@@ -14,8 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_events: {
+        Row: {
+          area_id: string | null
+          company_id: string
+          created_at: string
+          id: string
+          job_id: string | null
+          kind: string
+          meta: Json
+          photo_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          area_id?: string | null
+          company_id: string
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          kind: string
+          meta?: Json
+          photo_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          area_id?: string | null
+          company_id?: string
+          created_at?: string
+          id?: string
+          job_id?: string | null
+          kind?: string
+          meta?: Json
+          photo_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       areas: {
         Row: {
+          company_id: string
           created_at: string
           description: string | null
           id: string
@@ -24,6 +61,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          company_id: string
           created_at?: string
           description?: string | null
           id?: string
@@ -32,6 +70,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          company_id?: string
           created_at?: string
           description?: string | null
           id?: string
@@ -49,10 +88,105 @@ export type Database = {
           },
         ]
       }
+      comments: {
+        Row: {
+          body: string
+          company_id: string
+          created_at: string
+          id: string
+          job_id: string
+          photo_id: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          company_id: string
+          created_at?: string
+          id?: string
+          job_id: string
+          photo_id: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          job_id?: string
+          photo_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comments_photo_id_fkey"
+            columns: ["photo_id"]
+            isOneToOne: false
+            referencedRelation: "photos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      companies: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      company_members: {
+        Row: {
+          company_id: string
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["company_role"]
+          user_id: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["company_role"]
+          user_id: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["company_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_members_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "companies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           address: string | null
           client: string | null
+          company_id: string
           created_at: string
           id: string
           name: string
@@ -64,6 +198,7 @@ export type Database = {
         Insert: {
           address?: string | null
           client?: string | null
+          company_id: string
           created_at?: string
           id?: string
           name: string
@@ -75,6 +210,7 @@ export type Database = {
         Update: {
           address?: string | null
           client?: string | null
+          company_id?: string
           created_at?: string
           id?: string
           name?: string
@@ -88,8 +224,10 @@ export type Database = {
       photos: {
         Row: {
           accuracy: number | null
+          annotated_image_url: string | null
           area_id: string
           caption: string | null
+          company_id: string
           created_at: string
           id: string
           image_url: string
@@ -97,13 +235,16 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           storage_path: string
+          tags: string[]
           taken_at: string
           user_id: string
         }
         Insert: {
           accuracy?: number | null
+          annotated_image_url?: string | null
           area_id: string
           caption?: string | null
+          company_id: string
           created_at?: string
           id?: string
           image_url: string
@@ -111,13 +252,16 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           storage_path: string
+          tags?: string[]
           taken_at?: string
           user_id: string
         }
         Update: {
           accuracy?: number | null
+          annotated_image_url?: string | null
           area_id?: string
           caption?: string | null
+          company_id?: string
           created_at?: string
           id?: string
           image_url?: string
@@ -125,6 +269,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           storage_path?: string
+          tags?: string[]
           taken_at?: string
           user_id?: string
         }
@@ -145,15 +290,80 @@ export type Database = {
           },
         ]
       }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          display_name: string | null
+          email: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      share_links: {
+        Row: {
+          company_id: string
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          job_id: string
+          token: string
+        }
+        Insert: {
+          company_id: string
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          job_id: string
+          token?: string
+        }
+        Update: {
+          company_id?: string
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          job_id?: string
+          token?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      company_role_of: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: Database["public"]["Enums"]["company_role"]
+      }
+      get_shared_job: { Args: { _token: string }; Returns: Json }
+      is_company_member: {
+        Args: { _company_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      company_role: "owner" | "admin" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -280,6 +490,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      company_role: ["owner", "admin", "member"],
+    },
   },
 } as const
