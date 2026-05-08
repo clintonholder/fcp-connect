@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from "
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 
-type Company = { id: string; name: string; owner_id: string; role?: string };
+export type Company = { id: string; name: string; owner_id: string; role: string };
 
 type CompanyCtx = {
   company: Company | null;
@@ -33,12 +33,11 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       .from("company_members")
       .select("role, company_id, companies(id, name, owner_id)")
       .eq("user_id", user.id);
-    let list: Company[] = (mems ?? [])
-      .map((m) => {
-        const c = m.companies as unknown as { id: string; name: string; owner_id: string } | null;
-        return c ? { id: c.id, name: c.name, owner_id: c.owner_id, role: m.role } : null;
-      })
-      .filter((x): x is Company => !!x);
+    const raw = (mems ?? []).map((m) => {
+      const c = m.companies as unknown as { id: string; name: string; owner_id: string } | null;
+      return c ? ({ id: c.id, name: c.name, owner_id: c.owner_id, role: m.role as string } as Company) : null;
+    });
+    let list: Company[] = raw.filter((x): x is Company => x !== null);
 
     if (list.length === 0) {
       // Auto-create a personal company

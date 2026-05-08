@@ -12,6 +12,6 @@ export async function logActivity(opts: {
     photo_id: opts.photo_id ?? null,
     user_id: u.user?.id ?? null,
     kind: opts.kind,
-    meta: opts.meta ?? {},
+    meta: (opts.meta ?? {}) as never,
   });
 }
