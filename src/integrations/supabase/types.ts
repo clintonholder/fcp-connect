@@ -14,7 +14,137 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      areas: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          job_id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          job_id: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          job_id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "areas_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jobs: {
+        Row: {
+          address: string | null
+          client: string | null
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          client?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          client?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      photos: {
+        Row: {
+          accuracy: number | null
+          area_id: string
+          caption: string | null
+          created_at: string
+          id: string
+          image_url: string
+          job_id: string
+          latitude: number | null
+          longitude: number | null
+          storage_path: string
+          taken_at: string
+          user_id: string
+        }
+        Insert: {
+          accuracy?: number | null
+          area_id: string
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_url: string
+          job_id: string
+          latitude?: number | null
+          longitude?: number | null
+          storage_path: string
+          taken_at?: string
+          user_id: string
+        }
+        Update: {
+          accuracy?: number | null
+          area_id?: string
+          caption?: string | null
+          created_at?: string
+          id?: string
+          image_url?: string
+          job_id?: string
+          latitude?: number | null
+          longitude?: number | null
+          storage_path?: string
+          taken_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "photos_area_id_fkey"
+            columns: ["area_id"]
+            isOneToOne: false
+            referencedRelation: "areas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "photos_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
