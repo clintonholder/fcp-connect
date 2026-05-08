@@ -4,6 +4,7 @@ import {
 } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { CompanyProvider, useCompany } from "@/lib/company-context";
 import { Toaster } from "@/components/ui/sonner";
 import { HardHat, MapPin, LogOut, FolderKanban } from "lucide-react";
 import { Button } from "@/components/ui/button";
