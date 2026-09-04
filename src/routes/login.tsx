@@ -1,4 +1,4 @@
-import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, type FormEvent } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,25 +12,39 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
 });
 
+type Mode = "signin" | "signup" | "forgot";
+
 function LoginPage() {
-  const [mode, setMode] = useState<"signin" | "signup">("signin");
+  const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [sent, setSent] = useState<null | "confirm" | "reset">(null);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      if (mode === "signup") {
-        const { error } = await supabase.auth.signUp({
+      if (mode === "forgot") {
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+          redirectTo: `${window.location.origin}/reset-password`,
+        });
+        if (error) throw error;
+        setSent("reset");
+        toast.success("Password reset link sent — check your email.");
+      } else if (mode === "signup") {
+        const { data, error } = await supabase.auth.signUp({
           email, password,
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        toast.success("Account created — you can sign in now.");
-        setMode("signin");
+        if (data.session) {
+          navigate({ to: "/" });
+        } else {
+          setSent("confirm");
+          toast.success("Check your email to confirm your account.");
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
@@ -54,24 +68,47 @@ function LoginPage() {
           <p className="text-sm text-muted-foreground">Geotag and organize job site photos</p>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          {sent ? (
+            <div className="space-y-4 text-center">
+              <p className="text-sm text-muted-foreground">
+                {sent === "confirm"
+                  ? `We sent a confirmation link to ${email}. Click it to activate your account, then sign in.`
+                  : `We sent a password reset link to ${email}. Open it to choose a new password.`}
+              </p>
+              <Button variant="outline" className="w-full" onClick={() => { setSent(null); setMode("signin"); }}>
+                Back to sign in
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
-            </div>
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? "..." : mode === "signin" ? "Sign In" : "Create Account"}
-            </Button>
-            <button type="button" onClick={() => setMode(mode === "signin" ? "signup" : "signin")} className="w-full text-sm text-muted-foreground hover:text-foreground">
-              {mode === "signin" ? "Need an account? Sign up" : "Already have an account? Sign in"}
-            </button>
-          </form>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              </div>
+              {mode !== "forgot" && (
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <Input id="password" type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+                </div>
+              )}
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? "..." : mode === "signin" ? "Sign In" : mode === "signup" ? "Create Account" : "Send reset link"}
+              </Button>
+              <div className="space-y-1">
+                <button type="button" onClick={() => setMode(mode === "signin" ? "signup" : "signin")} className="w-full text-sm text-muted-foreground hover:text-foreground">
+                  {mode === "signin" ? "Need an account? Sign up" : "Already have an account? Sign in"}
+                </button>
+                {mode !== "forgot" && (
+                  <button type="button" onClick={() => setMode("forgot")} className="w-full text-sm text-muted-foreground hover:text-foreground">
+                    Forgot your password?
+                  </button>
+                )}
+              </div>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>
   );
 }
+
