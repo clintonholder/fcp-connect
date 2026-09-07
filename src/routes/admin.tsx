@@ -18,7 +18,7 @@ import { formatDistanceToNow } from "date-fns";
 import {
   adminListUsers, adminListAudit, adminInviteUser, adminResendInvite,
   adminSetUserDisabled, adminSetUserRoles, adminSaveRole,
-  adminSendPasswordReset, adminDeleteUser, adminCreateUser,
+  adminSendPasswordReset, adminDeleteUser, adminCreateUser, adminUpdateUser,
 } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin")({
@@ -65,6 +65,7 @@ function AdminPage() {
   const createUser = useServerFn(adminCreateUser);
   const sendReset = useServerFn(adminSendPasswordReset);
   const deleteUser = useServerFn(adminDeleteUser);
+  const updateUser = useServerFn(adminUpdateUser);
   const [busy, setBusy] = useState<string | null>(null);
 
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -175,7 +176,7 @@ function AdminPage() {
           <h1 className="flex items-center gap-2 text-2xl font-bold sm:text-3xl"><Shield className="h-6 w-6 text-primary" />Admin</h1>
           <p className="text-sm text-muted-foreground">Users, roles and audit history</p>
         </div>
-        <Button onClick={() => setInviteOpen(true)}><UserPlus className="h-4 w-4 mr-1" />New User</Button>
+        <Button onClick={() => { setEditUserId(null); setInviteForm({ email: "", displayName: "", roleId: "" }); setInviteOpen(true); }}><UserPlus className="h-4 w-4 mr-1" />New User</Button>
       </div>
 
       <Dialog open={inviteOpen} onOpenChange={(o) => { setInviteOpen(o); if (!o) setEditUserId(null); }}>
@@ -252,6 +253,11 @@ function AdminPage() {
                   <option value="">No role</option>
                   {(roles.data ?? []).filter((r) => r.is_active).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
+                <Button size="sm" variant="ghost" aria-label={`Edit ${u.display_name || u.email}`} onClick={() => {
+                  setEditUserId(u.id);
+                  setInviteForm({ email: u.email, displayName: u.display_name ?? "", roleId: u.roles[0]?.id ?? "" });
+                  setInviteOpen(true);
+                }}><Pencil className="h-3.5 w-3.5" /></Button>
                 <Button size="sm" variant="outline" disabled={busy === `invite-${u.id}`} onClick={async () => {
                   setBusy(`invite-${u.id}`);
                   try { await resend({ data: { email: u.email, origin: window.location.origin } }); toast.success("Invitation sent"); refresh(); }
