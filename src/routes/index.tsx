@@ -16,7 +16,14 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { DIVISIONS, projectDivisions } from "@/lib/project-meta";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
+const mdFmt = new Intl.DateTimeFormat(undefined, { month: "2-digit", day: "2-digit" });
+function photoRangeLabel(r?: { min: number; max: number }) {
+  if (!r) return "No photos";
+  const a = mdFmt.format(new Date(r.min));
+  const b = mdFmt.format(new Date(r.max));
+  return a === b ? a : `${a}–${b}`;
+}
+
 import { logActivity } from "@/lib/activity";
 import { geocodeAddress } from "@/lib/geocode";
 import { ProjectForm, type ProjectFormValues, emptyProject } from "@/components/ProjectForm";
