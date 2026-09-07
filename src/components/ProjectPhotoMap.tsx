@@ -40,6 +40,7 @@ function FitToPhotos({ points }: { points: [number, number][] }) {
 
 export default function ProjectPhotoMap({ photos }: { photos: MapPhoto[] }) {
   const [tileError, setTileError] = useState(false);
+  const { layer, choose } = useBaseLayer("fcp.photoMap.layer");
 
   useEffect(() => {
     delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
