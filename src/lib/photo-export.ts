@@ -106,17 +106,10 @@ export function saveBlob(blob: Blob, fileName: string) {
   document.body.appendChild(a);
   a.click();
 
-  // In sandboxed previews/iframes the download can be blocked silently.
-  // Fall back to opening the file in a new tab so the user still gets it.
+  // Opening the blob in a tab would lose the file name, so only clean up here.
   setTimeout(() => {
     a.remove();
-    try {
-      const inFrame = window.self !== window.top;
-      if (inFrame) window.open(url, "_blank", "noopener");
-    } catch {
-      window.open(url, "_blank", "noopener");
-    }
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
-  }, 300);
+    URL.revokeObjectURL(url);
+  }, 60000);
 }
 

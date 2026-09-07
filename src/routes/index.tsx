@@ -308,6 +308,7 @@ function ProjectsPage() {
                           {j.archived_at && <Badge variant="outline" className="gap-1"><Archive className="h-3 w-3" />Archived</Badge>}
                         </div>
                         {(j.customer || j.client) && <p className="text-xs text-muted-foreground truncate">{j.customer || j.client}</p>}
+                        {j.cmic_number && <p className="text-xs text-muted-foreground truncate">CMiC {j.cmic_number}</p>}
                         {j.address && <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground truncate"><MapPin className="h-3 w-3" />{j.address}</p>}
                         <div className="mt-2 flex flex-wrap gap-1">
                           {j.status && <Badge variant="secondary">{j.status}</Badge>}
