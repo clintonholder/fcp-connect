@@ -158,13 +158,22 @@ function ProjectsPage() {
 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">Projects</h1>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold sm:text-3xl">Projects</h1>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Switch id="show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
+            <Label htmlFor="show-archived" className="cursor-pointer text-sm">
+              Show archived
+              <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold ${showArchived ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                {showArchived ? "ON" : "OFF"}
+              </span>
+            </Label>
+          </div>
+          {can.can_add_projects && (
+            <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1" />New Project</Button>
+          )}
         </div>
-        {can.can_add_projects && (
-          <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1" />New Project</Button>
-        )}
       </div>
 
       <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : closeCreate())}>
@@ -190,11 +199,39 @@ function ProjectsPage() {
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
-      <div className="mb-4 flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">{filtered.length} project{filtered.length === 1 ? "" : "s"}</span>
-        <button className="text-muted-foreground underline hover:text-foreground" onClick={() => setShowArchived((v) => !v)}>
-          {showArchived ? "Hide archived" : "Show archived"}
-        </button>
+
+      <div className="mb-3 rounded-lg border bg-card p-3">
+        <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+          <SlidersHorizontal className="h-4 w-4 text-primary" />Filters
+          {activeFilterCount > 0 && <Badge variant="secondary">{activeFilterCount} active</Badge>}
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          <select className={sel} value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}>
+            <option value="">All statuses</option>
+            <option value="Active">Active</option>
+            <option value="Archived">Archived</option>
+          </select>
+          <select className={sel} value={filters.division} onChange={(e) => setFilters({ ...filters, division: e.target.value })}>
+            <option value="">All divisions</option>
+            {DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+          <select className={sel} value={filters.phase} onChange={(e) => setFilters({ ...filters, phase: e.target.value })}>
+            <option value="">All phases</option>
+            {phaseOptions.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <select className={sel} value={filters.person} onChange={(e) => setFilters({ ...filters, person: e.target.value })}>
+            <option value="">Anyone assigned</option>
+            {peopleOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <Button variant="outline" onClick={() => setFilters(emptyFilters)} disabled={activeFilterCount === 0}>
+            Clear filters
+          </Button>
+        </div>
+      </div>
+
+      <div className="mb-4 text-sm text-muted-foreground">
+        {filtered.length} project{filtered.length === 1 ? "" : "s"} match{filtered.length === 1 ? "es" : ""}
+        {showArchived ? " (including archived)" : ""}
       </div>
 
       {isLoading ? (
