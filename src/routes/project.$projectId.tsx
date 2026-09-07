@@ -65,6 +65,7 @@ function ProjectDetail() {
   const [uploadPhase, setUploadPhase] = useState<string>("Progress");
   const [mapFilters, setMapFilters] = useState({ phase: "", uploader: "", since: "" });
   const fileRef = useRef<HTMLInputElement>(null);
+  const pickRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [exporting, setExporting] = useState<{ done: number; total: number } | null>(null);
   const [exportReady, setExportReady] = useState<{
@@ -175,20 +176,32 @@ function ProjectDetail() {
 
   // ---- Upload -------------------------------------------------------------
   const handleFiles = async (files: FileList | null) => {
-    if (!files || !files.length || !company) return;
+    if (!files || !files.length) return;
+    if (!user) { toast.error("Please sign in again to add photos"); return; }
+    if (!company) { toast.error("Workspace still loading — try again in a moment"); return; }
+    const list = Array.from(files);
     setUploading(true);
+    const progress = toast.loading(`Adding ${list.length} photo${list.length === 1 ? "" : "s"}…`);
+    // Device location is a fallback only — never block the upload on it.
     const coords = await new Promise<GeolocationPosition | null>((resolve) => {
-      if (!navigator.geolocation) return resolve(null);
-      navigator.geolocation.getCurrentPosition((p) => resolve(p), () => resolve(null), { enableHighAccuracy: true, timeout: 8000 });
+      if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null);
+      let done = false;
+      const finish = (v: GeolocationPosition | null) => { if (!done) { done = true; resolve(v); } };
+      setTimeout(() => finish(null), 6000);
+      try {
+        navigator.geolocation.getCurrentPosition((p) => finish(p), () => finish(null), { enableHighAccuracy: true, timeout: 6000 });
+      } catch { finish(null); }
     });
     try {
       let withGps = 0;
-      const list = Array.from(files);
       for (const file of list) {
-        const exif = await readPhotoExif(file);
-        const ext = file.name.split(".").pop() || "jpg";
-        const path = `${user!.id}/${projectId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("job-photos").upload(path, file, { contentType: file.type });
+        let exif = { takenAt: null as string | null, latitude: null as number | null, longitude: null as number | null };
+        try { exif = await readPhotoExif(file); } catch { /* metadata is optional */ }
+        const nameExt = (file.name.split(".").pop() || "").toLowerCase();
+        const ext = /^[a-z0-9]{2,5}$/.test(nameExt) ? nameExt : (file.type.split("/")[1] || "jpg");
+        const path = `${user.id}/${projectId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("job-photos")
+          .upload(path, file, { contentType: file.type || "image/jpeg", upsert: false });
         if (upErr) throw upErr;
         const { data: pub } = supabase.storage.from("job-photos").getPublicUrl(path);
         const hasExifGps = exif.latitude != null && exif.longitude != null;
@@ -196,7 +209,7 @@ function ProjectDetail() {
         const lng = hasExifGps ? exif.longitude : (coords?.coords.longitude ?? null);
         if (lat != null && lng != null) withGps++;
         const { error: insErr } = await supabase.from("photos").insert({
-          job_id: projectId, user_id: user!.id, company_id: company.id,
+          job_id: projectId, user_id: user.id, company_id: company.id,
           storage_path: path, image_url: pub.publicUrl, phase: uploadPhase || null,
           taken_at: exif.takenAt ?? new Date().toISOString(),
           latitude: lat,
@@ -205,17 +218,26 @@ function ProjectDetail() {
         });
         if (insErr) throw insErr;
       }
-      await logActivity({ company_id: company.id, job_id: projectId, kind: "photo_uploaded", meta: { count: files.length, phase: uploadPhase } });
-      qc.invalidateQueries({ queryKey: ["photos", projectId] });
+      try {
+        await logActivity({ company_id: company.id, job_id: projectId, kind: "photo_uploaded", meta: { count: list.length, phase: uploadPhase } });
+      } catch { /* history entry is not critical */ }
+      await qc.invalidateQueries({ queryKey: ["photos", projectId] });
       qc.invalidateQueries({ queryKey: ["activity", projectId] });
-      toast.success(withGps === list.length ? "Photos uploaded with location" : withGps ? `Photos uploaded (${withGps} of ${list.length} with location)` : "Photos uploaded (no location data)");
+      toast.success(
+        withGps === list.length ? "Photos uploaded with location" : withGps ? `Photos uploaded (${withGps} of ${list.length} with location)` : "Photos uploaded (no location data)",
+        { id: progress },
+      );
     } catch (e) {
-      toast.error((e as Error).message);
+      console.error("[photo upload]", e);
+      toast.error(`Upload failed: ${(e as Error).message || "unknown error"}`, { id: progress });
     } finally {
+      
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
+      if (pickRef.current) pickRef.current.value = "";
     }
   };
+
 
   // ---- Batch actions ------------------------------------------------------
   const selectedPhotos = filteredPhotos.filter((p) => selected.includes(p.id));
@@ -541,9 +563,15 @@ function ProjectDetail() {
             </select>
             <input ref={fileRef} type="file" accept="image/*" capture="environment" multiple className="hidden"
               onChange={(e) => handleFiles(e.target.files)} />
+            <input ref={pickRef} type="file" accept="image/*" multiple className="hidden"
+              onChange={(e) => handleFiles(e.target.files)} />
             <Button size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
               <Camera className="mr-1 h-4 w-4" />{uploading ? "Uploading…" : "Take Photo"}
             </Button>
+            <Button size="sm" variant="outline" disabled={uploading} onClick={() => pickRef.current?.click()}>
+              Choose Photos
+            </Button>
+
           </div>
         )}
       </div>
