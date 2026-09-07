@@ -18,7 +18,7 @@ import { formatDistanceToNow } from "date-fns";
 import {
   adminListUsers, adminListAudit, adminInviteUser, adminResendInvite,
   adminSetUserDisabled, adminSetUserRoles, adminSaveRole,
-  adminSendPasswordReset, adminDeleteUser, adminCreateUser,
+  adminSendPasswordReset, adminDeleteUser, adminCreateUser, adminUpdateUser,
 } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin")({
@@ -65,10 +65,13 @@ function AdminPage() {
   const createUser = useServerFn(adminCreateUser);
   const sendReset = useServerFn(adminSendPasswordReset);
   const deleteUser = useServerFn(adminDeleteUser);
+  const updateUser = useServerFn(adminUpdateUser);
   const [busy, setBusy] = useState<string | null>(null);
 
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [editUserId, setEditUserId] = useState<string | null>(null);
   const [inviteForm, setInviteForm] = useState({ email: "", displayName: "", roleId: "" });
+
   const [roleOpen, setRoleOpen] = useState(false);
   const emptyPerms = Object.fromEntries(PERMISSIONS.map((p) => [p.key, true])) as Record<PermissionKey, boolean>;
   const [roleForm, setRoleForm] = useState<{ id?: string; name: string; permissions: Record<PermissionKey, boolean> }>(
@@ -134,6 +137,31 @@ function AdminPage() {
     onError: fail,
   });
 
+  const updateMut = useMutation({
+    mutationFn: () => {
+      if (!editUserId) return Promise.reject(new Error("No user selected"));
+      if (!inviteForm.displayName.trim() || !inviteForm.email.trim()) {
+        return Promise.reject(new Error("A name and a valid email address are required"));
+      }
+      return updateUser({
+        data: {
+          userId: editUserId,
+          email: inviteForm.email,
+          displayName: inviteForm.displayName,
+          roleId: inviteForm.roleId || null,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Changes saved");
+      setInviteForm({ email: "", displayName: "", roleId: "" });
+      setEditUserId(null);
+      setInviteOpen(false);
+      refresh();
+    },
+    onError: fail,
+  });
+
 
   const roleMut = useMutation({
     mutationFn: () => saveRole({ data: { id: roleForm.id, name: roleForm.name, permissions: roleForm.permissions } }),
@@ -148,13 +176,13 @@ function AdminPage() {
           <h1 className="flex items-center gap-2 text-2xl font-bold sm:text-3xl"><Shield className="h-6 w-6 text-primary" />Admin</h1>
           <p className="text-sm text-muted-foreground">Users, roles and audit history</p>
         </div>
-        <Button onClick={() => setInviteOpen(true)}><UserPlus className="h-4 w-4 mr-1" />New User</Button>
+        <Button onClick={() => { setEditUserId(null); setInviteForm({ email: "", displayName: "", roleId: "" }); setInviteOpen(true); }}><UserPlus className="h-4 w-4 mr-1" />New User</Button>
       </div>
 
-      <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+      <Dialog open={inviteOpen} onOpenChange={(o) => { setInviteOpen(o); if (!o) setEditUserId(null); }}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Add a user</DialogTitle></DialogHeader>
-          <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); inviteMut.mutate(); }}>
+          <DialogHeader><DialogTitle>{editUserId ? "Modify a user" : "Add a user"}</DialogTitle></DialogHeader>
+          <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (editUserId) updateMut.mutate(); else inviteMut.mutate(); }}>
             <div><Label htmlFor="i-name">Full name *</Label><Input id="i-name" required value={inviteForm.displayName} onChange={(e) => setInviteForm({ ...inviteForm, displayName: e.target.value })} /></div>
             <div><Label htmlFor="i-email">Work email *</Label><Input id="i-email" type="email" required value={inviteForm.email} onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })} /></div>
             <div>
@@ -165,20 +193,31 @@ function AdminPage() {
                 {(roles.data ?? []).filter((r) => r.is_active).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
-            <p className="text-xs text-muted-foreground">Invited people receive an email and choose their own password. Passwords are never shown or stored here.</p>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <Button type="submit" disabled={inviteMut.isPending || createMut.isPending}>
-                {inviteMut.isPending ? "Sending…" : "Add and send invitation"}
+            <p className="text-xs text-muted-foreground">
+              {editUserId
+                ? "Passwords cannot be changed here — use Send password reset on the person's row."
+                : "Invited people receive an email and choose their own password. Passwords are never shown or stored here."}
+            </p>
+            {editUserId ? (
+              <Button type="submit" className="w-full" disabled={updateMut.isPending}>
+                {updateMut.isPending ? "Saving…" : "Save Changes"}
               </Button>
-              <Button type="button" variant="secondary" disabled={inviteMut.isPending || createMut.isPending}
-                onClick={() => createMut.mutate()}>
-                {createMut.isPending ? "Adding…" : "Add without invitation"}
-              </Button>
-            </div>
-            <Button type="button" variant="outline" className="w-full" onClick={() => setInviteOpen(false)}>Cancel</Button>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Button type="submit" disabled={inviteMut.isPending || createMut.isPending}>
+                  {inviteMut.isPending ? "Sending…" : "Add and send invitation"}
+                </Button>
+                <Button type="button" variant="secondary" disabled={inviteMut.isPending || createMut.isPending}
+                  onClick={() => createMut.mutate()}>
+                  {createMut.isPending ? "Adding…" : "Add without invitation"}
+                </Button>
+              </div>
+            )}
+            <Button type="button" variant="outline" className="w-full" onClick={() => { setInviteOpen(false); setEditUserId(null); }}>Cancel</Button>
           </form>
         </DialogContent>
       </Dialog>
+
 
 
       <section>
@@ -214,6 +253,11 @@ function AdminPage() {
                   <option value="">No role</option>
                   {(roles.data ?? []).filter((r) => r.is_active).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
+                <Button size="sm" variant="ghost" aria-label={`Edit ${u.display_name || u.email}`} onClick={() => {
+                  setEditUserId(u.id);
+                  setInviteForm({ email: u.email, displayName: u.display_name ?? "", roleId: u.roles[0]?.id ?? "" });
+                  setInviteOpen(true);
+                }}><Pencil className="h-3.5 w-3.5" /></Button>
                 <Button size="sm" variant="outline" disabled={busy === `invite-${u.id}`} onClick={async () => {
                   setBusy(`invite-${u.id}`);
                   try { await resend({ data: { email: u.email, origin: window.location.origin } }); toast.success("Invitation sent"); refresh(); }

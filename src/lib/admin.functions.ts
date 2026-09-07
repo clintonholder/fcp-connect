@@ -362,3 +362,54 @@ export const adminCreateUser = createServerFn({ method: "POST" })
     await audit(context.userId, "user_created_without_invitation", "user", newId, { email: data.email });
     return { id: newId };
   });
+
+/* ----------------------------- edit a user ----------------------------- */
+
+export const adminUpdateUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { userId: string; email: string; displayName: string; roleId: string | null }) => {
+    const email = d.email?.trim().toLowerCase();
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error("A valid email address is required");
+    if (!d.displayName?.trim()) throw new Error("A name is required");
+    if (!d.userId) throw new Error("Missing user");
+    return { userId: d.userId, email, displayName: d.displayName.trim(), roleId: d.roleId };
+  })
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const db = await admin();
+
+    const { data: current } = await db
+      .from("profiles").select("email, display_name").eq("id", data.userId).maybeSingle();
+    if (!current) throw new Error("That user no longer exists");
+
+    const emailChanged = (current.email ?? "").toLowerCase() !== data.email;
+    if (emailChanged) {
+      const { data: clash } = await db.from("profiles").select("id").ilike("email", data.email).maybeSingle();
+      if (clash && clash.id !== data.userId) throw new Error("Someone with that email address already exists");
+      const { error: authErr } = await db.auth.admin.updateUserById(data.userId, {
+        email: data.email,
+        user_metadata: { display_name: data.displayName },
+      });
+      if (authErr) throw new Error(authErr.message);
+    } else {
+      await db.auth.admin.updateUserById(data.userId, { user_metadata: { display_name: data.displayName } });
+    }
+
+    const { error: profErr } = await db
+      .from("profiles").update({ email: data.email, display_name: data.displayName }).eq("id", data.userId);
+    if (profErr) throw new Error(profErr.message);
+
+    // Keep the single-role model in step with the form.
+    await db.from("user_roles").delete().eq("user_id", data.userId);
+    if (data.roleId) {
+      const { error: roleErr } = await db.from("user_roles").insert({ user_id: data.userId, role_id: data.roleId });
+      if (roleErr) throw new Error(roleErr.message);
+    }
+
+    await audit(context.userId, "user_updated", "user", data.userId, {
+      email: data.email,
+      previous_email: current.email,
+      display_name: data.displayName,
+    });
+    return { ok: true };
+  });
