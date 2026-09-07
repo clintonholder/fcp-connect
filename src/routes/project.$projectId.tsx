@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -44,7 +44,6 @@ function ProjectDetail() {
   const { user } = useAuth();
   const { company } = useCompany();
   const qc = useQueryClient();
-  const navigate = useNavigate();
   const [areaOpen, setAreaOpen] = useState(false);
   const [areaName, setAreaName] = useState("");
   const [tagFilter, setTagFilter] = useState<string | null>(null);
@@ -498,7 +497,6 @@ function ProjectDetail() {
       </div>
 
       <PhotoDetailDialog photo={activePhoto} open={!!activePhoto} onClose={() => setActivePhoto(null)} />
-      {void navigate}
     </div>
   );
 }
