@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useCompany } from "@/lib/company-context";
 import { useMyRoles } from "@/lib/roles";
 import { projectDivisions } from "@/lib/project-meta";
+import { buildPhotoZip, saveBlob } from "@/lib/photo-export";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -65,6 +66,7 @@ function ProjectDetail() {
   const [mapFilters, setMapFilters] = useState({ phase: "", uploader: "", since: "" });
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [exporting, setExporting] = useState<{ done: number; total: number } | null>(null);
   useEffect(() => setMapReady(true), []);
 
   const { data: project } = useQuery({
@@ -240,25 +242,27 @@ function ProjectDetail() {
   };
 
   const batchExport = async () => {
-    let ok = 0; const failed: string[] = [];
-    for (const p of selectedPhotos) {
-      try {
-        const res = await fetch(p.annotated_image_url ?? p.image_url);
-        const blob = await res.blob();
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `photo-${p.id}.jpg`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-        ok++;
-      } catch { failed.push(p.id); }
+    if (!selectedPhotos.length) { toast.error("Select at least one photo to export"); return; }
+    setExporting({ done: 0, total: selectedPhotos.length });
+    try {
+      const { ok, failed, blob, fileName } = await buildPhotoZip(
+        selectedPhotos,
+        project as never,
+        (done, total) => setExporting({ done, total }),
+      );
+      if (!blob) { toast.error("No photos could be exported"); return; }
+      saveBlob(blob, fileName);
+      await logActivity({
+        company_id: company!.id, job_id: projectId, kind: "photo_exported",
+        meta: { photo_ids: selectedPhotos.map((p) => p.id), failed_photo_ids: failed, count: ok, file: fileName, result: failed.length ? "partial" : "ok" },
+      });
+      if (failed.length) toast.warning(`${ok} photo${ok === 1 ? "" : "s"} exported · ${failed.length} failed`);
+      else toast.success(`${ok} photo${ok === 1 ? "" : "s"} exported to ${fileName}`);
+    } catch (e) {
+      toast.error((e as Error).message || "Export failed");
+    } finally {
+      setExporting(null);
     }
-    await logActivity({
-      company_id: company!.id, job_id: projectId, kind: "photo_exported",
-      meta: { photo_ids: selectedPhotos.map((p) => p.id), failed_photo_ids: failed, count: ok, result: failed.length ? "partial" : "ok" },
-    });
-    if (failed.length) toast.warning(`${ok} downloaded · ${failed.length} failed`);
-    else toast.success(`${ok} photo${ok === 1 ? "" : "s"} downloaded`);
   };
 
   const batchApplyPhase = async (value: string) => {
@@ -541,7 +545,10 @@ function ProjectDetail() {
           {selected.length > 0 && (
             <>
               <Button size="sm" variant="ghost" onClick={() => setSelected([])}><X className="mr-1 h-3 w-3" />Clear</Button>
-              <Button size="sm" variant="outline" onClick={batchExport}><Download className="mr-1 h-4 w-4" />Export</Button>
+              <Button size="sm" variant="outline" onClick={batchExport} disabled={!!exporting}>
+                <Download className="mr-1 h-4 w-4" />
+                {exporting ? `Exporting ${exporting.done}/${exporting.total}…` : "Export"}
+              </Button>
               {can.can_edit_photos && (
                 <>
                   <select className="rounded-md border border-input bg-background px-2 py-1 text-sm" defaultValue=""
