@@ -15,6 +15,8 @@ import { Plus, MapPin, Building2, Camera, Search, Archive, SlidersHorizontal } f
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { DIVISIONS, projectDivisions } from "@/lib/project-meta";
+import { useShowArchived } from "@/lib/show-archived";
+
 import { toast } from "sonner";
 const mdFmt = new Intl.DateTimeFormat(undefined, { month: "2-digit", day: "2-digit" });
 function photoRangeLabel(r?: { min: number; max: number }) {
@@ -42,7 +44,7 @@ export const Route = createFileRoute("/")({
   component: () => <RequireAuth><ProjectsPage /></RequireAuth>,
 });
 
-const emptyFilters = { division: "", person: "" };
+const emptyFilters = { division: "", tag: "", person: "", scope: "all" };
 const sel = "rounded-md border border-input bg-background px-2 py-2 text-sm";
 
 function ProjectsPage() {
@@ -52,8 +54,9 @@ function ProjectsPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [showArchived, setShowArchived] = useState(false);
+  const [showArchived, setShowArchived] = useShowArchived();
   const [filters, setFilters] = useState(emptyFilters);
+
   const [form, setForm] = useState<ProjectFormValues>(emptyProject);
 
   const { data: people } = useQuery({
@@ -125,22 +128,37 @@ function ProjectsPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [projects, collaborators, people]);
 
+  const tagOptions = useMemo(
+    () => Array.from(new Set((projects ?? []).flatMap((p) => p.tags ?? []).filter(Boolean) as string[])).sort(),
+    [projects],
+  );
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return (projects ?? []).filter((p) => {
       if (!showArchived && p.archived_at) return false;
       if (filters.division && !projectDivisions(p).includes(filters.division)) return false;
+      if (filters.tag && !(p.tags ?? []).includes(filters.tag)) return false;
       if (filters.person) {
         const isCollab = (collaborators ?? []).some((c) => c.job_id === p.id && c.user_id === filters.person);
         if (p.owner_id !== filters.person && !isCollab) return false;
+      }
+      if (filters.scope === "mine") {
+        const attached =
+          p.owner_id === user?.id ||
+          p.user_id === user?.id ||
+          (collaborators ?? []).some((c) => c.job_id === p.id && c.user_id === user?.id);
+        if (!attached) return false;
       }
       if (q && ![p.name, p.customer, p.client, p.address, ...projectDivisions(p), ...(p.tags ?? []), p.status, p.phase, p.cmic_number, ownerName(p.owner_id)]
         .filter(Boolean).some((x) => String(x).toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [projects, search, showArchived, people, filters, collaborators]);
+  }, [projects, search, showArchived, people, filters, collaborators, user]);
 
-  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const activeFilterCount =
+    (filters.division ? 1 : 0) + (filters.tag ? 1 : 0) + (filters.person ? 1 : 0) + (filters.scope !== "all" ? 1 : 0);
+
 
   const create = useMutation({
     mutationFn: async () => {
@@ -235,19 +253,36 @@ function ProjectsPage() {
           <SlidersHorizontal className="h-4 w-4 text-primary" />Filters
           {activeFilterCount > 0 && <Badge variant="secondary">{activeFilterCount} active</Badge>}
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
           <select className={sel} value={filters.division} onChange={(e) => setFilters({ ...filters, division: e.target.value })}>
             <option value="">All divisions</option>
             {DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+          <select className={sel} value={filters.tag} onChange={(e) => setFilters({ ...filters, tag: e.target.value })}>
+            <option value="">All project tags</option>
+            {tagOptions.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
           <select className={sel} value={filters.person} onChange={(e) => setFilters({ ...filters, person: e.target.value })}>
             <option value="">Anyone assigned</option>
             {peopleOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
+          <select className={sel} value={filters.scope} onChange={(e) => setFilters({ ...filters, scope: e.target.value })}>
+            <option value="all">All authorized projects</option>
+            <option value="mine">Included on project</option>
+          </select>
           <Button variant="outline" onClick={() => setFilters(emptyFilters)} disabled={activeFilterCount === 0}>
             Clear filters
           </Button>
         </div>
+        {activeFilterCount > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {filters.division && <Badge variant="outline">Division: {filters.division}</Badge>}
+            {filters.tag && <Badge variant="outline">Tag: {filters.tag}</Badge>}
+            {filters.person && <Badge variant="outline">Assigned: {ownerName(filters.person) || "Unknown user"}</Badge>}
+            {filters.scope === "mine" && <Badge variant="outline">Included on project</Badge>}
+          </div>
+        )}
+
       </div>
 
       <div className="mb-4 text-sm text-muted-foreground">
