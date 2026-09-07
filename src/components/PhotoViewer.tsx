@@ -214,11 +214,8 @@ export function PhotoViewer({
 
         {/* Details */}
         <div className="flex w-full flex-col gap-3 overflow-y-auto p-4 md:max-w-sm">
-          <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start justify-between gap-2 pr-14 md:pr-0">
             <h3 className="text-sm font-semibold">Photo details</h3>
-            <button aria-label="Close photo viewer" onClick={onClose} className="rounded p-1 hover:bg-muted">
-              <X className="h-4 w-4" />
-            </button>
           </div>
 
           {!editing ? (
