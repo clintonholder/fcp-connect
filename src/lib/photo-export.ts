@@ -96,9 +96,27 @@ export async function buildPhotoZip(
 }
 
 export function saveBlob(blob: Blob, fileName: string) {
+  const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
+  a.href = url;
   a.download = fileName;
+  a.rel = "noopener";
+  a.style.display = "none";
+  // Must be in the DOM for the click to trigger a download in most browsers.
+  document.body.appendChild(a);
   a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+
+  // In sandboxed previews/iframes the download can be blocked silently.
+  // Fall back to opening the file in a new tab so the user still gets it.
+  setTimeout(() => {
+    a.remove();
+    try {
+      const inFrame = window.self !== window.top;
+      if (inFrame) window.open(url, "_blank", "noopener");
+    } catch {
+      window.open(url, "_blank", "noopener");
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }, 300);
 }
+
