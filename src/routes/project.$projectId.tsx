@@ -545,7 +545,10 @@ function ProjectDetail() {
           {selected.length > 0 && (
             <>
               <Button size="sm" variant="ghost" onClick={() => setSelected([])}><X className="mr-1 h-3 w-3" />Clear</Button>
-              <Button size="sm" variant="outline" onClick={batchExport}><Download className="mr-1 h-4 w-4" />Export</Button>
+              <Button size="sm" variant="outline" onClick={batchExport} disabled={!!exporting}>
+                <Download className="mr-1 h-4 w-4" />
+                {exporting ? `Exporting ${exporting.done}/${exporting.total}…` : "Export"}
+              </Button>
               {can.can_edit_photos && (
                 <>
                   <select className="rounded-md border border-input bg-background px-2 py-1 text-sm" defaultValue=""
