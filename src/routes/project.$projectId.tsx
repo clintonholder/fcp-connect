@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useCompany } from "@/lib/company-context";
 import { useMyRoles } from "@/lib/roles";
 import { projectDivisions } from "@/lib/project-meta";
+import { buildPhotoZip, saveBlob } from "@/lib/photo-export";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
