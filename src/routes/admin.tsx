@@ -214,10 +214,23 @@ function AdminPage() {
                   <option value="">No role</option>
                   {(roles.data ?? []).filter((r) => r.is_active).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
-                <Button size="sm" variant="outline" onClick={async () => {
-                  try { await resend({ data: { email: u.email, origin: window.location.origin } }); toast.success("Invitation resent"); refresh(); }
+                <Button size="sm" variant="outline" disabled={busy === `invite-${u.id}`} onClick={async () => {
+                  setBusy(`invite-${u.id}`);
+                  try { await resend({ data: { email: u.email, origin: window.location.origin } }); toast.success("Invitation sent"); refresh(); }
                   catch (err) { fail(err); }
-                }}><Send className="h-3.5 w-3.5 mr-1" />Resend</Button>
+                  finally { setBusy(null); }
+                }}><Send className="h-3.5 w-3.5 mr-1" />
+                  {busy === `invite-${u.id}` ? "Sending…" : u.status === "Invitation pending" ? "Send invitation" : "Resend"}
+                </Button>
+                <Button size="sm" variant="outline" disabled={busy === `reset-${u.id}`} onClick={async () => {
+                  setBusy(`reset-${u.id}`);
+                  try { await sendReset({ data: { email: u.email, origin: window.location.origin } }); toast.success("Password reset email sent"); }
+                  catch (err) { fail(err); }
+                  finally { setBusy(null); }
+                }}><KeyRound className="h-3.5 w-3.5 mr-1" />
+                  {busy === `reset-${u.id}` ? "Sending…" : "Send password reset"}
+                </Button>
+
                 <Button size="sm" variant={u.is_disabled ? "outline" : "destructive"} onClick={async () => {
                   const next = !u.is_disabled;
                   if (next && !window.confirm(`Disable ${u.display_name || u.email}? They will not be able to sign in.`)) return;
