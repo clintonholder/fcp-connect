@@ -70,8 +70,7 @@ function Header() {
     <header className="sticky top-0 z-40 border-b bg-card text-foreground shadow-[var(--shadow-card)]">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-2.5">
         <Link to="/" className="flex min-w-0 items-center gap-2">
-          <img src={fcpLogo.url} alt="FCP Services" className="h-9 w-auto sm:h-11" />
-          <span className="hidden text-sm font-semibold tracking-wide text-primary sm:inline">FCP Connect</span>
+          <img src={fcpLogo.url} alt="FCP Services" className="h-10 w-auto sm:h-12" />
         </Link>
         <nav className="flex items-center gap-1">
           <Link to="/" className="rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary" activeOptions={{ exact: true }} activeProps={{ className: "bg-secondary text-primary font-medium" }}>
