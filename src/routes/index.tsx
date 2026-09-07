@@ -70,7 +70,31 @@ function ProjectsPage() {
     },
   });
 
+  const { data: photoDates } = useQuery({
+    queryKey: ["photo-date-ranges", company?.id],
+    enabled: !!company?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("photos").select("job_id, taken_at, created_at")
+        .eq("company_id", company!.id);
+      return data ?? [];
+    },
+  });
+
+  const ranges = useMemo(() => {
+    const m = new Map<string, { min: number; max: number }>();
+    for (const p of photoDates ?? []) {
+      const t = new Date(p.taken_at ?? p.created_at).getTime();
+      if (!Number.isFinite(t)) continue;
+      const cur = m.get(p.job_id);
+      if (!cur) m.set(p.job_id, { min: t, max: t });
+      else { cur.min = Math.min(cur.min, t); cur.max = Math.max(cur.max, t); }
+    }
+    return m;
+  }, [photoDates]);
+
   const { data: collaborators } = useQuery({
+
     queryKey: ["all-collaborators", company?.id],
     enabled: !!company?.id,
     queryFn: async () => {
