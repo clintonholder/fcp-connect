@@ -215,20 +215,32 @@ function AdminPage() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Roles</h2>
-          <Button size="sm" variant="outline" onClick={() => { setRoleForm({ name: "" }); setRoleOpen(true); }}>
+          <Button size="sm" variant="outline" onClick={() => { setRoleForm({ name: "", permissions: emptyPerms }); setRoleOpen(true); }}>
             <Plus className="h-4 w-4 mr-1" />Add role
           </Button>
         </div>
         <Card><CardContent className="space-y-2 p-3">
           {(roles.data ?? []).map((r) => (
             <div key={r.id} className="flex items-center justify-between gap-2 rounded-md border p-2">
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-medium">{r.name}</span>
                 {r.is_admin && <Badge variant="secondary">Administrator</Badge>}
                 {!r.is_active && <Badge variant="outline">Inactive</Badge>}
+                {!r.is_admin && PERMISSIONS.filter((p) => (r as Record<string, unknown>)[p.key] === true).map((p) => (
+                  <Badge key={p.key} variant="outline" className="font-normal">{p.label}</Badge>
+                ))}
               </div>
               <div className="flex gap-2">
-                <Button size="sm" variant="ghost" onClick={() => { setRoleForm({ id: r.id, name: r.name }); setRoleOpen(true); }}>
+                <Button size="sm" variant="ghost" aria-label={`Edit ${r.name}`} onClick={() => {
+                  setRoleForm({
+                    id: r.id,
+                    name: r.name,
+                    permissions: Object.fromEntries(
+                      PERMISSIONS.map((p) => [p.key, (r as Record<string, unknown>)[p.key] !== false]),
+                    ) as Record<PermissionKey, boolean>,
+                  });
+                  setRoleOpen(true);
+                }}>
                   <Pencil className="h-3.5 w-3.5" />
                 </Button>
                 <Button size="sm" variant="outline" onClick={async () => {
@@ -246,6 +258,24 @@ function AdminPage() {
           <DialogHeader><DialogTitle>{roleForm.id ? "Edit role" : "New role"}</DialogTitle></DialogHeader>
           <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); roleMut.mutate(); }}>
             <div><Label htmlFor="r-name">Role name *</Label><Input id="r-name" required value={roleForm.name} onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })} /></div>
+            <div>
+              <Label>Permissions</Label>
+              <p className="mb-2 text-xs text-muted-foreground">Choose what people with this role are allowed to do.</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {PERMISSIONS.map((p) => (
+                  <label key={p.key} className="flex items-center gap-2 rounded-md border p-2 text-sm">
+                    <Checkbox
+                      checked={roleForm.permissions[p.key]}
+                      onCheckedChange={(v) =>
+                        setRoleForm({ ...roleForm, permissions: { ...roleForm.permissions, [p.key]: v === true } })
+                      }
+                    />
+                    {p.label}
+                  </label>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">Administrators always have full access.</p>
+            </div>
             <div className="flex gap-2">
               <Button type="submit" className="flex-1" disabled={roleMut.isPending}>Save</Button>
               <Button type="button" variant="outline" className="flex-1" onClick={() => setRoleOpen(false)}>Cancel</Button>
