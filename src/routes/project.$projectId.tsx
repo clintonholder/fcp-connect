@@ -464,26 +464,32 @@ function ProjectDetail() {
 
       {filteredPhotos.length > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-3 rounded-md border bg-muted/40 p-2 text-sm">
-          <label className="flex items-center gap-2">
-            <Checkbox checked={allVisibleSelected}
+          <label className="flex items-center gap-2 font-medium">
+            <Checkbox checked={allVisibleSelected} aria-label="Select all photos"
               onCheckedChange={(v) => setSelected(v ? filteredPhotos.map((p) => p.id) : [])} />
             Select all ({filteredPhotos.length})
           </label>
+          <span className="text-muted-foreground">{selected.length} of {filteredPhotos.length} selected</span>
           {selected.length > 0 && (
             <>
-              <span className="text-muted-foreground">{selected.length} selected</span>
               <Button size="sm" variant="ghost" onClick={() => setSelected([])}><X className="mr-1 h-3 w-3" />Clear</Button>
               <Button size="sm" variant="outline" onClick={batchExport}><Download className="mr-1 h-4 w-4" />Export</Button>
-              <select className="rounded-md border border-input bg-background px-2 py-1 text-sm" defaultValue=""
-                aria-label="Apply phase to selected photos"
-                onChange={(e) => { if (e.target.value) { batchApplyPhase(e.target.value); e.target.value = ""; } }}>
-                <option value="">Apply phase…</option>
-                {PHOTO_PHASES.map((p) => <option key={p} value={p}>{p}</option>)}
-              </select>
-              <Button size="sm" variant="outline" onClick={batchApplyTag}><Tag className="mr-1 h-4 w-4" />Apply tag</Button>
-              <Button size="sm" variant="outline" className="text-destructive" onClick={batchArchive}>
-                <Archive className="mr-1 h-4 w-4" />Archive
-              </Button>
+              {can.can_edit_photos && (
+                <>
+                  <select className="rounded-md border border-input bg-background px-2 py-1 text-sm" defaultValue=""
+                    aria-label="Apply phase to selected photos"
+                    onChange={(e) => { if (e.target.value) { batchApplyPhase(e.target.value); e.target.value = ""; } }}>
+                    <option value="">Apply phase…</option>
+                    {PHOTO_PHASES.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </select>
+                  <Button size="sm" variant="outline" onClick={batchApplyTag}><Tag className="mr-1 h-4 w-4" />Apply tag</Button>
+                </>
+              )}
+              {can.can_delete_photos && (
+                <Button size="sm" variant="outline" className="text-destructive" onClick={batchArchive}>
+                  <Archive className="mr-1 h-4 w-4" />Archive
+                </Button>
+              )}
             </>
           )}
         </div>
@@ -507,9 +513,28 @@ function ProjectDetail() {
           {groupedPhotos.map((group) => (
             <Card key={group.name}>
               <CardContent className="p-4">
-                <h3 className="mb-3 font-semibold">
-                  {group.name} <span className="text-xs font-normal text-muted-foreground">({group.items.length})</span>
-                </h3>
+                {(() => {
+                  const ids = group.items.map((p) => p.id);
+                  const groupSelectedCount = ids.filter((id) => selected.includes(id)).length;
+                  const allGroupSelected = groupSelectedCount === ids.length;
+                  return (
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      <label className="flex items-center gap-2">
+                        <Checkbox
+                          aria-label={`Select all ${group.name} photos`}
+                          checked={allGroupSelected ? true : groupSelectedCount > 0 ? "indeterminate" : false}
+                          onCheckedChange={() => setGroupSelected(ids, !allGroupSelected)}
+                        />
+                        <h3 className="font-semibold">
+                          {group.name} <span className="text-xs font-normal text-muted-foreground">({group.items.length})</span>
+                        </h3>
+                      </label>
+                      {groupSelectedCount > 0 && (
+                        <span className="text-xs text-muted-foreground">{groupSelectedCount} selected in this group</span>
+                      )}
+                    </div>
+                  );
+                })()}
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                   {group.items.map((p) => {
                     const idx = filteredPhotos.findIndex((x) => x.id === p.id);
