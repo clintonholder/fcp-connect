@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/lib/auth-context";
 import { useCompany } from "@/lib/company-context";
+import { useMyRoles } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,6 +35,7 @@ export const Route = createFileRoute("/")({
 function ProjectsPage() {
   const { user } = useAuth();
   const { company } = useCompany();
+  const { can } = useMyRoles();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -90,8 +92,7 @@ function ProjectsPage() {
         address: form.address.trim() || null,
         division: form.division || null,
         owner_id: form.owner_id || user!.id,
-        status: form.status,
-        phase: form.phase || null,
+        status: "Active",
         cmic_number: form.cmic_number.trim() || null,
         notes: form.notes.trim() || null,
         latitude: geo?.lat ?? null,
@@ -124,9 +125,10 @@ function ProjectsPage() {
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold sm:text-3xl">Projects</h1>
-          <p className="text-sm text-muted-foreground">FCP Connect</p>
         </div>
-        <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1" />New Project</Button>
+        {can.can_add_projects && (
+          <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1" />New Project</Button>
+        )}
       </div>
 
       <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : closeCreate())}>

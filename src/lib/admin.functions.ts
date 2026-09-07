@@ -205,28 +205,44 @@ export const adminSetUserRoles = createServerFn({ method: "POST" })
 
 export const adminSaveRole = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { id?: string; name: string; isActive?: boolean }) => {
+  .inputValidator((d: {
+    id?: string;
+    name: string;
+    isActive?: boolean;
+    permissions?: Partial<Record<
+      "can_add_projects" | "can_edit_projects" | "can_delete_projects"
+      | "can_add_photos" | "can_edit_photos" | "can_delete_photos", boolean>>;
+  }) => {
     if (!d.name?.trim()) throw new Error("A role name is required");
     return { ...d, name: d.name.trim() };
   })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
     const db = await admin();
+    const keys = [
+      "can_add_projects", "can_edit_projects", "can_delete_projects",
+      "can_add_photos", "can_edit_photos", "can_delete_photos",
+    ] as const;
+    const perms: Record<string, boolean> = {};
+    for (const k of keys) {
+      const v = data.permissions?.[k];
+      if (typeof v === "boolean") perms[k] = v;
+    }
     if (data.id) {
       const { error } = await db
         .from("app_roles")
-        .update({ name: data.name, ...(data.isActive === undefined ? {} : { is_active: data.isActive }) })
+        .update({ name: data.name, ...(data.isActive === undefined ? {} : { is_active: data.isActive }), ...perms })
         .eq("id", data.id);
       if (error) throw new Error(error.message);
-      await audit(context.userId, "role_updated", "role", data.id, { name: data.name, is_active: data.isActive });
+      await audit(context.userId, "role_updated", "role", data.id, { name: data.name, is_active: data.isActive, ...perms });
       return { ok: true };
     }
     const { data: created, error } = await db
       .from("app_roles")
-      .insert({ name: data.name, is_active: true, is_admin: false })
+      .insert({ name: data.name, is_active: true, is_admin: false, ...perms })
       .select()
       .single();
     if (error) throw new Error(error.message);
-    await audit(context.userId, "role_created", "role", created.id, { name: data.name });
+    await audit(context.userId, "role_created", "role", created.id, { name: data.name, ...perms });
     return { ok: true };
   });

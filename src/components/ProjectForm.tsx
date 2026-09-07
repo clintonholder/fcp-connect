@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { PROJECT_PHASES, PROJECT_STATUSES, DIVISIONS } from "@/lib/project-meta";
+import { DIVISIONS } from "@/lib/project-meta";
 
 export type ProjectFormValues = {
   name: string;
@@ -10,15 +10,13 @@ export type ProjectFormValues = {
   address: string;
   division: string;
   owner_id: string;
-  status: string;
-  phase: string;
   cmic_number: string;
   notes: string;
 };
 
 export const emptyProject: ProjectFormValues = {
   name: "", customer: "", address: "", division: "", owner_id: "",
-  status: "Active", phase: "", cmic_number: "", notes: "",
+  cmic_number: "", notes: "",
 };
 
 type Person = { id: string; display_name: string | null; email: string | null };
@@ -65,19 +63,6 @@ export function ProjectForm({
           <select id="p-owner" className={selectClass} value={value.owner_id} onChange={(e) => set({ owner_id: e.target.value })}>
             <option value="">Unassigned</option>
             {people.map((p) => <option key={p.id} value={p.id}>{p.display_name || p.email}</option>)}
-          </select>
-        </div>
-        <div>
-          <Label htmlFor="p-status">Status *</Label>
-          <select id="p-status" className={selectClass} value={value.status} onChange={(e) => set({ status: e.target.value })}>
-            {PROJECT_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
-        <div>
-          <Label htmlFor="p-phase">Current phase</Label>
-          <select id="p-phase" className={selectClass} value={value.phase} onChange={(e) => set({ phase: e.target.value })}>
-            <option value="">—</option>
-            {PROJECT_PHASES.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
         </div>
       </div>

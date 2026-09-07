@@ -52,6 +52,12 @@ export type Database = {
       }
       app_roles: {
         Row: {
+          can_add_photos: boolean
+          can_add_projects: boolean
+          can_delete_photos: boolean
+          can_delete_projects: boolean
+          can_edit_photos: boolean
+          can_edit_projects: boolean
           created_at: string
           id: string
           is_active: boolean
@@ -60,6 +66,12 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          can_add_photos?: boolean
+          can_add_projects?: boolean
+          can_delete_photos?: boolean
+          can_delete_projects?: boolean
+          can_edit_photos?: boolean
+          can_edit_projects?: boolean
           created_at?: string
           id?: string
           is_active?: boolean
@@ -68,6 +80,12 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          can_add_photos?: boolean
+          can_add_projects?: boolean
+          can_delete_photos?: boolean
+          can_delete_projects?: boolean
+          can_edit_photos?: boolean
+          can_edit_projects?: boolean
           created_at?: string
           id?: string
           is_active?: boolean
@@ -529,6 +547,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["company_role"]
       }
       get_shared_job: { Args: { _token: string }; Returns: Json }
+      has_perm: { Args: { _perm: string; _user_id: string }; Returns: boolean }
       has_role: {
         Args: { _role_name: string; _user_id: string }
         Returns: boolean

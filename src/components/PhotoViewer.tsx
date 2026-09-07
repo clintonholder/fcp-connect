@@ -25,7 +25,7 @@ export type PhotoDetail = {
 };
 
 export function PhotoViewer({
-  photos, index, onIndexChange, onClose, uploaderName, canManage,
+  photos, index, onIndexChange, onClose, uploaderName, canManage, canArchive,
 }: {
   photos: PhotoDetail[];
   index: number;
@@ -33,6 +33,7 @@ export function PhotoViewer({
   onClose: () => void;
   uploaderName: (id: string) => string;
   canManage: (p: PhotoDetail) => boolean;
+  canArchive?: (p: PhotoDetail) => boolean;
 }) {
   const photo = photos[index];
   const { user } = useAuth();
@@ -266,7 +267,7 @@ export function PhotoViewer({
             {editable && !editing && (
               <Button size="sm" variant="outline" onClick={() => setEditing(true)}><Pencil className="h-4 w-4 mr-1" />Edit</Button>
             )}
-            {editable && (
+            {(canArchive ? canArchive(photo) : editable) && (
               <Button size="sm" variant="outline" className="text-destructive" onClick={removePhoto}>
                 <Trash2 className="h-4 w-4 mr-1" />Archive
               </Button>
