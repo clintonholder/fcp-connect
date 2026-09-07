@@ -24,6 +24,7 @@ import { formatDistanceToNow } from "date-fns";
 import { geocodeAddress } from "@/lib/geocode";
 import { ProjectForm, type ProjectFormValues } from "@/components/ProjectForm";
 import { PHOTO_PHASES, UNPHASED, phaseLabel, formatTakenAt } from "@/lib/photo-meta";
+import { readPhotoExif } from "@/lib/exif";
 
 const ProjectPhotoMap = lazy(() => import("@/components/ProjectPhotoMap"));
 
@@ -161,25 +162,33 @@ function ProjectDetail() {
       navigator.geolocation.getCurrentPosition((p) => resolve(p), () => resolve(null), { enableHighAccuracy: true, timeout: 8000 });
     });
     try {
-      for (const file of Array.from(files)) {
+      let withGps = 0;
+      const list = Array.from(files);
+      for (const file of list) {
+        const exif = await readPhotoExif(file);
         const ext = file.name.split(".").pop() || "jpg";
         const path = `${user!.id}/${projectId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
         const { error: upErr } = await supabase.storage.from("job-photos").upload(path, file, { contentType: file.type });
         if (upErr) throw upErr;
         const { data: pub } = supabase.storage.from("job-photos").getPublicUrl(path);
+        const hasExifGps = exif.latitude != null && exif.longitude != null;
+        const lat = hasExifGps ? exif.latitude : (coords?.coords.latitude ?? null);
+        const lng = hasExifGps ? exif.longitude : (coords?.coords.longitude ?? null);
+        if (lat != null && lng != null) withGps++;
         const { error: insErr } = await supabase.from("photos").insert({
           job_id: projectId, user_id: user!.id, company_id: company.id,
           storage_path: path, image_url: pub.publicUrl, phase: uploadPhase || null,
-          latitude: coords?.coords.latitude ?? null,
-          longitude: coords?.coords.longitude ?? null,
-          accuracy: coords?.coords.accuracy ?? null,
+          taken_at: exif.takenAt ?? new Date().toISOString(),
+          latitude: lat,
+          longitude: lng,
+          accuracy: hasExifGps ? null : (coords?.coords.accuracy ?? null),
         });
         if (insErr) throw insErr;
       }
       await logActivity({ company_id: company.id, job_id: projectId, kind: "photo_uploaded", meta: { count: files.length, phase: uploadPhase } });
       qc.invalidateQueries({ queryKey: ["photos", projectId] });
       qc.invalidateQueries({ queryKey: ["activity", projectId] });
-      toast.success(coords ? "Photos uploaded with GPS" : "Photos uploaded (no GPS)");
+      toast.success(withGps === list.length ? "Photos uploaded with location" : withGps ? `Photos uploaded (${withGps} of ${list.length} with location)` : "Photos uploaded (no location data)");
     } catch (e) {
       toast.error((e as Error).message);
     } finally {

@@ -173,6 +173,16 @@ export function PhotoViewer({
           touchX.current = null;
         }}
       >
+        <button
+          type="button"
+          aria-label="Close photo"
+          title="Close photo"
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
+          className="absolute right-3 top-3 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-black/80 text-white shadow-lg ring-2 ring-white/80 transition hover:bg-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white sm:h-14 sm:w-14"
+        >
+          <X className="h-7 w-7" strokeWidth={2.5} />
+        </button>
+
         {/* Image stage */}
         <div className="relative flex min-h-[40vh] flex-1 items-center justify-center bg-black">
           <img
@@ -204,11 +214,8 @@ export function PhotoViewer({
 
         {/* Details */}
         <div className="flex w-full flex-col gap-3 overflow-y-auto p-4 md:max-w-sm">
-          <div className="flex items-start justify-between gap-2">
+          <div className="flex items-start justify-between gap-2 pr-14 md:pr-0">
             <h3 className="text-sm font-semibold">Photo details</h3>
-            <button aria-label="Close photo viewer" onClick={onClose} className="rounded p-1 hover:bg-muted">
-              <X className="h-4 w-4" />
-            </button>
           </div>
 
           {!editing ? (
