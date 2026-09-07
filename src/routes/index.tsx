@@ -11,7 +11,10 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, MapPin, Building2, Camera, Search, Archive } from "lucide-react";
+import { Plus, MapPin, Building2, Camera, Search, Archive, SlidersHorizontal } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { DIVISIONS } from "@/lib/project-meta";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { logActivity } from "@/lib/activity";
@@ -32,6 +35,9 @@ export const Route = createFileRoute("/")({
   component: () => <RequireAuth><ProjectsPage /></RequireAuth>,
 });
 
+const emptyFilters = { status: "", division: "", phase: "", person: "" };
+const sel = "rounded-md border border-input bg-background px-2 py-2 text-sm";
+
 function ProjectsPage() {
   const { user } = useAuth();
   const { company } = useCompany();
@@ -40,6 +46,7 @@ function ProjectsPage() {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [showArchived, setShowArchived] = useState(false);
+  const [filters, setFilters] = useState(emptyFilters);
   const [form, setForm] = useState<ProjectFormValues>(emptyProject);
 
   const { data: people } = useQuery({
@@ -63,21 +70,54 @@ function ProjectsPage() {
     },
   });
 
+  const { data: collaborators } = useQuery({
+    queryKey: ["all-collaborators", company?.id],
+    enabled: !!company?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("project_collaborators").select("job_id, user_id")
+        .eq("company_id", company!.id);
+      return data ?? [];
+    },
+  });
+
   const ownerName = (id: string | null) => {
     const p = (people ?? []).find((x) => x.id === id);
     return p?.display_name || p?.email || "";
   };
 
+  const phaseOptions = useMemo(
+    () => Array.from(new Set((projects ?? []).map((p) => p.phase).filter(Boolean) as string[])).sort(),
+    [projects],
+  );
+
+  const peopleOptions = useMemo(() => {
+    const ids = new Set<string>();
+    (projects ?? []).forEach((p) => p.owner_id && ids.add(p.owner_id));
+    (collaborators ?? []).forEach((c) => ids.add(c.user_id));
+    return Array.from(ids).map((id) => ({ id, name: ownerName(id) || "Unknown user" }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [projects, collaborators, people]);
+
   const filtered = useMemo(() => {
-    const list = (projects ?? []).filter((p) => (showArchived ? true : !p.archived_at));
     const q = search.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter((p) =>
-      [p.name, p.customer, p.client, p.address, p.division, p.status, p.phase, p.cmic_number, ownerName(p.owner_id)]
-        .filter(Boolean)
-        .some((x) => String(x).toLowerCase().includes(q)),
-    );
-  }, [projects, search, showArchived, people]);
+    return (projects ?? []).filter((p) => {
+      if (!showArchived && p.archived_at) return false;
+      const status = p.archived_at ? "Archived" : "Active";
+      if (filters.status && filters.status !== status) return false;
+      if (filters.division && p.division !== filters.division) return false;
+      if (filters.phase && p.phase !== filters.phase) return false;
+      if (filters.person) {
+        const isCollab = (collaborators ?? []).some((c) => c.job_id === p.id && c.user_id === filters.person);
+        if (p.owner_id !== filters.person && !isCollab) return false;
+      }
+      if (q && ![p.name, p.customer, p.client, p.address, p.division, p.status, p.phase, p.cmic_number, ownerName(p.owner_id)]
+        .filter(Boolean).some((x) => String(x).toLowerCase().includes(q))) return false;
+      return true;
+    });
+  }, [projects, search, showArchived, people, filters, collaborators]);
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   const create = useMutation({
     mutationFn: async () => {
@@ -122,13 +162,22 @@ function ProjectsPage() {
 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">Projects</h1>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold sm:text-3xl">Projects</h1>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Switch id="show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
+            <Label htmlFor="show-archived" className="cursor-pointer text-sm">
+              Show archived
+              <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold ${showArchived ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                {showArchived ? "ON" : "OFF"}
+              </span>
+            </Label>
+          </div>
+          {can.can_add_projects && (
+            <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1" />New Project</Button>
+          )}
         </div>
-        {can.can_add_projects && (
-          <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1" />New Project</Button>
-        )}
       </div>
 
       <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : closeCreate())}>
@@ -154,11 +203,39 @@ function ProjectsPage() {
           onChange={(e) => setSearch(e.target.value)}
         />
       </div>
-      <div className="mb-4 flex items-center justify-between text-sm">
-        <span className="text-muted-foreground">{filtered.length} project{filtered.length === 1 ? "" : "s"}</span>
-        <button className="text-muted-foreground underline hover:text-foreground" onClick={() => setShowArchived((v) => !v)}>
-          {showArchived ? "Hide archived" : "Show archived"}
-        </button>
+
+      <div className="mb-3 rounded-lg border bg-card p-3">
+        <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+          <SlidersHorizontal className="h-4 w-4 text-primary" />Filters
+          {activeFilterCount > 0 && <Badge variant="secondary">{activeFilterCount} active</Badge>}
+        </div>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+          <select className={sel} value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}>
+            <option value="">All statuses</option>
+            <option value="Active">Active</option>
+            <option value="Archived">Archived</option>
+          </select>
+          <select className={sel} value={filters.division} onChange={(e) => setFilters({ ...filters, division: e.target.value })}>
+            <option value="">All divisions</option>
+            {DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+          <select className={sel} value={filters.phase} onChange={(e) => setFilters({ ...filters, phase: e.target.value })}>
+            <option value="">All phases</option>
+            {phaseOptions.map((p) => <option key={p} value={p}>{p}</option>)}
+          </select>
+          <select className={sel} value={filters.person} onChange={(e) => setFilters({ ...filters, person: e.target.value })}>
+            <option value="">Anyone assigned</option>
+            {peopleOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <Button variant="outline" onClick={() => setFilters(emptyFilters)} disabled={activeFilterCount === 0}>
+            Clear filters
+          </Button>
+        </div>
+      </div>
+
+      <div className="mb-4 text-sm text-muted-foreground">
+        {filtered.length} project{filtered.length === 1 ? "" : "s"} match{filtered.length === 1 ? "es" : ""}
+        {showArchived ? " (including archived)" : ""}
       </div>
 
       {isLoading ? (
@@ -200,8 +277,15 @@ function ProjectsPage() {
       ) : (
         <div className="rounded-xl border-2 border-dashed p-12 text-center">
           <Building2 className="mx-auto h-10 w-10 text-muted-foreground/50" />
-          <p className="mt-2 font-medium">{search ? "No matches" : "No projects yet"}</p>
-          <p className="text-sm text-muted-foreground">{search ? "Try another search." : "Create your first project to get started."}</p>
+          <p className="mt-2 font-medium">{search || activeFilterCount ? "No projects match" : "No projects yet"}</p>
+          <p className="text-sm text-muted-foreground">
+            {search || activeFilterCount
+              ? "Try another search, change the filters, or turn on Show archived."
+              : "Create your first project to get started."}
+          </p>
+          {activeFilterCount > 0 && (
+            <Button variant="outline" className="mt-3" onClick={() => setFilters(emptyFilters)}>Clear filters</Button>
+          )}
         </div>
       )}
     </div>

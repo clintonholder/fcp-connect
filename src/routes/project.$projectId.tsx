@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { adminDeleteProject } from "@/lib/projects.functions";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -50,6 +51,7 @@ function ProjectDetail() {
   const { company } = useCompany();
   const { isAdmin, can } = useMyRoles();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [phaseFilter, setPhaseFilter] = useState<string>("");
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
@@ -364,6 +366,19 @@ function ProjectDetail() {
     onError: (e) => toast.error((e as Error).message),
   });
 
+  const deleteProject = useMutation({
+    mutationFn: async () => {
+      await adminDeleteProject({ data: { projectId } });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      toast.success("Project permanently deleted");
+      navigate({ to: "/" });
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+
+
   const editDirty = !!edit && !!project && (
     edit.name !== (project.name ?? "") ||
     edit.customer !== (project.customer ?? project.client ?? "") ||
@@ -421,6 +436,23 @@ function ProjectDetail() {
               if (window.confirm(msg)) toggleArchive.mutate();
             }}>
               {project?.archived_at ? <><ArchiveRestore className="mr-1 h-4 w-4" />Restore</> : <><Archive className="mr-1 h-4 w-4" />Archive</>}
+            </Button>
+          )}
+          {isAdmin && (
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={deleteProject.isPending}
+              onClick={() => {
+                if (!window.confirm(
+                  `Permanently delete "${project?.name}"?\n\nThis cannot be undone. Every photo, photo location, comment, collaborator and history record for this project is destroyed.\n\nUse Archive instead if you only want to hide it.`,
+                )) return;
+                const typed = window.prompt('Type DELETE to permanently remove this project.');
+                if (typed?.trim().toUpperCase() !== "DELETE") { toast.info("Deletion cancelled"); return; }
+                deleteProject.mutate();
+              }}
+            >
+              <Trash2 className="mr-1 h-4 w-4" />{deleteProject.isPending ? "Deleting…" : "Delete Project"}
             </Button>
           )}
         </div>
