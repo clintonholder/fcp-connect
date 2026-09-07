@@ -35,7 +35,7 @@ export const Route = createFileRoute("/")({
   component: () => <RequireAuth><ProjectsPage /></RequireAuth>,
 });
 
-const emptyFilters = { status: "", division: "", phase: "", person: "" };
+const emptyFilters = { division: "", person: "" };
 const sel = "rounded-md border border-input bg-background px-2 py-2 text-sm";
 
 function ProjectsPage() {
@@ -86,11 +86,6 @@ function ProjectsPage() {
     return p?.display_name || p?.email || "";
   };
 
-  const phaseOptions = useMemo(
-    () => Array.from(new Set((projects ?? []).map((p) => p.phase).filter(Boolean) as string[])).sort(),
-    [projects],
-  );
-
   const peopleOptions = useMemo(() => {
     const ids = new Set<string>();
     (projects ?? []).forEach((p) => p.owner_id && ids.add(p.owner_id));
@@ -103,10 +98,7 @@ function ProjectsPage() {
     const q = search.trim().toLowerCase();
     return (projects ?? []).filter((p) => {
       if (!showArchived && p.archived_at) return false;
-      const status = p.archived_at ? "Archived" : "Active";
-      if (filters.status && filters.status !== status) return false;
       if (filters.division && p.division !== filters.division) return false;
-      if (filters.phase && p.phase !== filters.phase) return false;
       if (filters.person) {
         const isCollab = (collaborators ?? []).some((c) => c.job_id === p.id && c.user_id === filters.person);
         if (p.owner_id !== filters.person && !isCollab) return false;
@@ -198,7 +190,7 @@ function ProjectsPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           className="pl-9"
-          placeholder="Search by name, customer, address, division, owner, status or phase…"
+          placeholder="Search by name, customer, address, division or owner…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -209,19 +201,10 @@ function ProjectsPage() {
           <SlidersHorizontal className="h-4 w-4 text-primary" />Filters
           {activeFilterCount > 0 && <Badge variant="secondary">{activeFilterCount} active</Badge>}
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-          <select className={sel} value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}>
-            <option value="">All statuses</option>
-            <option value="Active">Active</option>
-            <option value="Archived">Archived</option>
-          </select>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           <select className={sel} value={filters.division} onChange={(e) => setFilters({ ...filters, division: e.target.value })}>
             <option value="">All divisions</option>
             {DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
-          </select>
-          <select className={sel} value={filters.phase} onChange={(e) => setFilters({ ...filters, phase: e.target.value })}>
-            <option value="">All phases</option>
-            {phaseOptions.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
           <select className={sel} value={filters.person} onChange={(e) => setFilters({ ...filters, person: e.target.value })}>
             <option value="">Anyone assigned</option>
