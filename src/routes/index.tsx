@@ -201,19 +201,10 @@ function ProjectsPage() {
           <SlidersHorizontal className="h-4 w-4 text-primary" />Filters
           {activeFilterCount > 0 && <Badge variant="secondary">{activeFilterCount} active</Badge>}
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-          <select className={sel} value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}>
-            <option value="">All statuses</option>
-            <option value="Active">Active</option>
-            <option value="Archived">Archived</option>
-          </select>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           <select className={sel} value={filters.division} onChange={(e) => setFilters({ ...filters, division: e.target.value })}>
             <option value="">All divisions</option>
             {DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
-          </select>
-          <select className={sel} value={filters.phase} onChange={(e) => setFilters({ ...filters, phase: e.target.value })}>
-            <option value="">All phases</option>
-            {phaseOptions.map((p) => <option key={p} value={p}>{p}</option>)}
           </select>
           <select className={sel} value={filters.person} onChange={(e) => setFilters({ ...filters, person: e.target.value })}>
             <option value="">Anyone assigned</option>
