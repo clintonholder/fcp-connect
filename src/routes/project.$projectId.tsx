@@ -99,7 +99,7 @@ function ProjectDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("activity_events")
-        .select("*, profiles(display_name, email)")
+        .select("*")
         .eq("job_id", projectId).order("created_at", { ascending: false }).limit(30);
       if (error) throw error;
       return data;
@@ -471,7 +471,6 @@ function ProjectDetail() {
           {(activity ?? []).length === 0 && <p className="text-sm text-muted-foreground">No activity yet.</p>}
           <ul className="space-y-2">
             {(activity ?? []).map((e) => {
-              const profile = e.profiles as unknown as { display_name?: string | null; email?: string | null } | null;
               const meta = e.meta as Record<string, unknown>;
               const label: Record<string, string> = {
                 job_created: "created the project",
@@ -487,7 +486,7 @@ function ProjectDetail() {
               };
               return (
                 <li key={e.id} className="flex justify-between gap-2 text-sm">
-                  <span><span className="font-medium">{profile?.display_name || profile?.email || "Someone"}</span> {label[e.kind] || e.kind} {meta?.name ? <em className="text-muted-foreground">({String(meta.name)})</em> : null}</span>
+                  <span><span className="font-medium">{personName(e.user_id)}</span> {label[e.kind] || e.kind} {meta?.name ? <em className="text-muted-foreground">({String(meta.name)})</em> : null}</span>
                   <span className="whitespace-nowrap text-xs text-muted-foreground">{formatDistanceToNow(new Date(e.created_at), { addSuffix: true })}</span>
                 </li>
               );
