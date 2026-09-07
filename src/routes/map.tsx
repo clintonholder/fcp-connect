@@ -4,6 +4,7 @@ import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { projectDivisions } from "@/lib/project-meta";
 import { RequireAuth } from "@/components/RequireAuth";
+import { useShowArchived } from "@/lib/show-archived";
 import { useCompany } from "@/lib/company-context";
 import { useAuth } from "@/lib/auth-context";
 import { MapPin, Search, SlidersHorizontal } from "lucide-react";
@@ -28,7 +29,7 @@ export const Route = createFileRoute("/map")({
   component: () => <RequireAuth><MapPage /></RequireAuth>,
 });
 
-const emptyFilters = { status: "", division: "", tag: "", scope: "all" };
+const emptyFilters = { division: "", tag: "", scope: "all" };
 
 function MapPage() {
   const [mounted, setMounted] = useState(false);
@@ -37,6 +38,7 @@ function MapPage() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState(emptyFilters);
+  const [showArchived, setShowArchived] = useShowArchived();
   useEffect(() => setMounted(true), []);
 
   const { data: memberships } = useQuery({
@@ -87,8 +89,7 @@ function MapPage() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return (projects ?? []).filter((p) => {
-      if (filters.status === "Active" && p.archived_at) return false;
-      if (filters.status === "Archived" && !p.archived_at) return false;
+      if (!showArchived && p.archived_at) return false;
       if (filters.division && !projectDivisions(p).includes(filters.division)) return false;
       if (filters.tag && !(p.tags ?? []).includes(filters.tag)) return false;
       if (filters.scope === "mine") {
@@ -102,12 +103,12 @@ function MapPage() {
         .filter(Boolean).some((x) => String(x).toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [projects, filters, search, people, memberships, user]);
+  }, [projects, filters, search, people, memberships, user, showArchived]);
 
   const mappable = filtered.filter((p) => p.latitude != null && p.longitude != null);
   const unmappable = filtered.length - mappable.length;
   const activeFilterCount =
-    (filters.status ? 1 : 0) + (filters.division ? 1 : 0) + (filters.tag ? 1 : 0) + (filters.scope !== "all" ? 1 : 0);
+    (filters.division ? 1 : 0) + (filters.tag ? 1 : 0) + (filters.scope !== "all" ? 1 : 0);
   const sel = "rounded-md border border-input bg-background px-2 py-1.5 text-sm";
 
   return (
@@ -132,12 +133,7 @@ function MapPage() {
           <SlidersHorizontal className="h-4 w-4 text-primary" />Filters
           {activeFilterCount > 0 && <Badge variant="secondary">{activeFilterCount} active</Badge>}
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-          <select className={sel} value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}>
-            <option value="">Active &amp; archived</option>
-            <option value="Active">Active</option>
-            <option value="Archived">Archived</option>
-          </select>
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           <select className={sel} value={filters.division} onChange={(e) => setFilters({ ...filters, division: e.target.value })}>
             <option value="">All divisions</option>{options.division.map((s) => <option key={s}>{s}</option>)}
           </select>
