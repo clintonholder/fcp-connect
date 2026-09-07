@@ -250,6 +250,27 @@ function AdminPage() {
                 }}>
                   {u.is_disabled ? <><RotateCcw className="h-3.5 w-3.5 mr-1" />Reactivate</> : <><Ban className="h-3.5 w-3.5 mr-1" />Disable</>}
                 </Button>
+                <Button size="sm" variant="destructive" disabled={busy === `del-${u.id}`} onClick={async () => {
+                  const who = u.display_name || u.email;
+                  if (!window.confirm(`Permanently delete ${who}?\n\nThis cannot be undone. Their sign-in, roles and project collaborator assignments are removed. Their projects and photos stay, reassigned to you.\n\nTo keep their history and only block sign-in, use Disable instead.`)) return;
+                  const typed = window.prompt(`Type DELETE to permanently remove ${who}.`);
+                  if (typed?.trim().toUpperCase() !== "DELETE") { toast.info("Deletion cancelled"); return; }
+                  setBusy(`del-${u.id}`);
+                  try {
+                    await deleteUser({ data: { userId: u.id } });
+                    toast.success("User deleted"); refresh();
+                  } catch (err) {
+                    if ((err as Error).message?.includes("LAST_ADMIN")) {
+                      if (window.confirm("This is the last active administrator. Delete anyway? Nobody will be able to manage users.")) {
+                        try { await deleteUser({ data: { userId: u.id, force: true } }); toast.success("User deleted"); refresh(); }
+                        catch (e2) { fail(e2); }
+                      }
+                    } else fail(err);
+                  } finally { setBusy(null); }
+                }}>
+                  <Trash2 className="h-3.5 w-3.5 mr-1" />{busy === `del-${u.id}` ? "Deleting…" : "Delete user"}
+                </Button>
+
               </div>
             </div>
           ))}
