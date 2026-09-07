@@ -277,8 +277,15 @@ function ProjectsPage() {
       ) : (
         <div className="rounded-xl border-2 border-dashed p-12 text-center">
           <Building2 className="mx-auto h-10 w-10 text-muted-foreground/50" />
-          <p className="mt-2 font-medium">{search ? "No matches" : "No projects yet"}</p>
-          <p className="text-sm text-muted-foreground">{search ? "Try another search." : "Create your first project to get started."}</p>
+          <p className="mt-2 font-medium">{search || activeFilterCount ? "No projects match" : "No projects yet"}</p>
+          <p className="text-sm text-muted-foreground">
+            {search || activeFilterCount
+              ? "Try another search, change the filters, or turn on Show archived."
+              : "Create your first project to get started."}
+          </p>
+          {activeFilterCount > 0 && (
+            <Button variant="outline" className="mt-3" onClick={() => setFilters(emptyFilters)}>Clear filters</Button>
+          )}
         </div>
       )}
     </div>
