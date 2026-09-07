@@ -672,7 +672,8 @@ function ProjectDetail() {
           onIndexChange={setViewerIndex}
           onClose={() => setViewerIndex(null)}
           uploaderName={personName}
-          canManage={canManage}
+          canManage={canEditPhoto}
+          canArchive={canArchivePhoto}
         />
       )}
     </div>

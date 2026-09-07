@@ -25,7 +25,7 @@ export type PhotoDetail = {
 };
 
 export function PhotoViewer({
-  photos, index, onIndexChange, onClose, uploaderName, canManage,
+  photos, index, onIndexChange, onClose, uploaderName, canManage, canArchive,
 }: {
   photos: PhotoDetail[];
   index: number;
@@ -33,6 +33,7 @@ export function PhotoViewer({
   onClose: () => void;
   uploaderName: (id: string) => string;
   canManage: (p: PhotoDetail) => boolean;
+  canArchive?: (p: PhotoDetail) => boolean;
 }) {
   const photo = photos[index];
   const { user } = useAuth();
