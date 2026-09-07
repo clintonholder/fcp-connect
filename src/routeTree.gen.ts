@@ -9,7 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TeamRouteImport } from './routes/team'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as LoginRouteImport } from './routes/login'
@@ -18,11 +17,6 @@ import { Route as ShareTokenRouteImport } from './routes/share.$token'
 import { Route as ProjectProjectIdRouteImport } from './routes/project.$projectId'
 import { Route as JobJobIdRouteImport } from './routes/job.$jobId'
 
-const TeamRoute = TeamRouteImport.update({
-  id: '/team',
-  path: '/team',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -64,7 +58,6 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/map': typeof MapRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/team': typeof TeamRoute
   '/job/$jobId': typeof JobJobIdRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/share/$token': typeof ShareTokenRoute
@@ -74,7 +67,6 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/map': typeof MapRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/team': typeof TeamRoute
   '/job/$jobId': typeof JobJobIdRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/share/$token': typeof ShareTokenRoute
@@ -85,7 +77,6 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/map': typeof MapRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/team': typeof TeamRoute
   '/job/$jobId': typeof JobJobIdRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/share/$token': typeof ShareTokenRoute
@@ -97,7 +88,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/map'
     | '/reset-password'
-    | '/team'
     | '/job/$jobId'
     | '/project/$projectId'
     | '/share/$token'
@@ -107,7 +97,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/map'
     | '/reset-password'
-    | '/team'
     | '/job/$jobId'
     | '/project/$projectId'
     | '/share/$token'
@@ -117,7 +106,6 @@ export interface FileRouteTypes {
     | '/login'
     | '/map'
     | '/reset-password'
-    | '/team'
     | '/job/$jobId'
     | '/project/$projectId'
     | '/share/$token'
@@ -128,7 +116,6 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   MapRoute: typeof MapRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  TeamRoute: typeof TeamRoute
   JobJobIdRoute: typeof JobJobIdRoute
   ProjectProjectIdRoute: typeof ProjectProjectIdRoute
   ShareTokenRoute: typeof ShareTokenRoute
@@ -136,13 +123,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/team': {
-      id: '/team'
-      path: '/team'
-      fullPath: '/team'
-      preLoaderRoute: typeof TeamRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -200,7 +180,6 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   MapRoute: MapRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  TeamRoute: TeamRoute,
   JobJobIdRoute: JobJobIdRoute,
   ProjectProjectIdRoute: ProjectProjectIdRoute,
   ShareTokenRoute: ShareTokenRoute,
