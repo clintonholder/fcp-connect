@@ -17,6 +17,11 @@ export const DIVISIONS = [
   "Facilities Maintenance",
 ] as const;
 
+export function projectDivisions(p: { divisions?: string[] | null; division?: string | null }): string[] {
+  if (p.divisions && p.divisions.length) return p.divisions;
+  return p.division ? [p.division] : [];
+}
+
 export type ProjectRow = {
   id: string;
   name: string;
@@ -24,6 +29,7 @@ export type ProjectRow = {
   customer: string | null;
   client: string | null;
   division: string | null;
+  divisions: string[];
   owner_id: string | null;
   status: string;
   phase: string | null;

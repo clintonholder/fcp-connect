@@ -317,6 +317,7 @@ export type Database = {
           created_at: string
           customer: string | null
           division: string | null
+          divisions: string[]
           geocode_failed: boolean
           id: string
           latitude: number | null
@@ -338,6 +339,7 @@ export type Database = {
           created_at?: string
           customer?: string | null
           division?: string | null
+          divisions?: string[]
           geocode_failed?: boolean
           id?: string
           latitude?: number | null
@@ -359,6 +361,7 @@ export type Database = {
           created_at?: string
           customer?: string | null
           division?: string | null
+          divisions?: string[]
           geocode_failed?: boolean
           id?: string
           latitude?: number | null
