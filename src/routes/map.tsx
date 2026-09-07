@@ -1,5 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 
