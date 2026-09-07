@@ -234,6 +234,7 @@ function ProjectDetail() {
       
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
+      if (pickRef.current) pickRef.current.value = "";
     }
   };
 
