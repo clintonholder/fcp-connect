@@ -1,0 +1,304 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { logActivity } from "@/lib/activity";
+import { PHOTO_PHASES, normalizePhase, phaseLabel, formatTakenAt } from "@/lib/photo-meta";
+import {
+  MapPin, X, ChevronLeft, ChevronRight, Download, Trash2, Save, Pencil,
+  MessageSquare, Send, ZoomIn, ZoomOut, Tag,
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+
+export type PhotoDetail = {
+  id: string; image_url: string; annotated_image_url: string | null;
+  caption: string | null; tags: string[] | null; phase: string | null;
+  latitude: number | null; longitude: number | null; taken_at: string;
+  area_id: string | null; job_id: string; company_id: string; user_id: string;
+  storage_path: string; archived_at?: string | null;
+};
+
+export function PhotoViewer({
+  photos, index, onIndexChange, onClose, uploaderName, canManage,
+}: {
+  photos: PhotoDetail[];
+  index: number;
+  onIndexChange: (i: number) => void;
+  onClose: () => void;
+  uploaderName: (id: string) => string;
+  canManage: (p: PhotoDetail) => boolean;
+}) {
+  const photo = photos[index];
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const [editing, setEditing] = useState(false);
+  const [caption, setCaption] = useState("");
+  const [phase, setPhase] = useState("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [zoom, setZoom] = useState(false);
+  const [comment, setComment] = useState("");
+  const touchX = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!photo) return;
+    setCaption(photo.caption ?? "");
+    setPhase(normalizePhase(photo.phase) ?? "");
+    setTags(photo.tags ?? []);
+    setEditing(false);
+    setZoom(false);
+  }, [photo?.id]);
+
+  const prev = useCallback(() => onIndexChange((index - 1 + photos.length) % photos.length), [index, photos.length, onIndexChange]);
+  const next = useCallback(() => onIndexChange((index + 1) % photos.length), [index, photos.length, onIndexChange]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      else if (e.key === "ArrowLeft") prev();
+      else if (e.key === "ArrowRight") next();
+    };
+    window.addEventListener("keydown", onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [prev, next, onClose]);
+
+  const { data: comments } = useQuery({
+    queryKey: ["comments", photo?.id],
+    enabled: !!photo?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("comments").select("*, profiles(display_name, email)")
+        .eq("photo_id", photo!.id).order("created_at", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  if (!photo || typeof document === "undefined") return null;
+  const editable = canManage(photo);
+  const displayUrl = photo.annotated_image_url ?? photo.image_url;
+
+  const save = async () => {
+    const { error } = await supabase.from("photos")
+      .update({ caption: caption.trim() || null, phase: phase || null, tags })
+      .eq("id", photo.id);
+    if (error) { toast.error(error.message); return; }
+    await logActivity({
+      company_id: photo.company_id, job_id: photo.job_id, photo_id: photo.id,
+      kind: "photo_updated", meta: { caption, phase, tags },
+    });
+    qc.invalidateQueries({ queryKey: ["photos", photo.job_id] });
+    setEditing(false);
+    toast.success("Photo updated");
+  };
+
+  const removePhoto = async () => {
+    if (!window.confirm("Archive this photo? It will be removed from the gallery and map.")) return;
+    const { error } = await supabase.from("photos")
+      .update({ archived_at: new Date().toISOString() }).eq("id", photo.id);
+    if (error) { toast.error(error.message); return; }
+    await logActivity({
+      company_id: photo.company_id, job_id: photo.job_id, photo_id: photo.id,
+      kind: "photo_archived", meta: { photo_ids: [photo.id], result: "ok" },
+    });
+    qc.invalidateQueries({ queryKey: ["photos", photo.job_id] });
+    toast.success("Photo archived");
+    onClose();
+  };
+
+  const download = async () => {
+    try {
+      const res = await fetch(displayUrl);
+      const blob = await res.blob();
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `photo-${photo.id}.jpg`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      await logActivity({
+        company_id: photo.company_id, job_id: photo.job_id, photo_id: photo.id,
+        kind: "photo_exported", meta: { photo_ids: [photo.id] },
+      });
+    } catch {
+      toast.error("Could not download this photo");
+    }
+  };
+
+  const addComment = async () => {
+    if (!comment.trim()) return;
+    const { error } = await supabase.from("comments").insert({
+      photo_id: photo.id, job_id: photo.job_id, company_id: photo.company_id,
+      user_id: user!.id, body: comment.trim(),
+    });
+    if (error) { toast.error(error.message); return; }
+    setComment("");
+    qc.invalidateQueries({ queryKey: ["comments", photo.id] });
+  };
+
+  const addTag = () => {
+    const t = tagInput.trim().toLowerCase();
+    if (!t || tags.includes(t)) return;
+    setTags([...tags, t]); setTagInput("");
+  };
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 p-2 sm:p-6"
+      onClick={onClose}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Photo viewer"
+    >
+      <div
+        className="relative flex max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-card shadow-2xl md:flex-row"
+        onClick={(e) => e.stopPropagation()}
+        onTouchStart={(e) => { touchX.current = e.touches[0].clientX; }}
+        onTouchEnd={(e) => {
+          if (touchX.current == null) return;
+          const dx = e.changedTouches[0].clientX - touchX.current;
+          if (Math.abs(dx) > 60) (dx > 0 ? prev() : next());
+          touchX.current = null;
+        }}
+      >
+        {/* Image stage */}
+        <div className="relative flex min-h-[40vh] flex-1 items-center justify-center bg-black">
+          <img
+            src={displayUrl}
+            alt={photo.caption ?? "Project photo"}
+            className={zoom ? "max-h-[60vh] w-full cursor-zoom-out object-cover md:max-h-[95vh]" : "max-h-[45vh] w-full cursor-zoom-in object-contain md:max-h-[95vh]"}
+            onClick={() => setZoom((z) => !z)}
+          />
+          {photos.length > 1 && (
+            <>
+              <button aria-label="Previous photo" onClick={prev}
+                className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white hover:bg-black/80">
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+              <button aria-label="Next photo" onClick={next}
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white hover:bg-black/80">
+                <ChevronRight className="h-5 w-5" />
+              </button>
+            </>
+          )}
+          <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded bg-black/60 px-2 py-0.5 text-xs text-white">
+            {index + 1} of {photos.length}
+          </span>
+          <button aria-label={zoom ? "Fit image" : "Zoom image"} onClick={() => setZoom((z) => !z)}
+            className="absolute bottom-2 right-2 rounded bg-black/60 p-1.5 text-white hover:bg-black/80">
+            {zoom ? <ZoomOut className="h-4 w-4" /> : <ZoomIn className="h-4 w-4" />}
+          </button>
+        </div>
+
+        {/* Details */}
+        <div className="flex w-full flex-col gap-3 overflow-y-auto p-4 md:max-w-sm">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="text-sm font-semibold">Photo details</h3>
+            <button aria-label="Close photo viewer" onClick={onClose} className="rounded p-1 hover:bg-muted">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {!editing ? (
+            <div className="space-y-2 text-sm">
+              <p className="text-muted-foreground">{formatTakenAt(photo.taken_at)}</p>
+              <div className="flex flex-wrap gap-1">
+                <Badge variant="secondary">{phaseLabel(photo.phase)}</Badge>
+                {(photo.tags ?? []).map((t) => <Badge key={t} variant="outline">#{t}</Badge>)}
+              </div>
+              <p>{photo.caption || <span className="text-muted-foreground">No caption</span>}</p>
+              <p className="text-muted-foreground">Uploaded by {uploaderName(photo.user_id)}</p>
+              <p className="flex items-center gap-1 text-muted-foreground">
+                <MapPin className="h-3 w-3" />
+                {photo.latitude != null && photo.longitude != null
+                  ? `${photo.latitude.toFixed(5)}, ${photo.longitude.toFixed(5)}`
+                  : "Location unavailable"}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <div>
+                <label className="text-xs font-medium">Phase</label>
+                <select className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+                  value={phase} onChange={(e) => setPhase(e.target.value)}>
+                  <option value="">Unassigned</option>
+                  {PHOTO_PHASES.map((p) => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium">Caption</label>
+                <Textarea rows={2} value={caption} onChange={(e) => setCaption(e.target.value)} />
+              </div>
+              <div>
+                <label className="flex items-center gap-1 text-xs font-medium"><Tag className="h-3 w-3" />Tags (area, trade…)</label>
+                <div className="my-1 flex flex-wrap gap-1">
+                  {tags.map((t) => (
+                    <Badge key={t} variant="secondary" className="gap-1">
+                      {t}<button aria-label={`Remove ${t}`} onClick={() => setTags(tags.filter((x) => x !== t))}><X className="h-3 w-3" /></button>
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input value={tagInput} placeholder="e.g. lobby, roof" onChange={(e) => setTagInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addTag(); } }} />
+                  <Button type="button" variant="outline" onClick={addTag}>Add</Button>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button size="sm" onClick={save}><Save className="h-4 w-4 mr-1" />Save</Button>
+                <Button size="sm" variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
+              </div>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={download}><Download className="h-4 w-4 mr-1" />Download</Button>
+            {editable && !editing && (
+              <Button size="sm" variant="outline" onClick={() => setEditing(true)}><Pencil className="h-4 w-4 mr-1" />Edit</Button>
+            )}
+            {editable && (
+              <Button size="sm" variant="outline" className="text-destructive" onClick={removePhoto}>
+                <Trash2 className="h-4 w-4 mr-1" />Archive
+              </Button>
+            )}
+          </div>
+
+          <div className="border-t pt-3">
+            <h4 className="mb-2 flex items-center gap-1 text-sm font-semibold"><MessageSquare className="h-4 w-4" />Comments</h4>
+            <div className="mb-2 max-h-40 space-y-2 overflow-y-auto">
+              {(comments ?? []).map((c) => {
+                const profile = c.profiles as unknown as { display_name?: string | null; email?: string | null } | null;
+                return (
+                  <div key={c.id} className="rounded-md bg-muted/50 p-2 text-sm">
+                    <div className="text-xs text-muted-foreground">
+                      <span className="font-medium text-foreground">{profile?.display_name || profile?.email || "User"}</span>
+                      {" · "}{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+                    </div>
+                    <p>{c.body}</p>
+                  </div>
+                );
+              })}
+              {comments?.length === 0 && <p className="text-xs text-muted-foreground">No comments yet.</p>}
+            </div>
+            <div className="flex gap-2">
+              <Input placeholder="Add a comment…" value={comment} onChange={(e) => setComment(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addComment(); } }} />
+              <Button onClick={addComment} disabled={!comment.trim()}><Send className="h-4 w-4" /></Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}

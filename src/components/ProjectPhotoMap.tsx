@@ -11,7 +11,7 @@ export type MapPhoto = {
   longitude: number | null;
   taken_at: string;
   uploader?: string | null;
-  area_name?: string | null;
+  phase?: string | null;
   tags?: string[] | null;
 };
 
@@ -39,7 +39,7 @@ export default function ProjectPhotoMap({ photos }: { photos: MapPhoto[] }) {
             <div style={{ minWidth: 170 }}>
               <img src={p.annotated_image_url ?? p.image_url} alt={p.caption ?? ""} style={{ width: "100%", borderRadius: 4, marginBottom: 4 }} />
               {p.caption && <div style={{ fontWeight: 600 }}>{p.caption}</div>}
-              {p.area_name && <div style={{ fontSize: 12, color: "#555" }}>{p.area_name}</div>}
+              {p.phase && <div style={{ fontSize: 12, color: "#555" }}>{p.phase}</div>}
               <div style={{ fontSize: 11, color: "#777" }}>{new Date(p.taken_at).toLocaleString()}</div>
               {p.uploader && <div style={{ fontSize: 11, color: "#777" }}>By {p.uploader}</div>}
               <a href={p.annotated_image_url ?? p.image_url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#00338D" }}>

@@ -67,27 +67,25 @@ function Header() {
   const { isAdmin } = useMyRoles();
   if (!user) return null;
   return (
-    <header className="sticky top-0 z-40 border-b bg-primary text-primary-foreground shadow-[var(--shadow-card)]">
+    <header className="sticky top-0 z-40 border-b bg-card text-foreground shadow-[var(--shadow-card)]">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-2.5">
-        <Link to="/" className="flex items-center gap-2 min-w-0">
-          <span className="flex h-9 items-center rounded bg-white px-2 py-1">
-            <img src={fcpLogo.url} alt="FCP Services" className="h-6 w-auto sm:h-7" />
-          </span>
-          <span className="hidden text-sm font-semibold tracking-wide sm:inline">FCP Connect</span>
+        <Link to="/" className="flex min-w-0 items-center gap-2">
+          <img src={fcpLogo.url} alt="FCP Services" className="h-9 w-auto sm:h-11" />
+          <span className="hidden text-sm font-semibold tracking-wide text-primary sm:inline">FCP Connect</span>
         </Link>
         <nav className="flex items-center gap-1">
-          <Link to="/" className="rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent" activeOptions={{ exact: true }} activeProps={{ className: "bg-sidebar-accent" }}>
+          <Link to="/" className="rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary" activeOptions={{ exact: true }} activeProps={{ className: "bg-secondary text-primary font-medium" }}>
             <span className="flex items-center gap-1.5"><FolderKanban className="h-4 w-4" /><span className="hidden sm:inline">Projects</span></span>
           </Link>
-          <Link to="/map" className="rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent" activeProps={{ className: "bg-sidebar-accent" }}>
+          <Link to="/map" className="rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary" activeProps={{ className: "bg-secondary text-primary font-medium" }}>
             <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" /><span className="hidden sm:inline">Map</span></span>
           </Link>
           {isAdmin && (
-            <Link to="/admin" className="rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent" activeProps={{ className: "bg-sidebar-accent" }}>
+            <Link to="/admin" className="rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary" activeProps={{ className: "bg-secondary text-primary font-medium" }}>
               <span className="flex items-center gap-1.5"><Shield className="h-4 w-4" /><span className="hidden sm:inline">Admin</span></span>
             </Link>
           )}
-          <Button variant="ghost" size="sm" onClick={signOut} aria-label="Sign out" className="text-primary-foreground hover:bg-sidebar-accent hover:text-primary-foreground">
+          <Button variant="ghost" size="sm" onClick={signOut} aria-label="Sign out" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
             <LogOut className="h-4 w-4" />
           </Button>
         </nav>
