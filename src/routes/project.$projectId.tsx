@@ -427,17 +427,19 @@ function ProjectDetail() {
       {/* Photos */}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">Photos <span className="text-sm font-normal text-muted-foreground">({filteredPhotos.length})</span></h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <select className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
-            value={uploadPhase} onChange={(e) => setUploadPhase(e.target.value)} aria-label="Phase for new photos">
-            {PHOTO_PHASES.map((p) => <option key={p} value={p}>{p}</option>)}
-          </select>
-          <input ref={fileRef} type="file" accept="image/*" capture="environment" multiple className="hidden"
-            onChange={(e) => handleFiles(e.target.files)} />
-          <Button size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
-            <Camera className="mr-1 h-4 w-4" />{uploading ? "Uploading…" : "Take Photo"}
-          </Button>
-        </div>
+        {can.can_add_photos && (
+          <div className="flex flex-wrap items-center gap-2">
+            <select className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
+              value={uploadPhase} onChange={(e) => setUploadPhase(e.target.value)} aria-label="Phase for new photos">
+              {PHOTO_PHASES.map((p) => <option key={p} value={p}>{p}</option>)}
+            </select>
+            <input ref={fileRef} type="file" accept="image/*" capture="environment" multiple className="hidden"
+              onChange={(e) => handleFiles(e.target.files)} />
+            <Button size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
+              <Camera className="mr-1 h-4 w-4" />{uploading ? "Uploading…" : "Take Photo"}
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="mb-3 flex flex-wrap items-center gap-2">
