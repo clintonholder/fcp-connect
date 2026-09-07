@@ -65,6 +65,7 @@ function ProjectDetail() {
   const [uploadPhase, setUploadPhase] = useState<string>("Progress");
   const [mapFilters, setMapFilters] = useState({ phase: "", uploader: "", since: "" });
   const fileRef = useRef<HTMLInputElement>(null);
+  const pickRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [exporting, setExporting] = useState<{ done: number; total: number } | null>(null);
   const [exportReady, setExportReady] = useState<{
