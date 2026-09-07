@@ -2,20 +2,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { DIVISIONS } from "@/lib/project-meta";
+import { DivisionSelect } from "@/components/DivisionSelect";
 
 export type ProjectFormValues = {
   name: string;
   customer: string;
   address: string;
-  division: string;
+  divisions: string[];
   owner_id: string;
   cmic_number: string;
   notes: string;
 };
 
 export const emptyProject: ProjectFormValues = {
-  name: "", customer: "", address: "", division: "", owner_id: "",
+  name: "", customer: "", address: "", divisions: [], owner_id: "",
   cmic_number: "", notes: "",
 };
 
@@ -51,13 +51,7 @@ export function ProjectForm({
         <Input id="p-address" value={value.address} onChange={(e) => set({ address: e.target.value })} />
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        <div>
-          <Label htmlFor="p-division">Division</Label>
-          <select id="p-division" className={selectClass} value={value.division} onChange={(e) => set({ division: e.target.value })}>
-            <option value="">—</option>
-            {DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
-          </select>
-        </div>
+        <DivisionSelect value={value.divisions} onChange={(divisions) => set({ divisions })} />
         <div>
           <Label htmlFor="p-owner">Project manager / owner</Label>
           <select id="p-owner" className={selectClass} value={value.owner_id} onChange={(e) => set({ owner_id: e.target.value })}>
