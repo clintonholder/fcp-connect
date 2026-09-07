@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { MapContainer, Marker, Popup, useMap } from "react-leaflet";
+import { BaseLayerToggle, BaseTileLayer, useBaseLayer } from "./MapBaseLayer";
 import L from "leaflet";
 
 export type MapPhoto = {
