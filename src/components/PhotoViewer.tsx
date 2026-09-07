@@ -267,7 +267,7 @@ export function PhotoViewer({
             {editable && !editing && (
               <Button size="sm" variant="outline" onClick={() => setEditing(true)}><Pencil className="h-4 w-4 mr-1" />Edit</Button>
             )}
-            {editable && (
+            {(canArchive ? canArchive(photo) : editable) && (
               <Button size="sm" variant="outline" className="text-destructive" onClick={removePhoto}>
                 <Trash2 className="h-4 w-4 mr-1" />Archive
               </Button>
