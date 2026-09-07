@@ -148,7 +148,21 @@ export const adminResendInvite = createServerFn({ method: "POST" })
     const { error } = await db.auth.admin.inviteUserByEmail(data.email, {
       redirectTo: `${data.origin}/reset-password`,
     });
-    if (error) throw new Error(error.message);
+    if (error) {
+      // The account already exists (e.g. added without an invitation) — send a
+      // "set your password" link instead, which is the same experience for them.
+      const { createClient } = await import("@supabase/supabase-js");
+      const client = createClient(
+        process.env["SUPABASE_URL"]!,
+        process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["SUPABASE_ANON_KEY"]!,
+        { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
+      );
+      const { error: e2 } = await client.auth.resetPasswordForEmail(data.email, {
+        redirectTo: `${data.origin}/reset-password`,
+      });
+      if (e2) throw new Error(e2.message);
+    }
+
     await db
       .from("invitations")
       .update({
