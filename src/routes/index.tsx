@@ -15,6 +15,8 @@ import { Plus, MapPin, Building2, Camera, Search, Archive, SlidersHorizontal } f
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { DIVISIONS, projectDivisions } from "@/lib/project-meta";
+import { useShowArchived } from "@/lib/show-archived";
+
 import { toast } from "sonner";
 const mdFmt = new Intl.DateTimeFormat(undefined, { month: "2-digit", day: "2-digit" });
 function photoRangeLabel(r?: { min: number; max: number }) {
