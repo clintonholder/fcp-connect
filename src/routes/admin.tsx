@@ -12,12 +12,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Shield, UserPlus, Send, Ban, RotateCcw, Plus, Pencil } from "lucide-react";
+import { Shield, UserPlus, Send, Ban, RotateCcw, Plus, Pencil, KeyRound, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import {
   adminListUsers, adminListAudit, adminInviteUser, adminResendInvite,
   adminSetUserDisabled, adminSetUserRoles, adminSaveRole,
+  adminSendPasswordReset, adminDeleteUser, adminCreateUser,
 } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin")({
@@ -61,6 +62,10 @@ function AdminPage() {
   const setDisabled = useServerFn(adminSetUserDisabled);
   const setRoles = useServerFn(adminSetUserRoles);
   const saveRole = useServerFn(adminSaveRole);
+  const createUser = useServerFn(adminCreateUser);
+  const sendReset = useServerFn(adminSendPasswordReset);
+  const deleteUser = useServerFn(adminDeleteUser);
+  const [busy, setBusy] = useState<string | null>(null);
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: "", displayName: "", roleId: "" });
