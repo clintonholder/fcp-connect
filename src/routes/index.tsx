@@ -128,22 +128,37 @@ function ProjectsPage() {
       .sort((a, b) => a.name.localeCompare(b.name));
   }, [projects, collaborators, people]);
 
+  const tagOptions = useMemo(
+    () => Array.from(new Set((projects ?? []).flatMap((p) => p.tags ?? []).filter(Boolean) as string[])).sort(),
+    [projects],
+  );
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return (projects ?? []).filter((p) => {
       if (!showArchived && p.archived_at) return false;
       if (filters.division && !projectDivisions(p).includes(filters.division)) return false;
+      if (filters.tag && !(p.tags ?? []).includes(filters.tag)) return false;
       if (filters.person) {
         const isCollab = (collaborators ?? []).some((c) => c.job_id === p.id && c.user_id === filters.person);
         if (p.owner_id !== filters.person && !isCollab) return false;
+      }
+      if (filters.scope === "mine") {
+        const attached =
+          p.owner_id === user?.id ||
+          p.user_id === user?.id ||
+          (collaborators ?? []).some((c) => c.job_id === p.id && c.user_id === user?.id);
+        if (!attached) return false;
       }
       if (q && ![p.name, p.customer, p.client, p.address, ...projectDivisions(p), ...(p.tags ?? []), p.status, p.phase, p.cmic_number, ownerName(p.owner_id)]
         .filter(Boolean).some((x) => String(x).toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [projects, search, showArchived, people, filters, collaborators]);
+  }, [projects, search, showArchived, people, filters, collaborators, user]);
 
-  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+  const activeFilterCount =
+    (filters.division ? 1 : 0) + (filters.tag ? 1 : 0) + (filters.person ? 1 : 0) + (filters.scope !== "all" ? 1 : 0);
+
 
   const create = useMutation({
     mutationFn: async () => {
