@@ -64,10 +64,12 @@ export const adminListUsers = createServerFn({ method: "GET" })
         const invite = (invites ?? []).find((i) => i.email?.toLowerCase() === (p.email ?? "").toLowerCase());
         let status: string;
         if (p.is_disabled) status = "Disabled";
+        else if (!confirmed && invite?.status === "pending") status = "Invitation pending";
         else if (!confirmed && invite && new Date(invite.expires_at) < new Date()) status = "Expired";
         else if (!confirmed && invite) status = "Invited";
         else if (!confirmed) status = "Unverified";
         else status = "Active";
+
         return {
           id: p.id,
           email: p.email ?? au?.email ?? "",
