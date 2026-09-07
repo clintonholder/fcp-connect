@@ -51,6 +51,7 @@ function ProjectDetail() {
   const { company } = useCompany();
   const { isAdmin, can } = useMyRoles();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const [phaseFilter, setPhaseFilter] = useState<string>("");
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
