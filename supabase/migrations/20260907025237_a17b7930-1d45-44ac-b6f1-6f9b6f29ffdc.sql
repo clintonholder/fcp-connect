@@ -1,0 +1,2 @@
+ALTER TABLE public.comments DROP CONSTRAINT IF EXISTS comments_photo_id_fkey;
+ALTER TABLE public.comments ADD CONSTRAINT comments_photo_id_fkey FOREIGN KEY (photo_id) REFERENCES public.photos(id) ON DELETE CASCADE;
