@@ -136,6 +136,31 @@ function AdminPage() {
     onError: fail,
   });
 
+  const updateMut = useMutation({
+    mutationFn: () => {
+      if (!editUserId) return Promise.reject(new Error("No user selected"));
+      if (!inviteForm.displayName.trim() || !inviteForm.email.trim()) {
+        return Promise.reject(new Error("A name and a valid email address are required"));
+      }
+      return updateUser({
+        data: {
+          userId: editUserId,
+          email: inviteForm.email,
+          displayName: inviteForm.displayName,
+          roleId: inviteForm.roleId || null,
+        },
+      });
+    },
+    onSuccess: () => {
+      toast.success("Changes saved");
+      setInviteForm({ email: "", displayName: "", roleId: "" });
+      setEditUserId(null);
+      setInviteOpen(false);
+      refresh();
+    },
+    onError: fail,
+  });
+
 
   const roleMut = useMutation({
     mutationFn: () => saveRole({ data: { id: roleForm.id, name: roleForm.name, permissions: roleForm.permissions } }),
