@@ -60,18 +60,17 @@ export default function ProjectPhotoMap({ photos }: { photos: MapPhoto[] }) {
     <div className="relative h-full w-full">
       {tileError && (
         <div className="absolute inset-x-0 top-0 z-[500] bg-destructive px-3 py-2 text-center text-xs text-destructive-foreground">
-          Map images could not be loaded. Check your internet connection and try again.
+          {layer === "satellite"
+            ? "Satellite imagery could not be loaded. Switch back to Map to keep working."
+            : "Map images could not be loaded. Check your internet connection and try again."}
         </div>
       )}
+      <BaseLayerToggle layer={layer} onChange={(v) => { setTileError(false); choose(v); }} />
       <MapContainer center={center} zoom={points.length ? 16 : 4} style={{ height: "100%", width: "100%" }}>
-        <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          maxZoom={19}
-          eventHandlers={{
-            tileerror: () => setTileError(true),
-            tileload: () => setTileError(false),
-          }}
+        <BaseTileLayer
+          layer={layer}
+          onError={() => setTileError(true)}
+          onLoad={() => setTileError(false)}
         />
         <FitToPhotos points={points} />
         {geo.map((p) => (
