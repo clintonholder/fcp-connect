@@ -561,9 +561,15 @@ function ProjectDetail() {
             </select>
             <input ref={fileRef} type="file" accept="image/*" capture="environment" multiple className="hidden"
               onChange={(e) => handleFiles(e.target.files)} />
+            <input ref={pickRef} type="file" accept="image/*" multiple className="hidden"
+              onChange={(e) => handleFiles(e.target.files)} />
             <Button size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
               <Camera className="mr-1 h-4 w-4" />{uploading ? "Uploading…" : "Take Photo"}
             </Button>
+            <Button size="sm" variant="outline" disabled={uploading} onClick={() => pickRef.current?.click()}>
+              Choose Photos
+            </Button>
+
           </div>
         )}
       </div>
