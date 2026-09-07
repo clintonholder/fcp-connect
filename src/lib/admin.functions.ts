@@ -246,3 +246,103 @@ export const adminSaveRole = createServerFn({ method: "POST" })
     await audit(context.userId, "role_created", "role", created.id, { name: data.name, ...perms });
     return { ok: true };
   });
+
+/* --------------------- password reset / deletion --------------------- */
+
+export const adminSendPasswordReset = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { email: string; origin: string }) => {
+    const email = d.email?.trim().toLowerCase();
+    if (!email) throw new Error("This user has no email address on file");
+    return { ...d, email };
+  })
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const { createClient } = await import("@supabase/supabase-js");
+    const client = createClient(
+      process.env["SUPABASE_URL"]!,
+      process.env["SUPABASE_PUBLISHABLE_KEY"] ?? process.env["SUPABASE_ANON_KEY"]!,
+      { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
+    );
+    const { error } = await client.auth.resetPasswordForEmail(data.email, {
+      redirectTo: `${data.origin}/reset-password`,
+    });
+    if (error) throw new Error(error.message);
+    await audit(context.userId, "password_reset_sent", "user", null, { email: data.email });
+    return { ok: true };
+  });
+
+export const adminDeleteUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { userId: string; force?: boolean }) => d)
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    if (data.userId === context.userId) throw new Error("You cannot delete your own account");
+    const db = await admin();
+
+    const { data: isTargetAdmin } = await db.rpc("is_admin", { _user_id: data.userId });
+    if (isTargetAdmin && (await countActiveAdmins(data.userId)) === 0 && !data.force) {
+      throw new Error("LAST_ADMIN");
+    }
+
+    const { data: prof } = await db.from("profiles").select("email, display_name").eq("id", data.userId).maybeSingle();
+
+    // Detach the person from everything that would otherwise block deletion.
+    await db.from("project_collaborators").delete().eq("user_id", data.userId);
+    await db.from("user_roles").delete().eq("user_id", data.userId);
+    await db.from("company_members").delete().eq("user_id", data.userId);
+    await db.from("jobs").update({ owner_id: null }).eq("owner_id", data.userId);
+    // Keep their work; reassign ownership of records to the acting administrator.
+    await db.from("jobs").update({ user_id: context.userId }).eq("user_id", data.userId);
+    await db.from("areas").update({ user_id: context.userId }).eq("user_id", data.userId);
+    await db.from("photos").update({ user_id: context.userId }).eq("user_id", data.userId);
+    await db.from("profiles").delete().eq("id", data.userId);
+
+    const { error } = await db.auth.admin.deleteUser(data.userId);
+    if (error) throw new Error(error.message);
+
+    await audit(context.userId, "user_deleted", "user", data.userId, {
+      email: prof?.email ?? null,
+      display_name: prof?.display_name ?? null,
+    });
+    return { ok: true };
+  });
+
+/* ------------------------- create without invite ------------------------- */
+
+export const adminCreateUser = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { email: string; displayName: string; roleId: string | null }) => {
+    const email = d.email?.trim().toLowerCase();
+    if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error("A valid email address is required");
+    if (!d.displayName?.trim()) throw new Error("A name is required");
+    return { email, displayName: d.displayName.trim(), roleId: d.roleId };
+  })
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const db = await admin();
+
+    const { data: existing } = await db.from("profiles").select("id").ilike("email", data.email).maybeSingle();
+    if (existing) throw new Error("Someone with that email address already exists");
+
+    const { data: created, error } = await db.auth.admin.createUser({
+      email: data.email,
+      email_confirm: false,
+      user_metadata: { display_name: data.displayName },
+    });
+    if (error) throw new Error(error.message);
+    const newId = created?.user?.id;
+    if (!newId) throw new Error("Could not create the account");
+
+    await db.from("profiles").upsert({ id: newId, email: data.email, display_name: data.displayName });
+    if (data.roleId) await db.from("user_roles").insert({ user_id: newId, role_id: data.roleId });
+    await db.from("invitations").insert({
+      email: data.email,
+      display_name: data.displayName,
+      role_id: data.roleId,
+      invited_by: context.userId,
+      status: "pending",
+    });
+    await audit(context.userId, "user_created_without_invitation", "user", newId, { email: data.email });
+    return { id: newId };
+  });
