@@ -1,4 +1,4 @@
-export const PROJECT_STATUSES = ["Active", "On Hold", "Complete", "Archived"] as const;
+export const PROJECT_STATUSES = ["Active", "Archived"] as const;
 
 export const PROJECT_PHASES = [
   "Pre-Construction",
@@ -11,12 +11,10 @@ export const PROJECT_PHASES = [
 ] as const;
 
 export const DIVISIONS = [
-  "General Construction",
-  "Interiors",
-  "Mechanical",
-  "Electrical",
-  "Civil",
-  "Service",
+  "National Paint",
+  "Minnesota Paint",
+  "National Construction",
+  "Facilities Maintenance",
 ] as const;
 
 export type ProjectRow = {
