@@ -230,7 +230,7 @@ function ProjectDetail() {
       console.error("[photo upload]", e);
       toast.error(`Upload failed: ${(e as Error).message || "unknown error"}`, { id: progress });
     } finally {
-      toast.dismiss(progress);
+      
       setUploading(false);
       if (fileRef.current) fileRef.current.value = "";
     }
