@@ -111,6 +111,25 @@ function AdminPage() {
     onError: fail,
   });
 
+  const createMut = useMutation({
+    mutationFn: () => {
+      if (!inviteForm.displayName.trim() || !inviteForm.email.trim()) {
+        return Promise.reject(new Error("A name and a valid email address are required"));
+      }
+      return createUser({
+        data: { email: inviteForm.email, displayName: inviteForm.displayName, roleId: inviteForm.roleId || null },
+      });
+    },
+    onSuccess: () => {
+      toast.success("User added — invitation pending");
+      setInviteForm({ email: "", displayName: "", roleId: "" });
+      setInviteOpen(false);
+      refresh();
+    },
+    onError: fail,
+  });
+
+
   const roleMut = useMutation({
     mutationFn: () => saveRole({ data: { id: roleForm.id, name: roleForm.name, permissions: roleForm.permissions } }),
     onSuccess: () => { toast.success("Role saved"); setRoleOpen(false); setRoleForm({ name: "", permissions: emptyPerms }); refresh(); },
