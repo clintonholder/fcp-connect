@@ -253,19 +253,36 @@ function ProjectsPage() {
           <SlidersHorizontal className="h-4 w-4 text-primary" />Filters
           {activeFilterCount > 0 && <Badge variant="secondary">{activeFilterCount} active</Badge>}
         </div>
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
           <select className={sel} value={filters.division} onChange={(e) => setFilters({ ...filters, division: e.target.value })}>
             <option value="">All divisions</option>
             {DIVISIONS.map((d) => <option key={d} value={d}>{d}</option>)}
+          </select>
+          <select className={sel} value={filters.tag} onChange={(e) => setFilters({ ...filters, tag: e.target.value })}>
+            <option value="">All project tags</option>
+            {tagOptions.map((t) => <option key={t} value={t}>{t}</option>)}
           </select>
           <select className={sel} value={filters.person} onChange={(e) => setFilters({ ...filters, person: e.target.value })}>
             <option value="">Anyone assigned</option>
             {peopleOptions.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
+          <select className={sel} value={filters.scope} onChange={(e) => setFilters({ ...filters, scope: e.target.value })}>
+            <option value="all">All authorized projects</option>
+            <option value="mine">Included on project</option>
+          </select>
           <Button variant="outline" onClick={() => setFilters(emptyFilters)} disabled={activeFilterCount === 0}>
             Clear filters
           </Button>
         </div>
+        {activeFilterCount > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {filters.division && <Badge variant="outline">Division: {filters.division}</Badge>}
+            {filters.tag && <Badge variant="outline">Tag: {filters.tag}</Badge>}
+            {filters.person && <Badge variant="outline">Assigned: {ownerName(filters.person) || "Unknown user"}</Badge>}
+            {filters.scope === "mine" && <Badge variant="outline">Included on project</Badge>}
+          </div>
+        )}
+
       </div>
 
       <div className="mb-4 text-sm text-muted-foreground">
