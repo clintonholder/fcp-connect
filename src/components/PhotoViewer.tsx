@@ -105,16 +105,17 @@ export function PhotoViewer({
   };
 
   const removePhoto = async () => {
-    if (!window.confirm("Archive this photo? It will be removed from the gallery and map.")) return;
-    const { error } = await supabase.from("photos")
-      .update({ archived_at: new Date().toISOString() }).eq("id", photo.id);
+    if (!window.confirm("Delete this photo? It is permanently removed from the photo groups and map.")) return;
+    const { data, error } = await supabase.from("photos").delete().eq("id", photo.id).select("id");
     if (error) { toast.error(error.message); return; }
+    if (!data?.length) { toast.error("You are not allowed to delete this photo"); return; }
+    if (photo.storage_path) await supabase.storage.from("job-photos").remove([photo.storage_path]);
     await logActivity({
-      company_id: photo.company_id, job_id: photo.job_id, photo_id: photo.id,
-      kind: "photo_archived", meta: { photo_ids: [photo.id], result: "ok" },
+      company_id: photo.company_id, job_id: photo.job_id,
+      kind: "photo_deleted", meta: { photo_ids: [photo.id], result: "ok" },
     });
     qc.invalidateQueries({ queryKey: ["photos", photo.job_id] });
-    toast.success("Photo archived");
+    toast.success("Photo deleted");
     onClose();
   };
 
@@ -269,7 +270,7 @@ export function PhotoViewer({
             )}
             {(canArchive ? canArchive(photo) : editable) && (
               <Button size="sm" variant="outline" className="text-destructive" onClick={removePhoto}>
-                <Trash2 className="h-4 w-4 mr-1" />Archive
+                <Trash2 className="h-4 w-4 mr-1" />Delete Photo
               </Button>
             )}
           </div>
