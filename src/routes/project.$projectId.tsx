@@ -66,6 +66,7 @@ function ProjectDetail() {
   const [mapFilters, setMapFilters] = useState({ phase: "", uploader: "", since: "" });
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [exporting, setExporting] = useState<{ done: number; total: number } | null>(null);
   useEffect(() => setMapReady(true), []);
 
   const { data: project } = useQuery({
