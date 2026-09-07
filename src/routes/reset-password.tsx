@@ -13,10 +13,10 @@ export const Route = createFileRoute("/reset-password")({
   component: ResetPasswordPage,
   head: () => ({
     meta: [
-      { title: "Reset Password — SiteSnap" },
-      { name: "description", content: "Choose a new password for your SiteSnap job site photo account." },
-      { property: "og:title", content: "Reset Password — SiteSnap" },
-      { property: "og:description", content: "Choose a new password for your SiteSnap account." },
+      { title: "Reset Password — FCP Connect" },
+      { name: "description", content: "Choose a new password for your FCP Connect project photo account." },
+      { property: "og:title", content: "Reset Password — FCP Connect" },
+      { property: "og:description", content: "Choose a new password for your FCP Connect account." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
