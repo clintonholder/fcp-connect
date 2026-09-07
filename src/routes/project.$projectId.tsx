@@ -14,7 +14,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   ArrowLeft, Camera, MapPin, Building2, ImageOff, Tag,
-  Activity, Pencil, Archive, ArchiveRestore, Download, X,
+  Activity, Pencil, Archive, ArchiveRestore, Download, X, Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { logActivity } from "@/lib/activity";
