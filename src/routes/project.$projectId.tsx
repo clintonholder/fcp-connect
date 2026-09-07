@@ -88,7 +88,7 @@ function ProjectDetail() {
     queryFn: async () => {
       const { data, error } = await supabase.from("photos").select("*")
         .eq("job_id", projectId).is("archived_at", null)
-        .order("taken_at", { ascending: false });
+        .order("taken_at", { ascending: true }).order("created_at", { ascending: true });
       if (error) throw error;
       return data as unknown as PhotoDetail[];
     },
