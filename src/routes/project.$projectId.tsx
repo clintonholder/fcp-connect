@@ -240,25 +240,27 @@ function ProjectDetail() {
   };
 
   const batchExport = async () => {
-    let ok = 0; const failed: string[] = [];
-    for (const p of selectedPhotos) {
-      try {
-        const res = await fetch(p.annotated_image_url ?? p.image_url);
-        const blob = await res.blob();
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(blob);
-        a.download = `photo-${p.id}.jpg`;
-        a.click();
-        URL.revokeObjectURL(a.href);
-        ok++;
-      } catch { failed.push(p.id); }
+    if (!selectedPhotos.length) { toast.error("Select at least one photo to export"); return; }
+    setExporting({ done: 0, total: selectedPhotos.length });
+    try {
+      const { ok, failed, blob, fileName } = await buildPhotoZip(
+        selectedPhotos,
+        project as never,
+        (done, total) => setExporting({ done, total }),
+      );
+      if (!blob) { toast.error("No photos could be exported"); return; }
+      saveBlob(blob, fileName);
+      await logActivity({
+        company_id: company!.id, job_id: projectId, kind: "photo_exported",
+        meta: { photo_ids: selectedPhotos.map((p) => p.id), failed_photo_ids: failed, count: ok, file: fileName, result: failed.length ? "partial" : "ok" },
+      });
+      if (failed.length) toast.warning(`${ok} photo${ok === 1 ? "" : "s"} exported · ${failed.length} failed`);
+      else toast.success(`${ok} photo${ok === 1 ? "" : "s"} exported to ${fileName}`);
+    } catch (e) {
+      toast.error((e as Error).message || "Export failed");
+    } finally {
+      setExporting(null);
     }
-    await logActivity({
-      company_id: company!.id, job_id: projectId, kind: "photo_exported",
-      meta: { photo_ids: selectedPhotos.map((p) => p.id), failed_photo_ids: failed, count: ok, result: failed.length ? "partial" : "ok" },
-    });
-    if (failed.length) toast.warning(`${ok} downloaded · ${failed.length} failed`);
-    else toast.success(`${ok} photo${ok === 1 ? "" : "s"} downloaded`);
   };
 
   const batchApplyPhase = async (value: string) => {
