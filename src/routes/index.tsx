@@ -16,7 +16,14 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { DIVISIONS, projectDivisions } from "@/lib/project-meta";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
+const mdFmt = new Intl.DateTimeFormat(undefined, { month: "2-digit", day: "2-digit" });
+function photoRangeLabel(r?: { min: number; max: number }) {
+  if (!r) return "No photos";
+  const a = mdFmt.format(new Date(r.min));
+  const b = mdFmt.format(new Date(r.max));
+  return a === b ? a : `${a}–${b}`;
+}
+
 import { logActivity } from "@/lib/activity";
 import { geocodeAddress } from "@/lib/geocode";
 import { ProjectForm, type ProjectFormValues, emptyProject } from "@/components/ProjectForm";
@@ -70,7 +77,31 @@ function ProjectsPage() {
     },
   });
 
+  const { data: photoDates } = useQuery({
+    queryKey: ["photo-date-ranges", company?.id],
+    enabled: !!company?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("photos").select("job_id, taken_at, created_at")
+        .eq("company_id", company!.id);
+      return data ?? [];
+    },
+  });
+
+  const ranges = useMemo(() => {
+    const m = new Map<string, { min: number; max: number }>();
+    for (const p of photoDates ?? []) {
+      const t = new Date(p.taken_at ?? p.created_at).getTime();
+      if (!Number.isFinite(t)) continue;
+      const cur = m.get(p.job_id);
+      if (!cur) m.set(p.job_id, { min: t, max: t });
+      else { cur.min = Math.min(cur.min, t); cur.max = Math.max(cur.max, t); }
+    }
+    return m;
+  }, [photoDates]);
+
   const { data: collaborators } = useQuery({
+
     queryKey: ["all-collaborators", company?.id],
     enabled: !!company?.id,
     queryFn: async () => {
@@ -251,7 +282,7 @@ function ProjectsPage() {
                         </div>
                         <div className="mt-2 flex items-center justify-between text-xs">
                           <span className="flex items-center gap-1 text-muted-foreground"><Camera className="h-3 w-3" />{count} photos</span>
-                          <span className="text-muted-foreground">{formatDistanceToNow(new Date(j.created_at), { addSuffix: true })}</span>
+                          <span className="whitespace-nowrap text-muted-foreground">{photoRangeLabel(ranges.get(j.id))}</span>
                         </div>
                       </div>
                     </div>
