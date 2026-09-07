@@ -113,15 +113,27 @@ function MapPage() {
 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6">
-      <div className="mb-4">
-        <h1 className="flex items-center gap-2 text-2xl font-bold sm:text-3xl">
-          <MapPin className="h-6 w-6 text-primary" />Project Map
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          {filtered.length} project{filtered.length === 1 ? "" : "s"} match your filters · {mappable.length} shown on the map
-          {unmappable > 0 && ` · ${unmappable} without a usable address`}
-        </p>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h1 className="flex items-center gap-2 text-2xl font-bold sm:text-3xl">
+            <MapPin className="h-6 w-6 text-primary" />Project Map
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {filtered.length} project{filtered.length === 1 ? "" : "s"} match your filters · {mappable.length} shown on the map
+            {unmappable > 0 && ` · ${unmappable} without a usable address`}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Switch id="map-show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
+          <Label htmlFor="map-show-archived" className="cursor-pointer text-sm">
+            Show archived
+            <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold ${showArchived ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+              {showArchived ? "ON" : "OFF"}
+            </span>
+          </Label>
+        </div>
       </div>
+
 
       <div className="mb-3 relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
