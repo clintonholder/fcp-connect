@@ -428,15 +428,24 @@ function ProjectDetail() {
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Edit Project</DialogTitle></DialogHeader>
           {edit && (
-            <ProjectForm
-              value={edit}
-              onChange={setEdit}
-              people={people ?? []}
-              saving={saveEdit.isPending}
-              onSave={() => saveEdit.mutate()}
-              onCancel={closeEdit}
-            />
+            <>
+              <ProjectForm
+                value={edit}
+                onChange={setEdit}
+                people={people ?? []}
+                saving={saveEdit.isPending}
+                onSave={() => saveEdit.mutate()}
+                onCancel={closeEdit}
+              />
+              <ProjectCollaborators
+                projectId={projectId}
+                companyId={project?.company_id}
+                people={people ?? []}
+                canEdit={can.can_edit_projects}
+              />
+            </>
           )}
+
         </DialogContent>
       </Dialog>
 
