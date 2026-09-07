@@ -359,7 +359,8 @@ export type Database = {
         Row: {
           accuracy: number | null
           annotated_image_url: string | null
-          area_id: string
+          archived_at: string | null
+          area_id: string | null
           caption: string | null
           company_id: string
           created_at: string
@@ -368,6 +369,7 @@ export type Database = {
           job_id: string
           latitude: number | null
           longitude: number | null
+          phase: string | null
           storage_path: string
           tags: string[]
           taken_at: string
@@ -376,7 +378,8 @@ export type Database = {
         Insert: {
           accuracy?: number | null
           annotated_image_url?: string | null
-          area_id: string
+          archived_at?: string | null
+          area_id?: string | null
           caption?: string | null
           company_id: string
           created_at?: string
@@ -385,6 +388,7 @@ export type Database = {
           job_id: string
           latitude?: number | null
           longitude?: number | null
+          phase?: string | null
           storage_path: string
           tags?: string[]
           taken_at?: string
@@ -393,7 +397,8 @@ export type Database = {
         Update: {
           accuracy?: number | null
           annotated_image_url?: string | null
-          area_id?: string
+          archived_at?: string | null
+          area_id?: string | null
           caption?: string | null
           company_id?: string
           created_at?: string
@@ -402,6 +407,7 @@ export type Database = {
           job_id?: string
           latitude?: number | null
           longitude?: number | null
+          phase?: string | null
           storage_path?: string
           tags?: string[]
           taken_at?: string
