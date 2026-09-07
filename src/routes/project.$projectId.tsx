@@ -8,7 +8,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useCompany } from "@/lib/company-context";
 import { useMyRoles } from "@/lib/roles";
 import { projectDivisions } from "@/lib/project-meta";
-import { buildPhotoZip, saveBlob } from "@/lib/photo-export";
+import { buildPhotoZip } from "@/lib/photo-export";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -68,7 +68,7 @@ function ProjectDetail() {
   const [uploading, setUploading] = useState(false);
   const [exporting, setExporting] = useState<{ done: number; total: number } | null>(null);
   const [exportReady, setExportReady] = useState<{
-    blob: Blob;
+    url: string;
     fileName: string;
     photoIds: string[];
     failedPhotoIds: string[];
@@ -259,12 +259,15 @@ function ProjectDetail() {
         (done, total) => setExporting({ done, total }),
       );
       if (!blob) { toast.error("No photos could be exported"); return; }
-      setExportReady({
-        blob,
+      setExportReady((previous) => {
+        if (previous) URL.revokeObjectURL(previous.url);
+        return {
+        url: URL.createObjectURL(blob),
         fileName,
         photoIds: selectedPhotos.map((p) => p.id),
         failedPhotoIds: failed,
         count: ok,
+        };
       });
       if (failed.length) toast.warning(`${ok} photo${ok === 1 ? "" : "s"} ready · ${failed.length} failed. Click Download ZIP.`);
       else toast.success(`${fileName} is ready. Click Download ZIP.`);
@@ -277,12 +280,12 @@ function ProjectDetail() {
 
   const downloadExport = () => {
     if (!exportReady) return;
-    // This save runs directly inside the user's click. Embedded browsers block
-    // downloads started later by an async ZIP-building callback.
-    saveBlob(exportReady.blob, exportReady.fileName);
     const completedExport = exportReady;
-    setExportReady(null);
     toast.success(`Download started: ${completedExport.fileName}`);
+    window.setTimeout(() => {
+      setExportReady((current) => current?.url === completedExport.url ? null : current);
+      URL.revokeObjectURL(completedExport.url);
+    }, 60000);
     void logActivity({
       company_id: company!.id, job_id: projectId, kind: "photo_exported",
       meta: {
@@ -577,19 +580,18 @@ function ProjectDetail() {
           {selected.length > 0 && (
             <>
               <Button size="sm" variant="ghost" onClick={() => setSelected([])}><X className="mr-1 h-3 w-3" />Clear</Button>
-              <Button
-                size="sm"
-                variant={exportReady ? "default" : "outline"}
-                onClick={exportReady ? downloadExport : batchExport}
-                disabled={!!exporting}
-              >
-                <Download className="mr-1 h-4 w-4" />
-                {exporting
-                  ? `Exporting ${exporting.done}/${exporting.total}…`
-                  : exportReady
-                    ? "Download ZIP"
-                    : "Export"}
-              </Button>
+              {exportReady ? (
+                <Button size="sm" variant="default" asChild>
+                  <a href={exportReady.url} download={exportReady.fileName} onClick={downloadExport}>
+                    <Download className="mr-1 h-4 w-4" />Download ZIP
+                  </a>
+                </Button>
+              ) : (
+                <Button size="sm" variant="outline" onClick={batchExport} disabled={!!exporting}>
+                  <Download className="mr-1 h-4 w-4" />
+                  {exporting ? `Exporting ${exporting.done}/${exporting.total}…` : "Export"}
+                </Button>
+              )}
               {can.can_edit_photos && (
                 <>
                   <select className="rounded-md border border-input bg-background px-2 py-1 text-sm" defaultValue=""
