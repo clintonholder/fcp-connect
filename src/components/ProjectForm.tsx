@@ -64,7 +64,7 @@ export function ProjectForm({
       </div>
       <TagInput value={value.tags} onChange={(tags) => set({ tags })} />
       <div>
-        <Label htmlFor="p-cmic">CMiC project number (optional)</Label>
+        <Label htmlFor="p-cmic">CMiC project number</Label>
         <Input id="p-cmic" value={value.cmic_number} onChange={(e) => set({ cmic_number: e.target.value })} />
       </div>
       <div>
