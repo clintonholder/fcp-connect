@@ -423,6 +423,23 @@ function ProjectDetail() {
               {project?.archived_at ? <><ArchiveRestore className="mr-1 h-4 w-4" />Restore</> : <><Archive className="mr-1 h-4 w-4" />Archive</>}
             </Button>
           )}
+          {isAdmin && (
+            <Button
+              size="sm"
+              variant="destructive"
+              disabled={deleteProject.isPending}
+              onClick={() => {
+                if (!window.confirm(
+                  `Permanently delete "${project?.name}"?\n\nThis cannot be undone. Every photo, photo location, comment, collaborator and history record for this project is destroyed.\n\nUse Archive instead if you only want to hide it.`,
+                )) return;
+                const typed = window.prompt('Type DELETE to permanently remove this project.');
+                if (typed?.trim().toUpperCase() !== "DELETE") { toast.info("Deletion cancelled"); return; }
+                deleteProject.mutate();
+              }}
+            >
+              <Trash2 className="mr-1 h-4 w-4" />{deleteProject.isPending ? "Deleting…" : "Delete Project"}
+            </Button>
+          )}
         </div>
       </div>
 
