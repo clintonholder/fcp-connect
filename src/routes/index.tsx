@@ -36,6 +36,7 @@ export const Route = createFileRoute("/")({
 });
 
 const emptyFilters = { status: "", division: "", phase: "", person: "" };
+const sel = "rounded-md border border-input bg-background px-2 py-2 text-sm";
 
 function ProjectsPage() {
   const { user } = useAuth();
