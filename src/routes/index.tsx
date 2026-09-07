@@ -275,7 +275,7 @@ function ProjectsPage() {
                         </div>
                         <div className="mt-2 flex items-center justify-between text-xs">
                           <span className="flex items-center gap-1 text-muted-foreground"><Camera className="h-3 w-3" />{count} photos</span>
-                          <span className="text-muted-foreground">{formatDistanceToNow(new Date(j.created_at), { addSuffix: true })}</span>
+                          <span className="whitespace-nowrap text-muted-foreground">{photoRangeLabel(ranges.get(j.id))}</span>
                         </div>
                       </div>
                     </div>
