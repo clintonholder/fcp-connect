@@ -42,7 +42,7 @@ export const Route = createFileRoute("/")({
   component: () => <RequireAuth><ProjectsPage /></RequireAuth>,
 });
 
-const emptyFilters = { division: "", person: "" };
+const emptyFilters = { division: "", tag: "", person: "", scope: "all" };
 const sel = "rounded-md border border-input bg-background px-2 py-2 text-sm";
 
 function ProjectsPage() {
@@ -52,8 +52,9 @@ function ProjectsPage() {
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [showArchived, setShowArchived] = useState(false);
+  const [showArchived, setShowArchived] = useShowArchived();
   const [filters, setFilters] = useState(emptyFilters);
+
   const [form, setForm] = useState<ProjectFormValues>(emptyProject);
 
   const { data: people } = useQuery({
