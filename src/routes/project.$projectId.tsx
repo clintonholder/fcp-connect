@@ -364,6 +364,19 @@ function ProjectDetail() {
     onError: (e) => toast.error((e as Error).message),
   });
 
+  const deleteProject = useMutation({
+    mutationFn: async () => {
+      await adminDeleteProject({ data: { projectId } });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["projects"] });
+      toast.success("Project permanently deleted");
+      navigate({ to: "/" });
+    },
+    onError: (e) => toast.error((e as Error).message),
+  });
+
+
   const editDirty = !!edit && !!project && (
     edit.name !== (project.name ?? "") ||
     edit.customer !== (project.customer ?? project.client ?? "") ||
