@@ -1,5 +1,6 @@
-import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
+import { useEffect, useState } from "react";
+import { MapContainer, Marker, Popup } from "react-leaflet";
+import { BaseLayerToggle, BaseTileLayer, useBaseLayer } from "./MapBaseLayer";
 import L from "leaflet";
 
 export type MapProject = {
@@ -21,6 +22,9 @@ export default function ProjectMap({
   projects: MapProject[];
   onOpen: (id: string) => void;
 }) {
+  const [tileError, setTileError] = useState(false);
+  const { layer, choose } = useBaseLayer("fcp.projectsMap.layer");
+
   useEffect(() => {
     delete (L.Icon.Default.prototype as { _getIconUrl?: unknown })._getIconUrl;
     L.Icon.Default.mergeOptions({
@@ -36,8 +40,17 @@ export default function ProjectMap({
     : [39.8283, -98.5795];
 
   return (
-    <MapContainer center={center} zoom={pinned.length ? 10 : 4} style={{ height: "100%", width: "100%" }}>
-      <TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+    <div className="relative h-full w-full">
+      {tileError && (
+        <div className="absolute inset-x-0 top-0 z-[500] bg-destructive px-3 py-2 text-center text-xs text-destructive-foreground">
+          {layer === "satellite"
+            ? "Satellite imagery could not be loaded. Switch back to Map to keep working."
+            : "Map images could not be loaded. Check your internet connection and try again."}
+        </div>
+      )}
+      <BaseLayerToggle layer={layer} onChange={(v) => { setTileError(false); choose(v); }} />
+      <MapContainer center={center} zoom={pinned.length ? 10 : 4} style={{ height: "100%", width: "100%" }}>
+      <BaseTileLayer layer={layer} onError={() => setTileError(true)} onLoad={() => setTileError(false)} />
       {pinned.map((p) => (
         <Marker key={p.id} position={[p.latitude as number, p.longitude as number]}>
           <Popup>
@@ -58,6 +71,7 @@ export default function ProjectMap({
           </Popup>
         </Marker>
       ))}
-    </MapContainer>
+      </MapContainer>
+    </div>
   );
 }
