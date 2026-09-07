@@ -7,29 +7,49 @@ import { useAuth } from "@/lib/auth-context";
 import { useCompany } from "@/lib/company-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, MapPin, Building2, Camera, Search } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Plus, MapPin, Building2, Camera, Search, Archive } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { logActivity } from "@/lib/activity";
+import { geocodeAddress } from "@/lib/geocode";
+import { ProjectForm, type ProjectFormValues, emptyProject } from "@/components/ProjectForm";
 
 export const Route = createFileRoute("/")({
-  component: () => <RequireAuth><JobsPage /></RequireAuth>,
+  head: () => ({
+    meta: [
+      { title: "Projects — FCP Connect" },
+      { name: "description", content: "Browse and search FCP Services projects, customers, divisions and field photo documentation." },
+      { property: "og:title", content: "Projects — FCP Connect" },
+      { property: "og:description", content: "Browse and search FCP Services projects, customers, divisions and field photo documentation." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: () => <RequireAuth><ProjectsPage /></RequireAuth>,
 });
 
-function JobsPage() {
+function ProjectsPage() {
   const { user } = useAuth();
   const { company } = useCompany();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
-  const [form, setForm] = useState({ name: "", address: "", client: "", notes: "" });
+  const [showArchived, setShowArchived] = useState(false);
+  const [form, setForm] = useState<ProjectFormValues>(emptyProject);
 
-  const { data: jobs, isLoading } = useQuery({
-    queryKey: ["jobs", company?.id],
+  const { data: people } = useQuery({
+    queryKey: ["people"],
+    queryFn: async () => {
+      const { data } = await supabase.from("profiles").select("id, display_name, email").order("display_name");
+      return data ?? [];
+    },
+  });
+
+  const { data: projects, isLoading } = useQuery({
+    queryKey: ["projects", company?.id],
     enabled: !!company?.id,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -41,60 +61,102 @@ function JobsPage() {
     },
   });
 
+  const ownerName = (id: string | null) => {
+    const p = (people ?? []).find((x) => x.id === id);
+    return p?.display_name || p?.email || "";
+  };
+
   const filtered = useMemo(() => {
-    if (!jobs) return [];
+    const list = (projects ?? []).filter((p) => (showArchived ? true : !p.archived_at));
     const q = search.trim().toLowerCase();
-    if (!q) return jobs;
-    return jobs.filter((j) =>
-      [j.name, j.address, j.client, j.notes].filter(Boolean).some((x) => String(x).toLowerCase().includes(q))
+    if (!q) return list;
+    return list.filter((p) =>
+      [p.name, p.customer, p.client, p.address, p.division, p.status, p.phase, p.cmic_number, ownerName(p.owner_id)]
+        .filter(Boolean)
+        .some((x) => String(x).toLowerCase().includes(q)),
     );
-  }, [jobs, search]);
+  }, [projects, search, showArchived, people]);
 
   const create = useMutation({
     mutationFn: async () => {
-      if (!company) throw new Error("No company selected");
+      if (!company) throw new Error("No workspace loaded yet");
+      if (!form.name.trim()) throw new Error("Project name is required");
+      if (!form.customer.trim()) throw new Error("Customer name is required");
+      const geo = form.address.trim() ? await geocodeAddress(form.address) : null;
       const { data, error } = await supabase.from("jobs").insert({
-        ...form, user_id: user!.id, company_id: company.id,
+        name: form.name.trim(),
+        customer: form.customer.trim(),
+        client: form.customer.trim(),
+        address: form.address.trim() || null,
+        division: form.division || null,
+        owner_id: form.owner_id || user!.id,
+        status: form.status,
+        phase: form.phase || null,
+        cmic_number: form.cmic_number.trim() || null,
+        notes: form.notes.trim() || null,
+        latitude: geo?.lat ?? null,
+        longitude: geo?.lon ?? null,
+        geocode_failed: !!form.address.trim() && !geo,
+        user_id: user!.id,
+        company_id: company.id,
       }).select().single();
       if (error) throw error;
       await logActivity({ company_id: company.id, job_id: data.id, kind: "job_created", meta: { name: data.name } });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["jobs", company?.id] });
-      setForm({ name: "", address: "", client: "", notes: "" });
+      qc.invalidateQueries({ queryKey: ["projects", company?.id] });
+      setForm(emptyProject);
       setOpen(false);
-      toast.success("Job site created");
+      toast.success("Project created");
     },
     onError: (e) => toast.error((e as Error).message),
   });
+
+  const dirty = JSON.stringify(form) !== JSON.stringify(emptyProject);
+  const closeCreate = () => {
+    if (dirty && !window.confirm("Discard this new project? Your changes will be lost.")) return;
+    setForm(emptyProject);
+    setOpen(false);
+  };
 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold sm:text-3xl">Job Sites</h1>
-          <p className="text-sm text-muted-foreground">{company?.name ?? "—"}</p>
+          <h1 className="text-2xl font-bold sm:text-3xl">Projects</h1>
+          <p className="text-sm text-muted-foreground">FCP Connect</p>
         </div>
-        <Dialog open={open} onOpenChange={setOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-1" />New Job</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>New Job Site</DialogTitle></DialogHeader>
-            <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); create.mutate(); }}>
-              <div><Label>Job name *</Label><Input required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} /></div>
-              <div><Label>Address</Label><Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} /></div>
-              <div><Label>Client</Label><Input value={form.client} onChange={(e) => setForm({ ...form, client: e.target.value })} /></div>
-              <div><Label>Notes</Label><Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} /></div>
-              <Button type="submit" className="w-full" disabled={create.isPending}>Create</Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+        <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1" />New Project</Button>
       </div>
 
-      <div className="mb-4 relative">
+      <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : closeCreate())}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>New Project</DialogTitle></DialogHeader>
+          <ProjectForm
+            value={form}
+            onChange={setForm}
+            people={people ?? []}
+            saving={create.isPending}
+            onSave={() => create.mutate()}
+            onCancel={closeCreate}
+          />
+        </DialogContent>
+      </Dialog>
+
+      <div className="mb-3 relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input className="pl-9" placeholder="Search jobs by name, address, client…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <Input
+          className="pl-9"
+          placeholder="Search by name, customer, address, division, owner, status or phase…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+      <div className="mb-4 flex items-center justify-between text-sm">
+        <span className="text-muted-foreground">{filtered.length} project{filtered.length === 1 ? "" : "s"}</span>
+        <button className="text-muted-foreground underline hover:text-foreground" onClick={() => setShowArchived((v) => !v)}>
+          {showArchived ? "Hide archived" : "Show archived"}
+        </button>
       </div>
 
       {isLoading ? (
@@ -104,15 +166,23 @@ function JobsPage() {
           {filtered.map((j) => {
             const count = (j.photos as unknown as { count: number }[])?.[0]?.count ?? 0;
             return (
-              <Link key={j.id} to="/job/$jobId" params={{ jobId: j.id }}>
-                <Card className="transition hover:shadow-[var(--shadow-elegant)] hover:-translate-y-0.5">
+              <Link key={j.id} to="/project/$projectId" params={{ projectId: j.id }} className="block">
+                <Card className="h-full transition hover:shadow-[var(--shadow-elegant)] hover:-translate-y-0.5">
                   <CardContent className="p-4">
                     <div className="flex items-start gap-3">
-                      <div className="rounded-md bg-accent/20 p-2"><Building2 className="h-5 w-5 text-accent-foreground" /></div>
+                      <div className="rounded-md bg-primary/10 p-2"><Building2 className="h-5 w-5 text-primary" /></div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="truncate font-semibold">{j.name}</h3>
-                        {j.client && <p className="text-xs text-muted-foreground truncate">{j.client}</p>}
+                        <div className="flex items-center gap-2">
+                          <h3 className="truncate font-semibold">{j.name}</h3>
+                          {j.archived_at && <Badge variant="outline" className="gap-1"><Archive className="h-3 w-3" />Archived</Badge>}
+                        </div>
+                        {(j.customer || j.client) && <p className="text-xs text-muted-foreground truncate">{j.customer || j.client}</p>}
                         {j.address && <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground truncate"><MapPin className="h-3 w-3" />{j.address}</p>}
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {j.status && <Badge variant="secondary">{j.status}</Badge>}
+                          {j.phase && <Badge variant="outline">{j.phase}</Badge>}
+                          {j.division && <Badge variant="outline">{j.division}</Badge>}
+                        </div>
                         <div className="mt-2 flex items-center justify-between text-xs">
                           <span className="flex items-center gap-1 text-muted-foreground"><Camera className="h-3 w-3" />{count} photos</span>
                           <span className="text-muted-foreground">{formatDistanceToNow(new Date(j.created_at), { addSuffix: true })}</span>
@@ -128,7 +198,7 @@ function JobsPage() {
       ) : (
         <div className="rounded-xl border-2 border-dashed p-12 text-center">
           <Building2 className="mx-auto h-10 w-10 text-muted-foreground/50" />
-          <p className="mt-2 font-medium">{search ? "No matches" : "No job sites yet"}</p>
+          <p className="mt-2 font-medium">{search ? "No matches" : "No projects yet"}</p>
           <p className="text-sm text-muted-foreground">{search ? "Try another search." : "Create your first project to get started."}</p>
         </div>
       )}
