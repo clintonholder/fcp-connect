@@ -3,19 +3,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DivisionSelect } from "@/components/DivisionSelect";
+import { TagInput } from "@/components/TagInput";
 
 export type ProjectFormValues = {
   name: string;
   customer: string;
   address: string;
   divisions: string[];
+  tags: string[];
   owner_id: string;
   cmic_number: string;
   notes: string;
 };
 
 export const emptyProject: ProjectFormValues = {
-  name: "", customer: "", address: "", divisions: [], owner_id: "",
+  name: "", customer: "", address: "", divisions: [], tags: [], owner_id: "",
   cmic_number: "", notes: "",
 };
 
@@ -60,6 +62,7 @@ export function ProjectForm({
           </select>
         </div>
       </div>
+      <TagInput value={value.tags} onChange={(tags) => set({ tags })} />
       <div>
         <Label htmlFor="p-cmic">CMiC project number (optional)</Label>
         <Input id="p-cmic" value={value.cmic_number} onChange={(e) => set({ cmic_number: e.target.value })} />
