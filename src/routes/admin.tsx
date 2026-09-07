@@ -12,12 +12,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Shield, UserPlus, Send, Ban, RotateCcw, Plus, Pencil } from "lucide-react";
+import { Shield, UserPlus, Send, Ban, RotateCcw, Plus, Pencil, KeyRound, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import {
   adminListUsers, adminListAudit, adminInviteUser, adminResendInvite,
   adminSetUserDisabled, adminSetUserRoles, adminSaveRole,
+  adminSendPasswordReset, adminDeleteUser, adminCreateUser,
 } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin")({
@@ -61,6 +62,10 @@ function AdminPage() {
   const setDisabled = useServerFn(adminSetUserDisabled);
   const setRoles = useServerFn(adminSetUserRoles);
   const saveRole = useServerFn(adminSaveRole);
+  const createUser = useServerFn(adminCreateUser);
+  const sendReset = useServerFn(adminSendPasswordReset);
+  const deleteUser = useServerFn(adminDeleteUser);
+  const [busy, setBusy] = useState<string | null>(null);
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: "", displayName: "", roleId: "" });
@@ -111,6 +116,25 @@ function AdminPage() {
     onError: fail,
   });
 
+  const createMut = useMutation({
+    mutationFn: () => {
+      if (!inviteForm.displayName.trim() || !inviteForm.email.trim()) {
+        return Promise.reject(new Error("A name and a valid email address are required"));
+      }
+      return createUser({
+        data: { email: inviteForm.email, displayName: inviteForm.displayName, roleId: inviteForm.roleId || null },
+      });
+    },
+    onSuccess: () => {
+      toast.success("User added — invitation pending");
+      setInviteForm({ email: "", displayName: "", roleId: "" });
+      setInviteOpen(false);
+      refresh();
+    },
+    onError: fail,
+  });
+
+
   const roleMut = useMutation({
     mutationFn: () => saveRole({ data: { id: roleForm.id, name: roleForm.name, permissions: roleForm.permissions } }),
     onSuccess: () => { toast.success("Role saved"); setRoleOpen(false); setRoleForm({ name: "", permissions: emptyPerms }); refresh(); },
@@ -129,7 +153,7 @@ function AdminPage() {
 
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Invite a user</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Add a user</DialogTitle></DialogHeader>
           <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); inviteMut.mutate(); }}>
             <div><Label htmlFor="i-name">Full name *</Label><Input id="i-name" required value={inviteForm.displayName} onChange={(e) => setInviteForm({ ...inviteForm, displayName: e.target.value })} /></div>
             <div><Label htmlFor="i-email">Work email *</Label><Input id="i-email" type="email" required value={inviteForm.email} onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })} /></div>
@@ -141,14 +165,21 @@ function AdminPage() {
                 {(roles.data ?? []).filter((r) => r.is_active).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
-            <p className="text-xs text-muted-foreground">They receive an email invitation and choose their own password. Passwords are never shown here.</p>
-            <div className="flex gap-2">
-              <Button type="submit" className="flex-1" disabled={inviteMut.isPending}>{inviteMut.isPending ? "Sending…" : "Send invitation"}</Button>
-              <Button type="button" variant="outline" className="flex-1" onClick={() => setInviteOpen(false)}>Cancel</Button>
+            <p className="text-xs text-muted-foreground">Invited people receive an email and choose their own password. Passwords are never shown or stored here.</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Button type="submit" disabled={inviteMut.isPending || createMut.isPending}>
+                {inviteMut.isPending ? "Sending…" : "Add and send invitation"}
+              </Button>
+              <Button type="button" variant="secondary" disabled={inviteMut.isPending || createMut.isPending}
+                onClick={() => createMut.mutate()}>
+                {createMut.isPending ? "Adding…" : "Add without invitation"}
+              </Button>
             </div>
+            <Button type="button" variant="outline" className="w-full" onClick={() => setInviteOpen(false)}>Cancel</Button>
           </form>
         </DialogContent>
       </Dialog>
+
 
       <section>
         <h2 className="mb-3 text-lg font-semibold">Users</h2>
@@ -183,10 +214,23 @@ function AdminPage() {
                   <option value="">No role</option>
                   {(roles.data ?? []).filter((r) => r.is_active).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
-                <Button size="sm" variant="outline" onClick={async () => {
-                  try { await resend({ data: { email: u.email, origin: window.location.origin } }); toast.success("Invitation resent"); refresh(); }
+                <Button size="sm" variant="outline" disabled={busy === `invite-${u.id}`} onClick={async () => {
+                  setBusy(`invite-${u.id}`);
+                  try { await resend({ data: { email: u.email, origin: window.location.origin } }); toast.success("Invitation sent"); refresh(); }
                   catch (err) { fail(err); }
-                }}><Send className="h-3.5 w-3.5 mr-1" />Resend</Button>
+                  finally { setBusy(null); }
+                }}><Send className="h-3.5 w-3.5 mr-1" />
+                  {busy === `invite-${u.id}` ? "Sending…" : u.status === "Invitation pending" ? "Send invitation" : "Resend"}
+                </Button>
+                <Button size="sm" variant="outline" disabled={busy === `reset-${u.id}`} onClick={async () => {
+                  setBusy(`reset-${u.id}`);
+                  try { await sendReset({ data: { email: u.email, origin: window.location.origin } }); toast.success("Password reset email sent"); }
+                  catch (err) { fail(err); }
+                  finally { setBusy(null); }
+                }}><KeyRound className="h-3.5 w-3.5 mr-1" />
+                  {busy === `reset-${u.id}` ? "Sending…" : "Send password reset"}
+                </Button>
+
                 <Button size="sm" variant={u.is_disabled ? "outline" : "destructive"} onClick={async () => {
                   const next = !u.is_disabled;
                   if (next && !window.confirm(`Disable ${u.display_name || u.email}? They will not be able to sign in.`)) return;
@@ -206,6 +250,27 @@ function AdminPage() {
                 }}>
                   {u.is_disabled ? <><RotateCcw className="h-3.5 w-3.5 mr-1" />Reactivate</> : <><Ban className="h-3.5 w-3.5 mr-1" />Disable</>}
                 </Button>
+                <Button size="sm" variant="destructive" disabled={busy === `del-${u.id}`} onClick={async () => {
+                  const who = u.display_name || u.email;
+                  if (!window.confirm(`Permanently delete ${who}?\n\nThis cannot be undone. Their sign-in, roles and project collaborator assignments are removed. Their projects and photos stay, reassigned to you.\n\nTo keep their history and only block sign-in, use Disable instead.`)) return;
+                  const typed = window.prompt(`Type DELETE to permanently remove ${who}.`);
+                  if (typed?.trim().toUpperCase() !== "DELETE") { toast.info("Deletion cancelled"); return; }
+                  setBusy(`del-${u.id}`);
+                  try {
+                    await deleteUser({ data: { userId: u.id } });
+                    toast.success("User deleted"); refresh();
+                  } catch (err) {
+                    if ((err as Error).message?.includes("LAST_ADMIN")) {
+                      if (window.confirm("This is the last active administrator. Delete anyway? Nobody will be able to manage users.")) {
+                        try { await deleteUser({ data: { userId: u.id, force: true } }); toast.success("User deleted"); refresh(); }
+                        catch (e2) { fail(e2); }
+                      }
+                    } else fail(err);
+                  } finally { setBusy(null); }
+                }}>
+                  <Trash2 className="h-3.5 w-3.5 mr-1" />{busy === `del-${u.id}` ? "Deleting…" : "Delete user"}
+                </Button>
+
               </div>
             </div>
           ))}

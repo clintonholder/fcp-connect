@@ -23,6 +23,8 @@ import { PhotoViewer, type PhotoDetail } from "@/components/PhotoViewer";
 import { formatDistanceToNow } from "date-fns";
 import { geocodeAddress } from "@/lib/geocode";
 import { ProjectForm, type ProjectFormValues } from "@/components/ProjectForm";
+import { ProjectCollaborators } from "@/components/ProjectCollaborators";
+
 import { PHOTO_PHASES, UNPHASED, phaseLabel, formatTakenAt } from "@/lib/photo-meta";
 import { readPhotoExif } from "@/lib/exif";
 
@@ -428,15 +430,24 @@ function ProjectDetail() {
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Edit Project</DialogTitle></DialogHeader>
           {edit && (
-            <ProjectForm
-              value={edit}
-              onChange={setEdit}
-              people={people ?? []}
-              saving={saveEdit.isPending}
-              onSave={() => saveEdit.mutate()}
-              onCancel={closeEdit}
-            />
+            <>
+              <ProjectForm
+                value={edit}
+                onChange={setEdit}
+                people={people ?? []}
+                saving={saveEdit.isPending}
+                onSave={() => saveEdit.mutate()}
+                onCancel={closeEdit}
+              />
+              <ProjectCollaborators
+                projectId={projectId}
+                companyId={project?.company_id}
+                people={people ?? []}
+                canEdit={can.can_edit_projects}
+              />
+            </>
           )}
+
         </DialogContent>
       </Dialog>
 
