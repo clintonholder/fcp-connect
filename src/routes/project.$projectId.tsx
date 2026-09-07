@@ -282,10 +282,11 @@ function ProjectDetail() {
     if (!exportReady) return;
     const completedExport = exportReady;
     toast.success(`Download started: ${completedExport.fileName}`);
+    // Let the browser grab the blob first, then restore the Export button.
     window.setTimeout(() => {
       setExportReady((current) => current?.url === completedExport.url ? null : current);
-      URL.revokeObjectURL(completedExport.url);
-    }, 60000);
+    }, 2000);
+    window.setTimeout(() => URL.revokeObjectURL(completedExport.url), 60000);
     void logActivity({
       company_id: company!.id, job_id: projectId, kind: "photo_exported",
       meta: {
