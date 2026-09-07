@@ -304,6 +304,7 @@ function ProjectDetail() {
       name: project.name ?? "",
       customer: project.customer ?? project.client ?? "",
       address: project.address ?? "",
+      tags: project.tags ?? [],
       divisions: (project.divisions?.length ? project.divisions : project.division ? [project.division] : []),
       owner_id: project.owner_id ?? "",
       cmic_number: project.cmic_number ?? "",
@@ -327,6 +328,7 @@ function ProjectDetail() {
         address: edit.address.trim() || null,
         division: edit.divisions[0] ?? null,
         divisions: edit.divisions,
+        tags: edit.tags,
         owner_id: edit.owner_id || null,
         cmic_number: edit.cmic_number.trim() || null,
         notes: edit.notes.trim() || null,
@@ -387,6 +389,7 @@ function ProjectDetail() {
     edit.customer !== (project.customer ?? project.client ?? "") ||
     edit.address !== (project.address ?? "") ||
     edit.divisions.join("|") !== projectDivisions(project).join("|") ||
+    edit.tags.join("|") !== (project.tags ?? []).join("|") ||
     edit.owner_id !== (project.owner_id ?? "") ||
     edit.cmic_number !== (project.cmic_number ?? "") ||
     edit.notes !== (project.notes ?? "")
@@ -424,6 +427,7 @@ function ProjectDetail() {
               {project?.status && <Badge variant="secondary">{project.status}</Badge>}
               {project?.phase && <Badge variant="outline">{project.phase}</Badge>}
               {project && projectDivisions(project).map((d) => <Badge key={d} variant="outline">{d}</Badge>)}
+              {(project?.tags ?? []).map((t: string) => <Badge key={t} variant="secondary">{t}</Badge>)}
               {project?.owner_id && <Badge variant="outline">PM: {personName(project.owner_id)}</Badge>}
               {project?.cmic_number && <Badge variant="outline">CMiC {project.cmic_number}</Badge>}
             </div>

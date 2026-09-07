@@ -103,7 +103,7 @@ function ProjectsPage() {
         const isCollab = (collaborators ?? []).some((c) => c.job_id === p.id && c.user_id === filters.person);
         if (p.owner_id !== filters.person && !isCollab) return false;
       }
-      if (q && ![p.name, p.customer, p.client, p.address, ...projectDivisions(p), p.status, p.phase, p.cmic_number, ownerName(p.owner_id)]
+      if (q && ![p.name, p.customer, p.client, p.address, ...projectDivisions(p), ...(p.tags ?? []), p.status, p.phase, p.cmic_number, ownerName(p.owner_id)]
         .filter(Boolean).some((x) => String(x).toLowerCase().includes(q))) return false;
       return true;
     });
@@ -125,6 +125,7 @@ function ProjectsPage() {
         address: form.address.trim() || null,
         division: form.divisions[0] ?? null,
         divisions: form.divisions,
+        tags: form.tags,
         owner_id: form.owner_id || user!.id,
         status: "Active",
         cmic_number: form.cmic_number.trim() || null,
@@ -246,6 +247,7 @@ function ProjectsPage() {
                           {j.status && <Badge variant="secondary">{j.status}</Badge>}
                           {j.phase && <Badge variant="outline">{j.phase}</Badge>}
                           {projectDivisions(j).map((d) => <Badge key={d} variant="outline">{d}</Badge>)}
+                          {(j.tags ?? []).map((t: string) => <Badge key={t} variant="secondary">{t}</Badge>)}
                         </div>
                         <div className="mt-2 flex items-center justify-between text-xs">
                           <span className="flex items-center gap-1 text-muted-foreground"><Camera className="h-3 w-3" />{count} photos</span>

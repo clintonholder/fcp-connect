@@ -327,6 +327,7 @@ export type Database = {
           owner_id: string | null
           phase: string | null
           status: string
+          tags: string[]
           updated_at: string
           user_id: string
         }
@@ -349,6 +350,7 @@ export type Database = {
           owner_id?: string | null
           phase?: string | null
           status?: string
+          tags?: string[]
           updated_at?: string
           user_id: string
         }
@@ -371,6 +373,7 @@ export type Database = {
           owner_id?: string | null
           phase?: string | null
           status?: string
+          tags?: string[]
           updated_at?: string
           user_id?: string
         }
