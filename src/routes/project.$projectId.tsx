@@ -144,7 +144,13 @@ function ProjectDetail() {
       return true;
     });
   }, [photos, mapFilters]);
-  const geoPhotos = mapPhotos.filter((p) => p.latitude != null && p.longitude != null);
+  const geoPhotos = mapPhotos.filter(
+    (p) =>
+      typeof p.latitude === "number" && typeof p.longitude === "number" &&
+      Number.isFinite(p.latitude) && Number.isFinite(p.longitude) &&
+      Math.abs(p.latitude) <= 90 && Math.abs(p.longitude) <= 180 &&
+      !(p.latitude === 0 && p.longitude === 0),
+  );
   const noGeoCount = mapPhotos.length - geoPhotos.length;
 
   const uploaders = useMemo(() => Array.from(new Set((photos ?? []).map((p) => p.user_id))), [photos]);
