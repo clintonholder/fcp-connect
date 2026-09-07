@@ -1,6 +1,7 @@
 import { createStart, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
+import { attachAuth } from "./lib/auth-attach";
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
@@ -19,4 +20,5 @@ const errorMiddleware = createMiddleware().server(async ({ next }) => {
 
 export const startInstance = createStart(() => ({
   requestMiddleware: [errorMiddleware],
+  functionMiddleware: [attachAuth],
 }));
