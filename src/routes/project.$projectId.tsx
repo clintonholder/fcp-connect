@@ -489,8 +489,8 @@ function ProjectDetail() {
                 </>
               )}
               {can.can_delete_photos && (
-                <Button size="sm" variant="outline" className="text-destructive" onClick={batchArchive}>
-                  <Archive className="mr-1 h-4 w-4" />Archive
+                <Button size="sm" variant="outline" className="text-destructive" onClick={batchDelete}>
+                  <Trash2 className="mr-1 h-4 w-4" />Delete Photo{selected.length === 1 ? "" : "s"}
                 </Button>
               )}
             </>
