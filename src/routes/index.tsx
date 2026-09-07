@@ -32,6 +32,8 @@ export const Route = createFileRoute("/")({
   component: () => <RequireAuth><ProjectsPage /></RequireAuth>,
 });
 
+const emptyFilters = { status: "", division: "", phase: "", person: "" };
+
 function ProjectsPage() {
   const { user } = useAuth();
   const { company } = useCompany();
@@ -40,6 +42,7 @@ function ProjectsPage() {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [showArchived, setShowArchived] = useState(false);
+  const [filters, setFilters] = useState(emptyFilters);
   const [form, setForm] = useState<ProjectFormValues>(emptyProject);
 
   const { data: people } = useQuery({
@@ -63,21 +66,54 @@ function ProjectsPage() {
     },
   });
 
+  const { data: collaborators } = useQuery({
+    queryKey: ["all-collaborators", company?.id],
+    enabled: !!company?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("project_collaborators").select("job_id, user_id")
+        .eq("company_id", company!.id);
+      return data ?? [];
+    },
+  });
+
   const ownerName = (id: string | null) => {
     const p = (people ?? []).find((x) => x.id === id);
     return p?.display_name || p?.email || "";
   };
 
+  const phaseOptions = useMemo(
+    () => Array.from(new Set((projects ?? []).map((p) => p.phase).filter(Boolean) as string[])).sort(),
+    [projects],
+  );
+
+  const peopleOptions = useMemo(() => {
+    const ids = new Set<string>();
+    (projects ?? []).forEach((p) => p.owner_id && ids.add(p.owner_id));
+    (collaborators ?? []).forEach((c) => ids.add(c.user_id));
+    return Array.from(ids).map((id) => ({ id, name: ownerName(id) || "Unknown user" }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [projects, collaborators, people]);
+
   const filtered = useMemo(() => {
-    const list = (projects ?? []).filter((p) => (showArchived ? true : !p.archived_at));
     const q = search.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter((p) =>
-      [p.name, p.customer, p.client, p.address, p.division, p.status, p.phase, p.cmic_number, ownerName(p.owner_id)]
-        .filter(Boolean)
-        .some((x) => String(x).toLowerCase().includes(q)),
-    );
-  }, [projects, search, showArchived, people]);
+    return (projects ?? []).filter((p) => {
+      if (!showArchived && p.archived_at) return false;
+      const status = p.archived_at ? "Archived" : "Active";
+      if (filters.status && filters.status !== status) return false;
+      if (filters.division && p.division !== filters.division) return false;
+      if (filters.phase && p.phase !== filters.phase) return false;
+      if (filters.person) {
+        const isCollab = (collaborators ?? []).some((c) => c.job_id === p.id && c.user_id === filters.person);
+        if (p.owner_id !== filters.person && !isCollab) return false;
+      }
+      if (q && ![p.name, p.customer, p.client, p.address, p.division, p.status, p.phase, p.cmic_number, ownerName(p.owner_id)]
+        .filter(Boolean).some((x) => String(x).toLowerCase().includes(q))) return false;
+      return true;
+    });
+  }, [projects, search, showArchived, people, filters, collaborators]);
+
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
 
   const create = useMutation({
     mutationFn: async () => {
