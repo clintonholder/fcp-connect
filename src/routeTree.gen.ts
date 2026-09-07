@@ -9,19 +9,15 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TeamRouteImport } from './routes/team'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
+import { Route as ProjectProjectIdRouteImport } from './routes/project.$projectId'
 import { Route as JobJobIdRouteImport } from './routes/job.$jobId'
 
-const TeamRoute = TeamRouteImport.update({
-  id: '/team',
-  path: '/team',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -37,6 +33,11 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -47,6 +48,11 @@ const ShareTokenRoute = ShareTokenRouteImport.update({
   path: '/share/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectProjectIdRoute = ProjectProjectIdRouteImport.update({
+  id: '/project/$projectId',
+  path: '/project/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const JobJobIdRoute = JobJobIdRouteImport.update({
   id: '/job/$jobId',
   path: '/job/$jobId',
@@ -55,81 +61,81 @@ const JobJobIdRoute = JobJobIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/map': typeof MapRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/team': typeof TeamRoute
   '/job/$jobId': typeof JobJobIdRoute
+  '/project/$projectId': typeof ProjectProjectIdRoute
   '/share/$token': typeof ShareTokenRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/map': typeof MapRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/team': typeof TeamRoute
   '/job/$jobId': typeof JobJobIdRoute
+  '/project/$projectId': typeof ProjectProjectIdRoute
   '/share/$token': typeof ShareTokenRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/map': typeof MapRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/team': typeof TeamRoute
   '/job/$jobId': typeof JobJobIdRoute
+  '/project/$projectId': typeof ProjectProjectIdRoute
   '/share/$token': typeof ShareTokenRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/admin'
     | '/login'
     | '/map'
     | '/reset-password'
-    | '/team'
     | '/job/$jobId'
+    | '/project/$projectId'
     | '/share/$token'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin'
     | '/login'
     | '/map'
     | '/reset-password'
-    | '/team'
     | '/job/$jobId'
+    | '/project/$projectId'
     | '/share/$token'
   id:
     | '__root__'
     | '/'
+    | '/admin'
     | '/login'
     | '/map'
     | '/reset-password'
-    | '/team'
     | '/job/$jobId'
+    | '/project/$projectId'
     | '/share/$token'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRoute: typeof AdminRoute
   LoginRoute: typeof LoginRoute
   MapRoute: typeof MapRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  TeamRoute: typeof TeamRoute
   JobJobIdRoute: typeof JobJobIdRoute
+  ProjectProjectIdRoute: typeof ProjectProjectIdRoute
   ShareTokenRoute: typeof ShareTokenRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/team': {
-      id: '/team'
-      path: '/team'
-      fullPath: '/team'
-      preLoaderRoute: typeof TeamRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -151,6 +157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -165,6 +178,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShareTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/project/$projectId': {
+      id: '/project/$projectId'
+      path: '/project/$projectId'
+      fullPath: '/project/$projectId'
+      preLoaderRoute: typeof ProjectProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/job/$jobId': {
       id: '/job/$jobId'
       path: '/job/$jobId'
@@ -177,11 +197,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRoute: AdminRoute,
   LoginRoute: LoginRoute,
   MapRoute: MapRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  TeamRoute: TeamRoute,
   JobJobIdRoute: JobJobIdRoute,
+  ProjectProjectIdRoute: ProjectProjectIdRoute,
   ShareTokenRoute: ShareTokenRoute,
 }
 export const routeTree = rootRouteImport

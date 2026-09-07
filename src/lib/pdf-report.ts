@@ -1,6 +1,6 @@
 import { jsPDF } from "jspdf";
 
-type Job = { name: string; address?: string | null; client?: string | null; notes?: string | null; created_at: string };
+type Job = { name: string; address?: string | null; client?: string | null; customer?: string | null; notes?: string | null; created_at: string };
 type Area = { id: string; name: string };
 type Photo = {
   id: string; area_id: string; image_url: string; annotated_image_url: string | null;
@@ -33,7 +33,7 @@ export async function generateJobPdf({ job, areas, photos }: { job: Job; areas: 
   doc.text(job.name, margin, margin + 20);
   doc.setFontSize(11).setFont("helvetica", "normal");
   let y = margin + 45;
-  if (job.client) { doc.text(`Client: ${job.client}`, margin, y); y += 16; }
+  if (job.customer || job.client) { doc.text(`Customer: ${job.customer || job.client}`, margin, y); y += 16; }
   if (job.address) { doc.text(`Address: ${job.address}`, margin, y); y += 16; }
   doc.text(`Created: ${new Date(job.created_at).toLocaleString()}`, margin, y); y += 16;
   doc.text(`Total photos: ${photos.length}`, margin, y); y += 16;

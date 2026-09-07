@@ -4,17 +4,19 @@ import {
 } from "@tanstack/react-router";
 import appCss from "../styles.css?url";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
-import { CompanyProvider, useCompany } from "@/lib/company-context";
+import { CompanyProvider } from "@/lib/company-context";
+import { useMyRoles } from "@/lib/roles";
 import { Toaster } from "@/components/ui/sonner";
-import { HardHat, MapPin, LogOut, FolderKanban, Users } from "lucide-react";
+import { MapPin, LogOut, FolderKanban, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import fcpLogo from "@/assets/fcp-logo.png.asset.json";
 
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="text-center">
         <h1 className="text-7xl font-bold">404</h1>
-        <Link to="/" className="mt-4 inline-block text-accent underline">Go home</Link>
+        <Link to="/" className="mt-4 inline-block text-primary underline">Go home</Link>
       </div>
     </div>
   );
@@ -37,10 +39,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "SiteSnap — Job Site Photos with GPS" },
-      { name: "description", content: "Capture, geotag, and organize commercial job site photos." },
+      { title: "FCP Connect — Project Photos & Field Documentation" },
+      { name: "description", content: "FCP Services project documentation: capture, geotag and organize job site photos by project." },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", type: "image/png", href: "/favicon.png" },
+    ],
   }),
   shellComponent: RootShell,
   component: RootComponent,
@@ -59,35 +64,30 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function Header() {
   const { user, signOut } = useAuth();
-  const { company, companies, setActive } = useCompany();
+  const { isAdmin } = useMyRoles();
   if (!user) return null;
   return (
     <header className="sticky top-0 z-40 border-b bg-primary text-primary-foreground shadow-[var(--shadow-card)]">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-3">
-        <Link to="/" className="flex items-center gap-2 font-bold">
-          <HardHat className="h-5 w-5 text-accent" />
-          <span className="hidden sm:inline">SiteSnap</span>
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-3 py-2.5">
+        <Link to="/" className="flex items-center gap-2 min-w-0">
+          <span className="flex h-9 items-center rounded bg-white px-2 py-1">
+            <img src={fcpLogo.url} alt="FCP Services" className="h-6 w-auto sm:h-7" />
+          </span>
+          <span className="hidden text-sm font-semibold tracking-wide sm:inline">FCP Connect</span>
         </Link>
-        {companies.length > 0 && (
-          <select
-            value={company?.id ?? ""}
-            onChange={(e) => setActive(e.target.value)}
-            className="rounded-md bg-sidebar-accent px-2 py-1 text-xs text-primary-foreground border border-sidebar-border max-w-[120px] sm:max-w-[180px] truncate"
-          >
-            {companies.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-          </select>
-        )}
         <nav className="flex items-center gap-1">
           <Link to="/" className="rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent" activeOptions={{ exact: true }} activeProps={{ className: "bg-sidebar-accent" }}>
-            <span className="flex items-center gap-1.5"><FolderKanban className="h-4 w-4" /><span className="hidden sm:inline">Jobs</span></span>
+            <span className="flex items-center gap-1.5"><FolderKanban className="h-4 w-4" /><span className="hidden sm:inline">Projects</span></span>
           </Link>
           <Link to="/map" className="rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent" activeProps={{ className: "bg-sidebar-accent" }}>
             <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" /><span className="hidden sm:inline">Map</span></span>
           </Link>
-          <Link to="/team" className="rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent" activeProps={{ className: "bg-sidebar-accent" }}>
-            <span className="flex items-center gap-1.5"><Users className="h-4 w-4" /><span className="hidden sm:inline">Team</span></span>
-          </Link>
-          <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground hover:bg-sidebar-accent hover:text-primary-foreground">
+          {isAdmin && (
+            <Link to="/admin" className="rounded-md px-2 py-1.5 text-sm hover:bg-sidebar-accent" activeProps={{ className: "bg-sidebar-accent" }}>
+              <span className="flex items-center gap-1.5"><Shield className="h-4 w-4" /><span className="hidden sm:inline">Admin</span></span>
+            </Link>
+          )}
+          <Button variant="ghost" size="sm" onClick={signOut} aria-label="Sign out" className="text-primary-foreground hover:bg-sidebar-accent hover:text-primary-foreground">
             <LogOut className="h-4 w-4" />
           </Button>
         </nav>
