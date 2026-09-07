@@ -13,13 +13,13 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
-  ArrowLeft, Camera, MapPin, Plus, Trash2, Building2, ImageOff, Tag, Share2, FileDown,
-  Activity, Copy, Pencil, Archive, ArchiveRestore, Download, X,
+  ArrowLeft, Camera, MapPin, Building2, ImageOff, Tag,
+  Activity, Pencil, Archive, ArchiveRestore, Download, X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { logActivity } from "@/lib/activity";
 import { PhotoViewer, type PhotoDetail } from "@/components/PhotoViewer";
-import { generateJobPdf } from "@/lib/pdf-report";
+
 import { formatDistanceToNow } from "date-fns";
 import { geocodeAddress } from "@/lib/geocode";
 import { ProjectForm, type ProjectFormValues } from "@/components/ProjectForm";
@@ -45,13 +45,13 @@ function ProjectDetail() {
   const { projectId } = Route.useParams();
   const { user } = useAuth();
   const { company } = useCompany();
-  const { isAdmin } = useMyRoles();
+  const { isAdmin, can } = useMyRoles();
   const qc = useQueryClient();
   const [phaseFilter, setPhaseFilter] = useState<string>("");
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
-  const [shareOpen, setShareOpen] = useState(false);
+  
   const [editOpen, setEditOpen] = useState(false);
   const [edit, setEdit] = useState<ProjectFormValues | null>(null);
   const [mapReady, setMapReady] = useState(false);
@@ -104,13 +104,6 @@ function ProjectDetail() {
     },
   });
 
-  const { data: shares } = useQuery({
-    queryKey: ["shares", projectId],
-    queryFn: async () => {
-      const { data } = await supabase.from("share_links").select("*").eq("job_id", projectId).order("created_at", { ascending: false });
-      return data ?? [];
-    },
-  });
 
   const allTags = useMemo(() => {
     const s = new Set<string>();
@@ -155,7 +148,9 @@ function ProjectDetail() {
 
   const uploaders = useMemo(() => Array.from(new Set((photos ?? []).map((p) => p.user_id))), [photos]);
 
-  const canManage = (p: PhotoDetail) => isAdmin || p.user_id === user?.id;
+  const isOwnerOrAdmin = (p: PhotoDetail) => isAdmin || p.user_id === user?.id;
+  const canEditPhoto = (p: PhotoDetail) => isOwnerOrAdmin(p) && can.can_edit_photos;
+  const canArchivePhoto = (p: PhotoDetail) => isOwnerOrAdmin(p) && can.can_delete_photos;
 
   // ---- Upload -------------------------------------------------------------
   const handleFiles = async (files: FileList | null) => {
@@ -198,9 +193,11 @@ function ProjectDetail() {
   const toggleSelect = (id: string) =>
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
   const allVisibleSelected = filteredPhotos.length > 0 && filteredPhotos.every((p) => selected.includes(p.id));
+  const setGroupSelected = (ids: string[], on: boolean) =>
+    setSelected((s) => (on ? Array.from(new Set([...s, ...ids])) : s.filter((x) => !ids.includes(x))));
 
   const batchArchive = async () => {
-    const allowed = selectedPhotos.filter(canManage);
+    const allowed = selectedPhotos.filter(canArchivePhoto);
     const blocked = selectedPhotos.length - allowed.length;
     if (!allowed.length) { toast.error("You are not allowed to archive the selected photos"); return; }
     if (!window.confirm(`Archive ${allowed.length} photo${allowed.length === 1 ? "" : "s"}? They are removed from the gallery, counts and photo map.`)) return;
@@ -244,7 +241,7 @@ function ProjectDetail() {
   };
 
   const batchApplyPhase = async (value: string) => {
-    const allowed = selectedPhotos.filter(canManage);
+    const allowed = selectedPhotos.filter(canEditPhoto);
     if (!allowed.length) { toast.error("You are not allowed to edit the selected photos"); return; }
     const { error } = await supabase.from("photos").update({ phase: value || null }).in("id", allowed.map((p) => p.id));
     if (error) { toast.error(error.message); return; }
@@ -261,7 +258,7 @@ function ProjectDetail() {
     const raw = window.prompt("Tag to apply to the selected photos");
     const tag = raw?.trim().toLowerCase();
     if (!tag) return;
-    const allowed = selectedPhotos.filter(canManage);
+    const allowed = selectedPhotos.filter(canEditPhoto);
     if (!allowed.length) { toast.error("You are not allowed to edit the selected photos"); return; }
     const failed: string[] = [];
     for (const p of allowed) {
@@ -280,24 +277,6 @@ function ProjectDetail() {
   };
 
   // ---- Project editing ----------------------------------------------------
-  const createShare = useMutation({
-    mutationFn: async () => {
-      if (!company) throw new Error("No workspace loaded");
-      const { data, error } = await supabase.from("share_links").insert({
-        job_id: projectId, company_id: company.id, created_by: user!.id,
-      }).select().single();
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: (d) => {
-      const url = `${window.location.origin}/share/${d.token}`;
-      navigator.clipboard.writeText(url).catch(() => {});
-      toast.success("Share link copied to clipboard");
-      qc.invalidateQueries({ queryKey: ["shares", projectId] });
-    },
-    onError: (e) => toast.error((e as Error).message),
-  });
-
   const openEdit = () => {
     if (!project) return;
     setEdit({
@@ -306,8 +285,6 @@ function ProjectDetail() {
       address: project.address ?? "",
       division: project.division ?? "",
       owner_id: project.owner_id ?? "",
-      status: project.status ?? "Active",
-      phase: project.phase ?? "",
       cmic_number: project.cmic_number ?? "",
       notes: project.notes ?? "",
     });
@@ -328,8 +305,6 @@ function ProjectDetail() {
         address: edit.address.trim() || null,
         division: edit.division || null,
         owner_id: edit.owner_id || null,
-        status: edit.status,
-        phase: edit.phase || null,
         cmic_number: edit.cmic_number.trim() || null,
         notes: edit.notes.trim() || null,
         ...(addressChanged
@@ -354,7 +329,7 @@ function ProjectDetail() {
       if (!project) return;
       const archiving = !project.archived_at;
       const { error } = await supabase.from("jobs")
-        .update({ archived_at: archiving ? new Date().toISOString() : null, ...(archiving ? { status: "Archived" } : {}) })
+        .update({ archived_at: archiving ? new Date().toISOString() : null, status: archiving ? "Archived" : "Active" })
         .eq("id", projectId);
       if (error) throw error;
       await logActivity({
@@ -377,8 +352,6 @@ function ProjectDetail() {
     edit.address !== (project.address ?? "") ||
     edit.division !== (project.division ?? "") ||
     edit.owner_id !== (project.owner_id ?? "") ||
-    edit.status !== (project.status ?? "Active") ||
-    edit.phase !== (project.phase ?? "") ||
     edit.cmic_number !== (project.cmic_number ?? "") ||
     edit.notes !== (project.notes ?? "")
   );
@@ -395,16 +368,6 @@ function ProjectDetail() {
     setEditOpen(false);
   };
 
-  const handlePdf = async () => {
-    if (!project || !photos) return;
-    toast.info("Generating PDF…");
-    try {
-      await generateJobPdf({ job: project, photos });
-      toast.success("PDF downloaded");
-    } catch (e) {
-      toast.error((e as Error).message);
-    }
-  };
 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6">
@@ -431,44 +394,17 @@ function ProjectDetail() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={openEdit}><Pencil className="mr-1 h-4 w-4" />Edit</Button>
-          <Button size="sm" variant="outline" onClick={() => {
-            const msg = project?.archived_at ? "Restore this project?" : "Archive this project? It stays available under 'Show archived'.";
-            if (window.confirm(msg)) toggleArchive.mutate();
-          }}>
-            {project?.archived_at ? <><ArchiveRestore className="mr-1 h-4 w-4" />Restore</> : <><Archive className="mr-1 h-4 w-4" />Archive</>}
-          </Button>
-          <Button size="sm" variant="outline" onClick={handlePdf}><FileDown className="mr-1 h-4 w-4" />PDF Report</Button>
-          <Dialog open={shareOpen} onOpenChange={setShareOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm" variant="outline"><Share2 className="mr-1 h-4 w-4" />Share</Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>Share this project</DialogTitle></DialogHeader>
-              <p className="text-sm text-muted-foreground">Anyone with the link can view all photos read-only.</p>
-              <Button onClick={() => createShare.mutate()} disabled={createShare.isPending}>
-                <Plus className="mr-1 h-4 w-4" />Create new share link
-              </Button>
-              <div className="max-h-60 space-y-2 overflow-y-auto">
-                {(shares ?? []).map((s) => {
-                  const url = `${typeof window !== "undefined" ? window.location.origin : ""}/share/${s.token}`;
-                  return (
-                    <div key={s.id} className="flex items-center gap-2 rounded-md border p-2 text-xs">
-                      <code className="flex-1 truncate">{url}</code>
-                      <Button size="sm" variant="ghost" onClick={() => { navigator.clipboard.writeText(url); toast.success("Copied"); }}>
-                        <Copy className="h-3 w-3" />
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={async () => {
-                        await supabase.from("share_links").delete().eq("id", s.id);
-                        qc.invalidateQueries({ queryKey: ["shares", projectId] });
-                      }}><Trash2 className="h-3 w-3" /></Button>
-                    </div>
-                  );
-                })}
-                {shares?.length === 0 && <p className="text-xs text-muted-foreground">No share links yet.</p>}
-              </div>
-            </DialogContent>
-          </Dialog>
+          {can.can_edit_projects && (
+            <Button size="sm" variant="outline" onClick={openEdit}><Pencil className="mr-1 h-4 w-4" />Edit</Button>
+          )}
+          {(project?.archived_at ? can.can_edit_projects : can.can_delete_projects) && (
+            <Button size="sm" variant="outline" onClick={() => {
+              const msg = project?.archived_at ? "Restore this project?" : "Archive this project? It stays available under 'Show archived'.";
+              if (window.confirm(msg)) toggleArchive.mutate();
+            }}>
+              {project?.archived_at ? <><ArchiveRestore className="mr-1 h-4 w-4" />Restore</> : <><Archive className="mr-1 h-4 w-4" />Archive</>}
+            </Button>
+          )}
         </div>
       </div>
 
