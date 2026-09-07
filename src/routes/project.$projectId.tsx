@@ -24,6 +24,7 @@ import { formatDistanceToNow } from "date-fns";
 import { geocodeAddress } from "@/lib/geocode";
 import { ProjectForm, type ProjectFormValues } from "@/components/ProjectForm";
 import { PHOTO_PHASES, UNPHASED, phaseLabel, formatTakenAt } from "@/lib/photo-meta";
+import { readPhotoExif } from "@/lib/exif";
 
 const ProjectPhotoMap = lazy(() => import("@/components/ProjectPhotoMap"));
 
