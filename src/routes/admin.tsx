@@ -129,7 +129,7 @@ function AdminPage() {
 
       <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Invite a user</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Add a user</DialogTitle></DialogHeader>
           <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); inviteMut.mutate(); }}>
             <div><Label htmlFor="i-name">Full name *</Label><Input id="i-name" required value={inviteForm.displayName} onChange={(e) => setInviteForm({ ...inviteForm, displayName: e.target.value })} /></div>
             <div><Label htmlFor="i-email">Work email *</Label><Input id="i-email" type="email" required value={inviteForm.email} onChange={(e) => setInviteForm({ ...inviteForm, email: e.target.value })} /></div>
@@ -141,14 +141,21 @@ function AdminPage() {
                 {(roles.data ?? []).filter((r) => r.is_active).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
-            <p className="text-xs text-muted-foreground">They receive an email invitation and choose their own password. Passwords are never shown here.</p>
-            <div className="flex gap-2">
-              <Button type="submit" className="flex-1" disabled={inviteMut.isPending}>{inviteMut.isPending ? "Sending…" : "Send invitation"}</Button>
-              <Button type="button" variant="outline" className="flex-1" onClick={() => setInviteOpen(false)}>Cancel</Button>
+            <p className="text-xs text-muted-foreground">Invited people receive an email and choose their own password. Passwords are never shown or stored here.</p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              <Button type="submit" disabled={inviteMut.isPending || createMut.isPending}>
+                {inviteMut.isPending ? "Sending…" : "Add and send invitation"}
+              </Button>
+              <Button type="button" variant="secondary" disabled={inviteMut.isPending || createMut.isPending}
+                onClick={() => createMut.mutate()}>
+                {createMut.isPending ? "Adding…" : "Add without invitation"}
+              </Button>
             </div>
+            <Button type="button" variant="outline" className="w-full" onClick={() => setInviteOpen(false)}>Cancel</Button>
           </form>
         </DialogContent>
       </Dialog>
+
 
       <section>
         <h2 className="mb-3 text-lg font-semibold">Users</h2>
