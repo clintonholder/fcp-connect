@@ -4,7 +4,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { RequireAuth } from "@/components/RequireAuth";
-import { useMyRoles } from "@/lib/roles";
+import { useMyRoles, PERMISSIONS, type PermissionKey } from "@/lib/roles";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -64,7 +65,10 @@ function AdminPage() {
   const [inviteOpen, setInviteOpen] = useState(false);
   const [inviteForm, setInviteForm] = useState({ email: "", displayName: "", roleId: "" });
   const [roleOpen, setRoleOpen] = useState(false);
-  const [roleForm, setRoleForm] = useState<{ id?: string; name: string }>({ name: "" });
+  const emptyPerms = Object.fromEntries(PERMISSIONS.map((p) => [p.key, true])) as Record<PermissionKey, boolean>;
+  const [roleForm, setRoleForm] = useState<{ id?: string; name: string; permissions: Record<PermissionKey, boolean> }>(
+    { name: "", permissions: emptyPerms },
+  );
 
   const users = useQuery({ queryKey: ["admin-users"], queryFn: () => listUsers({}) });
   const audit = useQuery({ queryKey: ["admin-audit"], queryFn: () => listAudit({}) });
@@ -108,8 +112,8 @@ function AdminPage() {
   });
 
   const roleMut = useMutation({
-    mutationFn: () => saveRole({ data: { id: roleForm.id, name: roleForm.name } }),
-    onSuccess: () => { toast.success("Role saved"); setRoleOpen(false); setRoleForm({ name: "" }); refresh(); },
+    mutationFn: () => saveRole({ data: { id: roleForm.id, name: roleForm.name, permissions: roleForm.permissions } }),
+    onSuccess: () => { toast.success("Role saved"); setRoleOpen(false); setRoleForm({ name: "", permissions: emptyPerms }); refresh(); },
     onError: fail,
   });
 
