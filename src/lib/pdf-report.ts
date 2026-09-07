@@ -1,10 +1,10 @@
 import { jsPDF } from "jspdf";
+import { phaseLabel } from "@/lib/photo-meta";
 
 type Job = { name: string; address?: string | null; client?: string | null; customer?: string | null; notes?: string | null; created_at: string };
-type Area = { id: string; name: string };
 type Photo = {
-  id: string; area_id: string; image_url: string; annotated_image_url: string | null;
-  caption: string | null; tags: string[] | null;
+  id: string; image_url: string; annotated_image_url: string | null;
+  caption: string | null; tags: string[] | null; phase?: string | null;
   latitude: number | null; longitude: number | null; taken_at: string;
 };
 
@@ -22,7 +22,7 @@ async function urlToDataUrl(url: string): Promise<string | null> {
   }
 }
 
-export async function generateJobPdf({ job, areas, photos }: { job: Job; areas: Area[]; photos: Photo[] }) {
+export async function generateJobPdf({ job, photos }: { job: Job; photos: Photo[] }) {
   const doc = new jsPDF({ unit: "pt", format: "letter" });
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
@@ -43,21 +43,26 @@ export async function generateJobPdf({ job, areas, photos }: { job: Job; areas: 
     doc.text(lines, margin, y);
   }
 
-  for (const area of areas) {
-    const areaPhotos = photos.filter((p) => p.area_id === area.id);
-    if (areaPhotos.length === 0) continue;
+  const groups = new Map<string, Photo[]>();
+  for (const p of photos) {
+    const key = phaseLabel(p.phase);
+    groups.set(key, [...(groups.get(key) ?? []), p]);
+  }
+
+  for (const [name, groupPhotos] of groups) {
+    if (groupPhotos.length === 0) continue;
     doc.addPage();
     doc.setFontSize(16).setFont("helvetica", "bold");
-    doc.text(area.name, margin, margin + 10);
+    doc.text(name, margin, margin + 10);
     doc.setFontSize(10).setFont("helvetica", "normal");
-    doc.text(`${areaPhotos.length} photo(s)`, margin, margin + 28);
+    doc.text(`${groupPhotos.length} photo(s)`, margin, margin + 28);
 
     let cy = margin + 50;
     const colW = (pageW - margin * 2 - 20) / 2;
     const imgH = 180;
     let col = 0;
 
-    for (const p of areaPhotos) {
+    for (const p of groupPhotos) {
       const data = await urlToDataUrl(p.annotated_image_url ?? p.image_url);
       if (!data) continue;
       const x = margin + col * (colW + 20);
