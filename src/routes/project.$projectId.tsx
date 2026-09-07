@@ -196,26 +196,27 @@ function ProjectDetail() {
   const setGroupSelected = (ids: string[], on: boolean) =>
     setSelected((s) => (on ? Array.from(new Set([...s, ...ids])) : s.filter((x) => !ids.includes(x))));
 
-  const batchArchive = async () => {
+  const batchDelete = async () => {
     const allowed = selectedPhotos.filter(canArchivePhoto);
     const blocked = selectedPhotos.length - allowed.length;
-    if (!allowed.length) { toast.error("You are not allowed to archive the selected photos"); return; }
-    if (!window.confirm(`Archive ${allowed.length} photo${allowed.length === 1 ? "" : "s"}? They are removed from the gallery, counts and photo map.`)) return;
+    if (!allowed.length) { toast.error("You are not allowed to delete the selected photos"); return; }
+    if (!window.confirm(`Delete ${allowed.length} photo${allowed.length === 1 ? "" : "s"}? They are permanently removed from the photo groups, counts and photo map.`)) return;
     const { data, error } = await supabase.from("photos")
-      .update({ archived_at: new Date().toISOString() })
-      .in("id", allowed.map((p) => p.id)).select("id");
+      .delete().in("id", allowed.map((p) => p.id)).select("id");
     if (error) { toast.error(error.message); return; }
     const done = (data ?? []).map((d) => d.id);
     const failed = allowed.filter((p) => !done.includes(p.id)).map((p) => p.id);
+    const paths = allowed.filter((p) => done.includes(p.id)).map((p) => p.storage_path).filter(Boolean);
+    if (paths.length) await supabase.storage.from("job-photos").remove(paths);
     await logActivity({
-      company_id: company!.id, job_id: projectId, kind: "photo_archived",
+      company_id: company!.id, job_id: projectId, kind: "photo_deleted",
       meta: { photo_ids: done, failed_photo_ids: failed, count: done.length, result: failed.length ? "partial" : "ok" },
     });
     qc.invalidateQueries({ queryKey: ["photos", projectId] });
     qc.invalidateQueries({ queryKey: ["activity", projectId] });
     setSelected([]);
-    if (failed.length || blocked) toast.warning(`${done.length} archived · ${failed.length + blocked} could not be archived`);
-    else toast.success(`${done.length} photo${done.length === 1 ? "" : "s"} archived`);
+    if (failed.length || blocked) toast.warning(`${done.length} deleted · ${failed.length + blocked} could not be deleted`);
+    else toast.success(`${done.length} photo${done.length === 1 ? "" : "s"} deleted`);
   };
 
   const batchExport = async () => {
