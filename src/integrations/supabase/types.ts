@@ -50,6 +50,33 @@ export type Database = {
         }
         Relationships: []
       }
+      app_roles: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          is_admin: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_admin?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          is_admin?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       areas: {
         Row: {
           company_id: string
@@ -87,6 +114,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          details: Json
+          id: string
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          details?: Json
+          id?: string
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
       }
       comments: {
         Row: {
@@ -182,39 +239,116 @@ export type Database = {
           },
         ]
       }
+      invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          display_name: string | null
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string | null
+          last_sent_at: string
+          role_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          display_name?: string | null
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          last_sent_at?: string
+          role_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          display_name?: string | null
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string | null
+          last_sent_at?: string
+          role_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invitations_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "app_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           address: string | null
+          archived_at: string | null
           client: string | null
+          cmic_number: string | null
           company_id: string
           created_at: string
+          customer: string | null
+          division: string | null
+          geocode_failed: boolean
           id: string
+          latitude: number | null
+          longitude: number | null
           name: string
           notes: string | null
+          owner_id: string | null
+          phase: string | null
           status: string
           updated_at: string
           user_id: string
         }
         Insert: {
           address?: string | null
+          archived_at?: string | null
           client?: string | null
+          cmic_number?: string | null
           company_id: string
           created_at?: string
+          customer?: string | null
+          division?: string | null
+          geocode_failed?: boolean
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           name: string
           notes?: string | null
+          owner_id?: string | null
+          phase?: string | null
           status?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           address?: string | null
+          archived_at?: string | null
           client?: string | null
+          cmic_number?: string | null
           company_id?: string
           created_at?: string
+          customer?: string | null
+          division?: string | null
+          geocode_failed?: boolean
           id?: string
+          latitude?: number | null
+          longitude?: number | null
           name?: string
           notes?: string | null
+          owner_id?: string | null
+          phase?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -297,6 +431,7 @@ export type Database = {
           display_name: string | null
           email: string | null
           id: string
+          is_disabled: boolean
           updated_at: string
         }
         Insert: {
@@ -305,6 +440,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id: string
+          is_disabled?: boolean
           updated_at?: string
         }
         Update: {
@@ -313,6 +449,7 @@ export type Database = {
           display_name?: string | null
           email?: string | null
           id?: string
+          is_disabled?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -347,6 +484,35 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_role_id_fkey"
+            columns: ["role_id"]
+            isOneToOne: false
+            referencedRelation: "app_roles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -357,6 +523,11 @@ export type Database = {
         Returns: Database["public"]["Enums"]["company_role"]
       }
       get_shared_job: { Args: { _token: string }; Returns: Json }
+      has_role: {
+        Args: { _role_name: string; _user_id: string }
+        Returns: boolean
+      }
+      is_admin: { Args: { _user_id: string }; Returns: boolean }
       is_company_member: {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
