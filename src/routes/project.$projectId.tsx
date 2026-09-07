@@ -67,6 +67,13 @@ function ProjectDetail() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [exporting, setExporting] = useState<{ done: number; total: number } | null>(null);
+  const [exportReady, setExportReady] = useState<{
+    blob: Blob;
+    fileName: string;
+    photoIds: string[];
+    failedPhotoIds: string[];
+    count: number;
+  } | null>(null);
   useEffect(() => setMapReady(true), []);
 
   const { data: project } = useQuery({
@@ -243,6 +250,7 @@ function ProjectDetail() {
 
   const batchExport = async () => {
     if (!selectedPhotos.length) { toast.error("Select at least one photo to export"); return; }
+    setExportReady(null);
     setExporting({ done: 0, total: selectedPhotos.length });
     try {
       const { ok, failed, blob, fileName } = await buildPhotoZip(
@@ -251,18 +259,42 @@ function ProjectDetail() {
         (done, total) => setExporting({ done, total }),
       );
       if (!blob) { toast.error("No photos could be exported"); return; }
-      saveBlob(blob, fileName);
-      await logActivity({
-        company_id: company!.id, job_id: projectId, kind: "photo_exported",
-        meta: { photo_ids: selectedPhotos.map((p) => p.id), failed_photo_ids: failed, count: ok, file: fileName, result: failed.length ? "partial" : "ok" },
+      setExportReady({
+        blob,
+        fileName,
+        photoIds: selectedPhotos.map((p) => p.id),
+        failedPhotoIds: failed,
+        count: ok,
       });
-      if (failed.length) toast.warning(`${ok} photo${ok === 1 ? "" : "s"} exported · ${failed.length} failed`);
-      else toast.success(`${ok} photo${ok === 1 ? "" : "s"} exported to ${fileName}`);
+      if (failed.length) toast.warning(`${ok} photo${ok === 1 ? "" : "s"} ready · ${failed.length} failed. Click Download ZIP.`);
+      else toast.success(`${fileName} is ready. Click Download ZIP.`);
     } catch (e) {
       toast.error((e as Error).message || "Export failed");
     } finally {
       setExporting(null);
     }
+  };
+
+  const downloadExport = () => {
+    if (!exportReady) return;
+    // This save runs directly inside the user's click. Embedded browsers block
+    // downloads started later by an async ZIP-building callback.
+    saveBlob(exportReady.blob, exportReady.fileName);
+    const completedExport = exportReady;
+    setExportReady(null);
+    toast.success(`Download started: ${completedExport.fileName}`);
+    void logActivity({
+      company_id: company!.id, job_id: projectId, kind: "photo_exported",
+      meta: {
+        photo_ids: completedExport.photoIds,
+        failed_photo_ids: completedExport.failedPhotoIds,
+        count: completedExport.count,
+        file: completedExport.fileName,
+        result: completedExport.failedPhotoIds.length ? "partial" : "ok",
+      },
+    }).catch(() => {
+      // A failed audit write must not prevent the already-started download.
+    });
   };
 
   const batchApplyPhase = async (value: string) => {
@@ -545,9 +577,18 @@ function ProjectDetail() {
           {selected.length > 0 && (
             <>
               <Button size="sm" variant="ghost" onClick={() => setSelected([])}><X className="mr-1 h-3 w-3" />Clear</Button>
-              <Button size="sm" variant="outline" onClick={batchExport} disabled={!!exporting}>
+              <Button
+                size="sm"
+                variant={exportReady ? "default" : "outline"}
+                onClick={exportReady ? downloadExport : batchExport}
+                disabled={!!exporting}
+              >
                 <Download className="mr-1 h-4 w-4" />
-                {exporting ? `Exporting ${exporting.done}/${exporting.total}…` : "Export"}
+                {exporting
+                  ? `Exporting ${exporting.done}/${exporting.total}…`
+                  : exportReady
+                    ? "Download ZIP"
+                    : "Export"}
               </Button>
               {can.can_edit_photos && (
                 <>
