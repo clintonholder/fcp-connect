@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { projectDivisions } from "@/lib/project-meta";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useCompany } from "@/lib/company-context";
 import { MapPin, Search } from "lucide-react";
@@ -54,7 +55,7 @@ function MapPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("id,name,address,customer,client,status,phase,division,owner_id,latitude,longitude,geocode_failed,archived_at,updated_at")
+        .select("id,name,address,customer,client,status,phase,division,divisions,owner_id,latitude,longitude,geocode_failed,archived_at,updated_at")
         .eq("company_id", company!.id)
         .is("archived_at", null)
         .order("updated_at", { ascending: false });
@@ -68,7 +69,7 @@ function MapPage() {
     return {
       status: uniq((projects ?? []).map((p) => p.status)),
       phase: uniq((projects ?? []).map((p) => p.phase)),
-      division: uniq((projects ?? []).map((p) => p.division)),
+      division: uniq((projects ?? []).flatMap((p) => projectDivisions(p))),
       owner: Array.from(new Set((projects ?? []).map((p) => p.owner_id).filter(Boolean) as string[])),
       customer: uniq((projects ?? []).map((p) => p.customer ?? p.client)),
     };
@@ -79,11 +80,11 @@ function MapPage() {
     return (projects ?? []).filter((p) => {
       if (filters.status && p.status !== filters.status) return false;
       if (filters.phase && p.phase !== filters.phase) return false;
-      if (filters.division && p.division !== filters.division) return false;
+      if (filters.division && !projectDivisions(p).includes(filters.division)) return false;
       if (filters.owner && p.owner_id !== filters.owner) return false;
       if (filters.customer && (p.customer ?? p.client) !== filters.customer) return false;
       if (filters.since && new Date(p.updated_at) < new Date(filters.since)) return false;
-      if (q && ![p.name, p.customer, p.client, p.address, p.division, p.status, p.phase, personName(p.owner_id)]
+      if (q && ![p.name, p.customer, p.client, p.address, ...projectDivisions(p), p.status, p.phase, personName(p.owner_id)]
         .filter(Boolean).some((x) => String(x).toLowerCase().includes(q))) return false;
       return true;
     });
@@ -137,7 +138,7 @@ function MapPage() {
               <ProjectMap
                 projects={mappable.map((p) => ({
                   id: p.id, name: p.name, address: p.address, customer: p.customer ?? p.client,
-                  status: p.status, phase: p.phase, division: p.division,
+                  status: p.status, phase: p.phase, division: projectDivisions(p).join(", ") || null,
                   latitude: p.latitude, longitude: p.longitude,
                 }))}
                 onOpen={(id) => navigate({ to: "/project/$projectId", params: { projectId: id } })}

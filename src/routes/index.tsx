@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Plus, MapPin, Building2, Camera, Search, Archive, SlidersHorizontal } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { DIVISIONS } from "@/lib/project-meta";
+import { DIVISIONS, projectDivisions } from "@/lib/project-meta";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { logActivity } from "@/lib/activity";
@@ -98,12 +98,12 @@ function ProjectsPage() {
     const q = search.trim().toLowerCase();
     return (projects ?? []).filter((p) => {
       if (!showArchived && p.archived_at) return false;
-      if (filters.division && p.division !== filters.division) return false;
+      if (filters.division && !projectDivisions(p).includes(filters.division)) return false;
       if (filters.person) {
         const isCollab = (collaborators ?? []).some((c) => c.job_id === p.id && c.user_id === filters.person);
         if (p.owner_id !== filters.person && !isCollab) return false;
       }
-      if (q && ![p.name, p.customer, p.client, p.address, p.division, p.status, p.phase, p.cmic_number, ownerName(p.owner_id)]
+      if (q && ![p.name, p.customer, p.client, p.address, ...projectDivisions(p), p.status, p.phase, p.cmic_number, ownerName(p.owner_id)]
         .filter(Boolean).some((x) => String(x).toLowerCase().includes(q))) return false;
       return true;
     });
@@ -116,13 +116,15 @@ function ProjectsPage() {
       if (!company) throw new Error("No workspace loaded yet");
       if (!form.name.trim()) throw new Error("Project name is required");
       if (!form.customer.trim()) throw new Error("Customer name is required");
+      if (form.divisions.length === 0) throw new Error("Select at least one division");
       const geo = form.address.trim() ? await geocodeAddress(form.address) : null;
       const { data, error } = await supabase.from("jobs").insert({
         name: form.name.trim(),
         customer: form.customer.trim(),
         client: form.customer.trim(),
         address: form.address.trim() || null,
-        division: form.division || null,
+        division: form.divisions[0] ?? null,
+        divisions: form.divisions,
         owner_id: form.owner_id || user!.id,
         status: "Active",
         cmic_number: form.cmic_number.trim() || null,
@@ -243,7 +245,7 @@ function ProjectsPage() {
                         <div className="mt-2 flex flex-wrap gap-1">
                           {j.status && <Badge variant="secondary">{j.status}</Badge>}
                           {j.phase && <Badge variant="outline">{j.phase}</Badge>}
-                          {j.division && <Badge variant="outline">{j.division}</Badge>}
+                          {projectDivisions(j).map((d) => <Badge key={d} variant="outline">{d}</Badge>)}
                         </div>
                         <div className="mt-2 flex items-center justify-between text-xs">
                           <span className="flex items-center gap-1 text-muted-foreground"><Camera className="h-3 w-3" />{count} photos</span>

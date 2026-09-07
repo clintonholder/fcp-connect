@@ -7,6 +7,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/lib/auth-context";
 import { useCompany } from "@/lib/company-context";
 import { useMyRoles } from "@/lib/roles";
+import { projectDivisions } from "@/lib/project-meta";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -303,7 +304,7 @@ function ProjectDetail() {
       name: project.name ?? "",
       customer: project.customer ?? project.client ?? "",
       address: project.address ?? "",
-      division: project.division ?? "",
+      divisions: (project.divisions?.length ? project.divisions : project.division ? [project.division] : []),
       owner_id: project.owner_id ?? "",
       cmic_number: project.cmic_number ?? "",
       notes: project.notes ?? "",
@@ -316,6 +317,7 @@ function ProjectDetail() {
       if (!edit || !project) return;
       if (!edit.name.trim()) throw new Error("Project name is required");
       if (!edit.customer.trim()) throw new Error("Customer name is required");
+      if (edit.divisions.length === 0) throw new Error("Select at least one division");
       const addressChanged = edit.address.trim() !== (project.address ?? "");
       const geo = addressChanged && edit.address.trim() ? await geocodeAddress(edit.address) : null;
       const { error } = await supabase.from("jobs").update({
@@ -323,7 +325,8 @@ function ProjectDetail() {
         customer: edit.customer.trim(),
         client: edit.customer.trim(),
         address: edit.address.trim() || null,
-        division: edit.division || null,
+        division: edit.divisions[0] ?? null,
+        divisions: edit.divisions,
         owner_id: edit.owner_id || null,
         cmic_number: edit.cmic_number.trim() || null,
         notes: edit.notes.trim() || null,
@@ -383,7 +386,7 @@ function ProjectDetail() {
     edit.name !== (project.name ?? "") ||
     edit.customer !== (project.customer ?? project.client ?? "") ||
     edit.address !== (project.address ?? "") ||
-    edit.division !== (project.division ?? "") ||
+    edit.divisions.join("|") !== projectDivisions(project).join("|") ||
     edit.owner_id !== (project.owner_id ?? "") ||
     edit.cmic_number !== (project.cmic_number ?? "") ||
     edit.notes !== (project.notes ?? "")
@@ -420,7 +423,7 @@ function ProjectDetail() {
             <div className="mt-1 flex flex-wrap gap-1 text-xs">
               {project?.status && <Badge variant="secondary">{project.status}</Badge>}
               {project?.phase && <Badge variant="outline">{project.phase}</Badge>}
-              {project?.division && <Badge variant="outline">{project.division}</Badge>}
+              {project && projectDivisions(project).map((d) => <Badge key={d} variant="outline">{d}</Badge>)}
               {project?.owner_id && <Badge variant="outline">PM: {personName(project.owner_id)}</Badge>}
               {project?.cmic_number && <Badge variant="outline">CMiC {project.cmic_number}</Badge>}
             </div>
