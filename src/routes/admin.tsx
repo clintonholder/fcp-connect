@@ -68,7 +68,9 @@ function AdminPage() {
   const [busy, setBusy] = useState<string | null>(null);
 
   const [inviteOpen, setInviteOpen] = useState(false);
+  const [editUserId, setEditUserId] = useState<string | null>(null);
   const [inviteForm, setInviteForm] = useState({ email: "", displayName: "", roleId: "" });
+
   const [roleOpen, setRoleOpen] = useState(false);
   const emptyPerms = Object.fromEntries(PERMISSIONS.map((p) => [p.key, true])) as Record<PermissionKey, boolean>;
   const [roleForm, setRoleForm] = useState<{ id?: string; name: string; permissions: Record<PermissionKey, boolean> }>(
