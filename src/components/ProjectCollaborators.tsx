@@ -25,16 +25,27 @@ export function ProjectCollaborators({
 }) {
   const qc = useQueryClient();
   const [personId, setPersonId] = useState("");
-  const [roleId, setRoleId] = useState("");
 
-  const roles = useQuery({
-    queryKey: ["app-roles"],
+  /** Each person's role comes from their own profile — never chosen here. */
+  const userRoles = useQuery({
+    queryKey: ["user-roles-with-names"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("app_roles").select("*").order("name");
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("user_id, role_id, app_roles(id, name, is_active)");
       if (error) throw error;
-      return data;
+      return data ?? [];
     },
   });
+
+  const roleOf = (userId: string) => {
+    const row = (userRoles.data ?? []).find((r) => {
+      const role = r.app_roles as unknown as { is_active: boolean } | null;
+      return r.user_id === userId && role?.is_active;
+    });
+    const role = row?.app_roles as unknown as { id: string; name: string } | null;
+    return role ? { id: role.id, name: role.name } : null;
+  };
 
   const collaborators = useQuery({
     queryKey: ["collaborators", projectId],
@@ -54,7 +65,6 @@ export function ProjectCollaborators({
     const p = people.find((x) => x.id === id);
     return p?.display_name || p?.email || "Unknown person";
   };
-  const roleName = (id: string | null) => (roles.data ?? []).find((r) => r.id === id)?.name ?? "No role";
 
   const add = useMutation({
     mutationFn: async () => {
@@ -64,21 +74,12 @@ export function ProjectCollaborators({
         job_id: projectId,
         company_id: companyId,
         user_id: personId,
-        role_id: roleId || null,
+        role_id: roleOf(personId)?.id ?? null,
         added_by: (await supabase.auth.getUser()).data.user?.id ?? null,
       });
       if (error) throw new Error(error.message.includes("duplicate") ? "They are already a collaborator" : error.message);
     },
-    onSuccess: () => { toast.success("Collaborator added"); setPersonId(""); setRoleId(""); refresh(); },
-    onError: (e) => toast.error((e as Error).message),
-  });
-
-  const changeRole = useMutation({
-    mutationFn: async ({ id, role_id }: { id: string; role_id: string | null }) => {
-      const { error } = await supabase.from("project_collaborators").update({ role_id }).eq("id", id);
-      if (error) throw new Error(error.message);
-    },
-    onSuccess: () => { toast.success("Role updated"); refresh(); },
+    onSuccess: () => { toast.success("Collaborator added"); setPersonId(""); refresh(); },
     onError: (e) => toast.error((e as Error).message),
   });
 
@@ -91,8 +92,8 @@ export function ProjectCollaborators({
     onError: (e) => toast.error((e as Error).message),
   });
 
-  const activeRoles = (roles.data ?? []).filter((r) => r.is_active);
   const alreadyIn = new Set((collaborators.data ?? []).map((c) => c.user_id));
+  const available = people.filter((p) => !alreadyIn.has(p.id));
 
   return (
     <div className="space-y-3 rounded-md border p-3">
@@ -112,19 +113,7 @@ export function ProjectCollaborators({
           <li key={c.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2">
             <span className="text-sm">{nameOf(c.user_id)}</span>
             <div className="flex items-center gap-2">
-              {canEdit ? (
-                <select
-                  aria-label={`Role for ${nameOf(c.user_id)}`}
-                  className="rounded-md border border-input bg-background px-2 py-1 text-sm"
-                  value={c.role_id ?? ""}
-                  onChange={(e) => changeRole.mutate({ id: c.id, role_id: e.target.value || null })}
-                >
-                  <option value="">No role</option>
-                  {activeRoles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-                </select>
-              ) : (
-                <Badge variant="outline">{roleName(c.role_id)}</Badge>
-              )}
+              <Badge variant="outline">{roleOf(c.user_id)?.name ?? "No role"}</Badge>
               {canEdit && (
                 <Button
                   type="button" size="sm" variant="ghost" aria-label={`Remove ${nameOf(c.user_id)}`}
@@ -140,22 +129,20 @@ export function ProjectCollaborators({
       </ul>
 
       {canEdit && (
-        <div className="grid gap-2 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+        <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
           <div>
             <Label htmlFor="collab-person" className="text-xs">Add person</Label>
             <select id="collab-person" className={selectClass} value={personId} onChange={(e) => setPersonId(e.target.value)}>
               <option value="">Choose someone…</option>
-              {people.filter((p) => !alreadyIn.has(p.id)).map((p) => (
-                <option key={p.id} value={p.id}>{p.display_name || p.email}</option>
+              {available.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {(p.display_name || p.email) + (roleOf(p.id) ? ` — ${roleOf(p.id)!.name}` : "")}
+                </option>
               ))}
             </select>
-          </div>
-          <div>
-            <Label htmlFor="collab-role" className="text-xs">Role on this project</Label>
-            <select id="collab-role" className={selectClass} value={roleId} onChange={(e) => setRoleId(e.target.value)}>
-              <option value="">No role</option>
-              {activeRoles.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-            </select>
+            {available.length === 0 && (
+              <p className="mt-1 text-xs text-muted-foreground">Everyone available is already on this project.</p>
+            )}
           </div>
           <Button type="button" variant="outline" disabled={add.isPending || !personId} onClick={() => add.mutate()}>
             <Plus className="mr-1 h-4 w-4" />{add.isPending ? "Adding…" : "Add"}
