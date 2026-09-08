@@ -105,9 +105,10 @@ function ProjectDetail() {
         .eq("job_id", projectId).is("archived_at", null)
         .order("taken_at", { ascending: true }).order("created_at", { ascending: true });
       if (error) throw error;
-      return data as unknown as PhotoDetail[];
+      return (await signPhotoUrls((data ?? []) as unknown as PhotoDetail[])) as PhotoDetail[];
     },
   });
+
 
   const { data: activity } = useQuery({
     queryKey: ["activity", projectId],
