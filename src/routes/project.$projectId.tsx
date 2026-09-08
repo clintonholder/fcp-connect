@@ -9,6 +9,8 @@ import { useCompany } from "@/lib/company-context";
 import { useMyRoles } from "@/lib/roles";
 import { projectDivisions } from "@/lib/project-meta";
 import { buildPhotoZip } from "@/lib/photo-export";
+import { signPhotoUrls } from "@/lib/photo-urls";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -105,9 +107,10 @@ function ProjectDetail() {
         .eq("job_id", projectId).is("archived_at", null)
         .order("taken_at", { ascending: true }).order("created_at", { ascending: true });
       if (error) throw error;
-      return data as unknown as PhotoDetail[];
+      return (await signPhotoUrls((data ?? []) as unknown as PhotoDetail[])) as PhotoDetail[];
     },
   });
+
 
   const { data: activity } = useQuery({
     queryKey: ["activity", projectId],

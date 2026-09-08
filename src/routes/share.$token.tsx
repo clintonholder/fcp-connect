@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { getSharedProject } from "@/lib/share.functions";
 import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Building2, Camera } from "lucide-react";
 
@@ -20,14 +21,12 @@ type SharedData = {
 
 function SharedJobPage() {
   const { token } = Route.useParams();
+  const fetchShared = useServerFn(getSharedProject);
   const { data, isLoading, error } = useQuery({
     queryKey: ["shared-job", token],
-    queryFn: async () => {
-      const { data, error } = await supabase.rpc("get_shared_job", { _token: token });
-      if (error) throw error;
-      return data as unknown as SharedData | null;
-    },
+    queryFn: async () => (await fetchShared({ data: { token } })) as unknown as SharedData | null,
   });
+
 
   if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading…</div>;
   if (error || !data) return <div className="p-8 text-center text-muted-foreground">This share link is invalid or expired.</div>;
