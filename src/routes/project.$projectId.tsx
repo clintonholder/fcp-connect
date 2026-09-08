@@ -9,6 +9,8 @@ import { useCompany } from "@/lib/company-context";
 import { useMyRoles } from "@/lib/roles";
 import { projectDivisions } from "@/lib/project-meta";
 import { buildPhotoZip } from "@/lib/photo-export";
+import { signPhotoUrls } from "@/lib/photo-urls";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
