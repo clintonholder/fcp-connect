@@ -44,14 +44,15 @@ The migration is applied first and the database types refreshed before any code 
 
 **Everything that touches media**
 - Image uploads keep their exact current behaviour and additionally record media type "image", the real MIME type and byte size. Video uploads record media type "video", real MIME type, byte size and duration.
-- Gallery cards, signed-link rendering, viewer, selection, delete (row + file), export/download, list refresh after changes, the photo map and the public share page all branch on `media_type` — never on the filename.
+- Gallery cards, signed-link rendering, viewer, selection, delete (row + file), export/download, list refresh after changes and the public share page all branch on `media_type` — never on the filename.
+- The photo map is left untouched: videos are filtered out of it, so every existing map behaviour stays exactly as it is.
 - Cards show a video badge and play icon; the viewer renders a `<video>` with controls while captions, comments, delete, navigation and permissions keep working for both kinds.
 - Export keeps the real extension. Videos carry no embedded location, so they use device location when granted and otherwise read "Location unavailable" — no invented pins.
 
 ## Technical notes
 
 - New: `src/components/VideoRecorder.tsx` (getUserMedia + MediaRecorder, runtime `isTypeSupported` detection, track teardown on unmount).
-- Edited: `src/routes/project.$projectId.tsx` (capture switch, video upload, card rendering, delete/export branches), `src/components/PhotoViewer.tsx` (video playback), `src/lib/photo-export.ts` (extension from stored path/mime), `src/components/ProjectPhotoMap.tsx` (video pin thumbnail), `src/lib/share.functions.ts` / `src/routes/share.$token.tsx` (share page renders videos), plus the migration.
+- Edited: `src/routes/project.$projectId.tsx` (capture switch, video upload, card rendering, delete/export branches, videos excluded from map data), `src/components/PhotoViewer.tsx` (video playback), `src/lib/photo-export.ts` (extension from stored path/mime), `src/lib/share.functions.ts` / `src/routes/share.$token.tsx` (share page renders videos), plus the migration. `src/components/ProjectPhotoMap.tsx` is not modified.
 
 ## Verification
 
