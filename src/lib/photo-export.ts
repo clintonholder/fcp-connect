@@ -9,6 +9,8 @@ export type ExportablePhoto = {
   phase: string | null;
   taken_at: string | null;
   created_at?: string | null;
+  media_type?: string | null;
+  mime_type?: string | null;
 };
 
 export type ExportProject = {
@@ -36,7 +38,7 @@ function pad(n: number) {
 export function timestampName(photo: ExportablePhoto): string {
   const raw = photo.taken_at ?? photo.created_at ?? null;
   const d = raw ? new Date(raw) : null;
-  if (!d || Number.isNaN(d.getTime())) return `photo-${photo.id}`;
+  if (!d || Number.isNaN(d.getTime())) return `${photo.media_type === "video" ? "video" : "photo"}-${photo.id}`;
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
 }
 
@@ -44,7 +46,10 @@ export function fileExtension(photo: ExportablePhoto): string {
   const source = photo.storage_path || photo.image_url || "";
   const clean = source.split("?")[0]?.split("#")[0] ?? "";
   const match = clean.match(/\.([a-zA-Z0-9]{1,5})$/);
-  return match ? match[1].toLowerCase() : "jpg";
+  if (match) return match[1].toLowerCase();
+  const fromMime = photo.mime_type?.split(";")[0]?.split("/")[1]?.toLowerCase();
+  if (fromMime) return fromMime;
+  return photo.media_type === "video" ? "webm" : "jpg";
 }
 
 export function zipFileName(project: ExportProject | null | undefined): string {
@@ -70,7 +75,7 @@ export async function buildPhotoZip(
 
   for (const p of photos) {
     try {
-      const res = await fetch(p.annotated_image_url ?? p.image_url);
+      const res = await fetch(p.media_type === "video" ? p.image_url : (p.annotated_image_url ?? p.image_url));
       if (!res.ok) throw new Error(String(res.status));
       const blob = await res.blob();
       const folder = sanitizeName(phaseLabel(p.phase)) || "Unassigned";
