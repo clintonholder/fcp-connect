@@ -43,7 +43,8 @@ The migration is applied first and the database types refreshed before any code 
 - Unique filenames; if the database insert fails, the just-uploaded file is deleted so nothing is orphaned. Retry keeps the recording in memory.
 
 **Everything that touches media**
-- Gallery cards, viewer, selection, delete (row + file), export/download and the photo map all branch on `media_type`.
+- Image uploads keep their exact current behaviour and additionally record media type "image", the real MIME type and byte size. Video uploads record media type "video", real MIME type, byte size and duration.
+- Gallery cards, signed-link rendering, viewer, selection, delete (row + file), export/download, list refresh after changes, the photo map and the public share page all branch on `media_type` — never on the filename.
 - Cards show a video badge and play icon; the viewer renders a `<video>` with controls while captions, comments, delete, navigation and permissions keep working for both kinds.
 - Export keeps the real extension. Videos carry no embedded location, so they use device location when granted and otherwise read "Location unavailable" — no invented pins.
 
