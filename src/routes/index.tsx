@@ -213,9 +213,6 @@ function ProjectsPage() {
             <Switch id="show-archived" checked={showArchived} onCheckedChange={setShowArchived} />
             <Label htmlFor="show-archived" className="cursor-pointer text-sm">
               Show archived
-              <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold ${showArchived ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
-                {showArchived ? "ON" : "OFF"}
-              </span>
             </Label>
           </div>
           {can.can_add_projects && (
