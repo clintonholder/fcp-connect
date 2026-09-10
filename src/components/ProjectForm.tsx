@@ -4,6 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DivisionSelect } from "@/components/DivisionSelect";
 import { TagInput } from "@/components/TagInput";
+import { useMyRoles } from "@/lib/roles";
+import { DIVISIONS } from "@/lib/project-meta";
 
 export type ProjectFormValues = {
   name: string;
