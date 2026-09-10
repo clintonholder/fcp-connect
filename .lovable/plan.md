@@ -21,7 +21,9 @@ One migration on the `photos` table:
 - `file_size` — bytes.
 - `duration_seconds` — video length; empty for images.
 
-No new table, no new bucket, no policy change, bucket stays private. If the project-wide file size limit turns out to be below what a 60-second clip needs, the bucket limit is raised — a size setting only, not a visibility change.
+No new table, no new bucket, no policy change, bucket stays private. Storage limits stay as they are unless a real upload test fails on size.
+
+The migration is applied first and the database types refreshed before any code changes, and existing rows are confirmed to read as "image" afterwards.
 
 ## What will be built
 
