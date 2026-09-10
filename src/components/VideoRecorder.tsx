@@ -48,6 +48,7 @@ export function VideoRecorder({
   const chunksRef = useRef<BlobPart[]>([]);
   const timerRef = useRef<number | null>(null);
   const urlRef = useRef<string | null>(null);
+  const secondsRef = useRef(0);
 
   const [error, setError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
@@ -191,8 +192,6 @@ export function VideoRecorder({
       if (secondsRef.current >= MAX_VIDEO_SECONDS) stop();
     }, 1000);
   };
-
-  const secondsRef = useRef(0);
 
   const retake = async () => {
     releasePreview();
