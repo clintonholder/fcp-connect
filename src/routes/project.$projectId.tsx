@@ -83,7 +83,8 @@ function ProjectDetail() {
   } | null>(null);
   useEffect(() => setMapReady(true), []);
 
-  const { data: project } = useQuery({
+  const { data: project, isLoading: projectLoading, isError: projectError } = useQuery({
+    retry: false,
     queryKey: ["project", projectId],
     queryFn: async () => {
       const { data, error } = await supabase.from("jobs").select("*").eq("id", projectId).single();
