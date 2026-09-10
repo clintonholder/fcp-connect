@@ -388,11 +388,15 @@ export type Database = {
           caption: string | null
           company_id: string
           created_at: string
+          duration_seconds: number | null
+          file_size: number | null
           id: string
           image_url: string
           job_id: string
           latitude: number | null
           longitude: number | null
+          media_type: string
+          mime_type: string | null
           phase: string | null
           storage_path: string
           tags: string[]
@@ -407,11 +411,15 @@ export type Database = {
           caption?: string | null
           company_id: string
           created_at?: string
+          duration_seconds?: number | null
+          file_size?: number | null
           id?: string
           image_url: string
           job_id: string
           latitude?: number | null
           longitude?: number | null
+          media_type?: string
+          mime_type?: string | null
           phase?: string | null
           storage_path: string
           tags?: string[]
@@ -426,11 +434,15 @@ export type Database = {
           caption?: string | null
           company_id?: string
           created_at?: string
+          duration_seconds?: number | null
+          file_size?: number | null
           id?: string
           image_url?: string
           job_id?: string
           latitude?: number | null
           longitude?: number | null
+          media_type?: string
+          mime_type?: string | null
           phase?: string | null
           storage_path?: string
           tags?: string[]

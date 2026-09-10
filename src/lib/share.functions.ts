@@ -11,6 +11,7 @@ type SharedPhoto = {
   latitude: number | null;
   longitude: number | null;
   taken_at: string;
+  media_type?: string | null;
 };
 
 type SharedData = {

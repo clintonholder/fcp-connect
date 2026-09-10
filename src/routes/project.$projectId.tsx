@@ -19,7 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import {
   ArrowLeft, Camera, MapPin, Building2, ImageOff, Tag,
-  Activity, Pencil, Archive, ArchiveRestore, Download, X, Trash2,
+  Activity, Pencil, Archive, ArchiveRestore, Download, X, Trash2, Video, Play,
 } from "lucide-react";
 import { toast } from "sonner";
 import { logActivity } from "@/lib/activity";
@@ -32,6 +32,7 @@ import { ProjectCollaborators } from "@/components/ProjectCollaborators";
 
 import { PHOTO_PHASES, UNPHASED, phaseLabel, formatTakenAt } from "@/lib/photo-meta";
 import { readPhotoExif } from "@/lib/exif";
+import { VideoRecorder, type RecordedVideo } from "@/components/VideoRecorder";
 
 const ProjectPhotoMap = lazy(() => import("@/components/ProjectPhotoMap"));
 
@@ -69,6 +70,8 @@ function ProjectDetail() {
   const fileRef = useRef<HTMLInputElement>(null);
   const pickRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
+  const [captureMode, setCaptureMode] = useState<"photo" | "video">("photo");
+  const [recorderOpen, setRecorderOpen] = useState(false);
   const [exporting, setExporting] = useState<{ done: number; total: number } | null>(null);
   const [exportReady, setExportReady] = useState<{
     url: string;
@@ -155,7 +158,8 @@ function ProjectDetail() {
   }, [filteredPhotos]);
 
   const mapPhotos = useMemo(() => {
-    return (photos ?? []).filter((p) => {
+    // The map only ever shows still photos; videos are excluded entirely.
+    return (photos ?? []).filter((p) => p.media_type !== "video").filter((p) => {
       if (mapFilters.phase && phaseLabel(p.phase) !== mapFilters.phase) return false;
       if (mapFilters.uploader && p.user_id !== mapFilters.uploader) return false;
       if (mapFilters.since && new Date(p.taken_at) < new Date(mapFilters.since)) return false;
@@ -214,6 +218,7 @@ function ProjectDetail() {
         const { error: insErr } = await supabase.from("photos").insert({
           job_id: projectId, user_id: user.id, company_id: company.id,
           storage_path: path, image_url: pub.publicUrl, phase: uploadPhase || null,
+          media_type: "image", mime_type: file.type || null, file_size: file.size,
           taken_at: exif.takenAt ?? new Date().toISOString(),
           latitude: lat,
           longitude: lng,
@@ -241,6 +246,47 @@ function ProjectDetail() {
     }
   };
 
+
+  // ---- Video upload -------------------------------------------------------
+  const uploadRecording = async (video: RecordedVideo) => {
+    if (!user) throw new Error("Please sign in again to add videos");
+    if (!company) throw new Error("Workspace still loading — try again in a moment");
+    const coords = await new Promise<GeolocationPosition | null>((resolve) => {
+      if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null);
+      let done = false;
+      const finish = (v: GeolocationPosition | null) => { if (!done) { done = true; resolve(v); } };
+      setTimeout(() => finish(null), 6000);
+      try {
+        navigator.geolocation.getCurrentPosition((p) => finish(p), () => finish(null), { enableHighAccuracy: true, timeout: 6000 });
+      } catch { finish(null); }
+    });
+    const path = `${user.id}/${projectId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${video.extension}`;
+    const { error: upErr } = await supabase.storage.from("job-photos")
+      .upload(path, video.blob, { contentType: video.mimeType, upsert: false });
+    if (upErr) throw new Error(upErr.message);
+    const { data: pub } = supabase.storage.from("job-photos").getPublicUrl(path);
+    const { error: insErr } = await supabase.from("photos").insert({
+      job_id: projectId, user_id: user.id, company_id: company.id,
+      storage_path: path, image_url: pub.publicUrl, phase: uploadPhase || null,
+      media_type: "video", mime_type: video.mimeType, file_size: video.blob.size,
+      duration_seconds: video.durationSeconds,
+      taken_at: new Date().toISOString(),
+      latitude: coords?.coords.latitude ?? null,
+      longitude: coords?.coords.longitude ?? null,
+      accuracy: coords?.coords.accuracy ?? null,
+    });
+    if (insErr) {
+      // Never leave an orphaned file behind when the record could not be saved.
+      await supabase.storage.from("job-photos").remove([path]);
+      throw new Error(insErr.message);
+    }
+    try {
+      await logActivity({ company_id: company.id, job_id: projectId, kind: "video_uploaded", meta: { phase: uploadPhase, duration_seconds: video.durationSeconds } });
+    } catch { /* history entry is not critical */ }
+    await qc.invalidateQueries({ queryKey: ["photos", projectId] });
+    qc.invalidateQueries({ queryKey: ["activity", projectId] });
+    toast.success("Video uploaded");
+  };
 
   // ---- Batch actions ------------------------------------------------------
   const selectedPhotos = filteredPhotos.filter((p) => selected.includes(p.id));
@@ -568,12 +614,32 @@ function ProjectDetail() {
               onChange={(e) => handleFiles(e.target.files)} />
             <input ref={pickRef} type="file" accept="image/*" multiple className="hidden"
               onChange={(e) => handleFiles(e.target.files)} />
-            <Button size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
-              <Camera className="mr-1 h-4 w-4" />{uploading ? "Uploading…" : "Take Photo"}
-            </Button>
-            <Button size="sm" variant="outline" disabled={uploading} onClick={() => pickRef.current?.click()}>
-              Choose Photos
-            </Button>
+            <div className="inline-flex rounded-md border p-0.5" role="group" aria-label="Capture type">
+              <button type="button" aria-pressed={captureMode === "photo"}
+                className={`rounded px-2 py-1 text-sm ${captureMode === "photo" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                onClick={() => setCaptureMode("photo")}>
+                <Camera className="mr-1 inline h-4 w-4" />Photo
+              </button>
+              <button type="button" aria-pressed={captureMode === "video"}
+                className={`rounded px-2 py-1 text-sm ${captureMode === "video" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
+                onClick={() => setCaptureMode("video")}>
+                <Video className="mr-1 inline h-4 w-4" />Video
+              </button>
+            </div>
+            {captureMode === "photo" ? (
+              <>
+                <Button size="sm" disabled={uploading} onClick={() => fileRef.current?.click()}>
+                  <Camera className="mr-1 h-4 w-4" />{uploading ? "Uploading…" : "Take Photo"}
+                </Button>
+                <Button size="sm" variant="outline" disabled={uploading} onClick={() => pickRef.current?.click()}>
+                  Choose Photos
+                </Button>
+              </>
+            ) : (
+              <Button size="sm" disabled={uploading} onClick={() => setRecorderOpen(true)}>
+                <Video className="mr-1 h-4 w-4" />Record Video
+              </Button>
+            )}
 
           </div>
         )}
@@ -693,15 +759,24 @@ function ProjectDetail() {
                         <button
                           className="block w-full cursor-pointer"
                           onClick={() => setViewerIndex(idx)}
-                          aria-label={`Open photo ${idx + 1}`}
+                          aria-label={`Open ${p.media_type === "video" ? "video" : "photo"} ${idx + 1}`}
                         >
-                          <img
-                            src={p.annotated_image_url ?? p.image_url}
-                            alt={p.caption ?? `${group.name} photo`}
-                            className="aspect-square w-full object-cover"
-                            loading="lazy"
-                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = "hidden"; }}
-                          />
+                          {p.media_type === "video" ? (
+                            <div className="relative flex aspect-square w-full items-center justify-center bg-black/80">
+                              <Play className="h-8 w-8 text-white" />
+                              <span className="absolute bottom-1 right-1 rounded bg-black/70 px-1 text-[10px] text-white">
+                                {p.duration_seconds ? `${Math.round(Number(p.duration_seconds))}s` : "Video"}
+                              </span>
+                            </div>
+                          ) : (
+                            <img
+                              src={p.annotated_image_url ?? p.image_url}
+                              alt={p.caption ?? `${group.name} photo`}
+                              className="aspect-square w-full object-cover"
+                              loading="lazy"
+                              onError={(e) => { (e.currentTarget as HTMLImageElement).style.visibility = "hidden"; }}
+                            />
+                          )}
                         </button>
                         <span
                           className="absolute left-1 top-1 rounded bg-background/90 p-0.5"
@@ -814,6 +889,8 @@ function ProjectDetail() {
           </ul>
         </CardContent></Card>
       </div>
+
+      <VideoRecorder open={recorderOpen} onClose={() => setRecorderOpen(false)} onUpload={uploadRecording} />
 
       {viewerIndex !== null && filteredPhotos[viewerIndex] && (
         <PhotoViewer
