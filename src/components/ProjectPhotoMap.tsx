@@ -14,6 +14,8 @@ export type MapPhoto = {
   uploader?: string | null;
   phase?: string | null;
   tags?: string[] | null;
+  media_type?: string | null;
+  mime_type?: string | null;
 };
 
 function isValid(p: MapPhoto) {
