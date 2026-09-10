@@ -122,7 +122,7 @@ export function VideoRecorder({
     return () => {
       clearTimer();
       try {
-        recorderRef.current?.state === "recording" && recorderRef.current.stop();
+        if (recorderRef.current?.state === "recording") recorderRef.current.stop();
       } catch {
         /* already stopped */
       }
