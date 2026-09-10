@@ -32,7 +32,7 @@ import { ProjectCollaborators } from "@/components/ProjectCollaborators";
 
 import { PHOTO_PHASES, UNPHASED, phaseLabel, formatTakenAt } from "@/lib/photo-meta";
 import { readPhotoExif } from "@/lib/exif";
-import { VideoRecorder, type RecordedVideo } from "@/components/VideoRecorder";
+const MAX_VIDEO_SECONDS = 60;
 
 const ProjectPhotoMap = lazy(() => import("@/components/ProjectPhotoMap"));
 
@@ -69,9 +69,10 @@ function ProjectDetail() {
   const [mapFilters, setMapFilters] = useState({ phase: "", uploader: "", since: "" });
   const fileRef = useRef<HTMLInputElement>(null);
   const pickRef = useRef<HTMLInputElement>(null);
+  const videoCaptureRef = useRef<HTMLInputElement>(null);
+  const videoPickRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [captureMode, setCaptureMode] = useState<"photo" | "video">("photo");
-  const [recorderOpen, setRecorderOpen] = useState(false);
   const [exporting, setExporting] = useState<{ done: number; total: number } | null>(null);
   const [exportReady, setExportReady] = useState<{
     url: string;
@@ -158,8 +159,8 @@ function ProjectDetail() {
   }, [filteredPhotos]);
 
   const mapPhotos = useMemo(() => {
-    // The map only ever shows still photos; videos are excluded entirely.
-    return (photos ?? []).filter((p) => p.media_type !== "video").filter((p) => {
+    // Photos and videos are both mapped when they carry a location.
+    return (photos ?? []).filter((p) => {
       if (mapFilters.phase && phaseLabel(p.phase) !== mapFilters.phase) return false;
       if (mapFilters.uploader && p.user_id !== mapFilters.uploader) return false;
       if (mapFilters.since && new Date(p.taken_at) < new Date(mapFilters.since)) return false;
@@ -248,44 +249,83 @@ function ProjectDetail() {
 
 
   // ---- Video upload -------------------------------------------------------
-  const uploadRecording = async (video: RecordedVideo) => {
-    if (!user) throw new Error("Please sign in again to add videos");
-    if (!company) throw new Error("Workspace still loading — try again in a moment");
-    const coords = await new Promise<GeolocationPosition | null>((resolve) => {
-      if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null);
-      let done = false;
-      const finish = (v: GeolocationPosition | null) => { if (!done) { done = true; resolve(v); } };
-      setTimeout(() => finish(null), 6000);
-      try {
-        navigator.geolocation.getCurrentPosition((p) => finish(p), () => finish(null), { enableHighAccuracy: true, timeout: 6000 });
-      } catch { finish(null); }
+  const readVideoDuration = (file: File) =>
+    new Promise<number | null>((resolve) => {
+      const url = URL.createObjectURL(file);
+      const el = document.createElement("video");
+      el.preload = "metadata";
+      const done = (v: number | null) => { URL.revokeObjectURL(url); resolve(v); };
+      el.onloadedmetadata = () => {
+        const d = el.duration;
+        done(Number.isFinite(d) && d > 0 ? d : null);
+      };
+      el.onerror = () => done(null);
+      setTimeout(() => done(null), 8000);
+      el.src = url;
     });
-    const path = `${user.id}/${projectId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${video.extension}`;
-    const { error: upErr } = await supabase.storage.from("job-photos")
-      .upload(path, video.blob, { contentType: video.mimeType, upsert: false });
-    if (upErr) throw new Error(upErr.message);
-    const { data: pub } = supabase.storage.from("job-photos").getPublicUrl(path);
-    const { error: insErr } = await supabase.from("photos").insert({
-      job_id: projectId, user_id: user.id, company_id: company.id,
-      storage_path: path, image_url: pub.publicUrl, phase: uploadPhase || null,
-      media_type: "video", mime_type: video.mimeType, file_size: video.blob.size,
-      duration_seconds: video.durationSeconds,
-      taken_at: new Date().toISOString(),
-      latitude: coords?.coords.latitude ?? null,
-      longitude: coords?.coords.longitude ?? null,
-      accuracy: coords?.coords.accuracy ?? null,
-    });
-    if (insErr) {
-      // Never leave an orphaned file behind when the record could not be saved.
-      await supabase.storage.from("job-photos").remove([path]);
-      throw new Error(insErr.message);
-    }
+
+  const handleVideoFiles = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    const file = files[0];
+    if (!user) { toast.error("Please sign in again to add videos"); return; }
+    if (!company) { toast.error("Workspace still loading — try again in a moment"); return; }
+    if (!file.type.startsWith("video/")) { toast.error("That file isn't a video — pick a video clip."); return; }
+
+    setUploading(true);
     try {
-      await logActivity({ company_id: company.id, job_id: projectId, kind: "video_uploaded", meta: { phase: uploadPhase, duration_seconds: video.durationSeconds } });
-    } catch { /* history entry is not critical */ }
-    await qc.invalidateQueries({ queryKey: ["photos", projectId] });
-    qc.invalidateQueries({ queryKey: ["activity", projectId] });
-    toast.success("Video uploaded");
+      const duration = await readVideoDuration(file);
+      if (duration !== null && duration > MAX_VIDEO_SECONDS + 0.5) {
+        const mins = Math.floor(duration / 60);
+        const secs = Math.round(duration % 60);
+        toast.error(`Videos must be 60 seconds or less — this one is ${mins}:${String(secs).padStart(2, "0")}`);
+        return;
+      }
+
+      const coords = await new Promise<GeolocationPosition | null>((resolve) => {
+        if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null);
+        let done = false;
+        const finish = (v: GeolocationPosition | null) => { if (!done) { done = true; resolve(v); } };
+        setTimeout(() => finish(null), 6000);
+        try {
+          navigator.geolocation.getCurrentPosition((p) => finish(p), () => finish(null), { enableHighAccuracy: true, timeout: 6000 });
+        } catch { finish(null); }
+      });
+
+      const nameExt = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "";
+      const extension = nameExt || (file.type.split("/")[1] || "mp4").split(";")[0];
+      const path = `${user.id}/${projectId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
+      const { error: upErr } = await supabase.storage.from("job-photos")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (upErr) throw new Error(upErr.message);
+      const { data: pub } = supabase.storage.from("job-photos").getPublicUrl(path);
+      const { error: insErr } = await supabase.from("photos").insert({
+        job_id: projectId, user_id: user.id, company_id: company.id,
+        storage_path: path, image_url: pub.publicUrl, phase: uploadPhase || null,
+        media_type: "video", mime_type: file.type, file_size: file.size,
+        duration_seconds: duration,
+        taken_at: new Date(file.lastModified || Date.now()).toISOString(),
+        latitude: coords?.coords.latitude ?? null,
+        longitude: coords?.coords.longitude ?? null,
+        accuracy: coords?.coords.accuracy ?? null,
+      });
+      if (insErr) {
+        // Never leave an orphaned file behind when the record could not be saved.
+        await supabase.storage.from("job-photos").remove([path]);
+        throw new Error(insErr.message);
+      }
+      try {
+        await logActivity({ company_id: company.id, job_id: projectId, kind: "video_uploaded", meta: { phase: uploadPhase, duration_seconds: duration } });
+      } catch { /* history entry is not critical */ }
+      await qc.invalidateQueries({ queryKey: ["photos", projectId] });
+      qc.invalidateQueries({ queryKey: ["activity", projectId] });
+      toast.success("Video uploaded");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Video upload failed");
+    } finally {
+      setUploading(false);
+      if (videoCaptureRef.current) videoCaptureRef.current.value = "";
+      if (videoPickRef.current) videoPickRef.current.value = "";
+    }
   };
 
   // ---- Batch actions ------------------------------------------------------
@@ -614,6 +654,10 @@ function ProjectDetail() {
               onChange={(e) => handleFiles(e.target.files)} />
             <input ref={pickRef} type="file" accept="image/*" multiple className="hidden"
               onChange={(e) => handleFiles(e.target.files)} />
+            <input ref={videoCaptureRef} type="file" accept="video/*" capture="environment" className="hidden"
+              onChange={(e) => handleVideoFiles(e.target.files)} />
+            <input ref={videoPickRef} type="file" accept="video/*" className="hidden"
+              onChange={(e) => handleVideoFiles(e.target.files)} />
             <div className="inline-flex rounded-md border p-0.5" role="group" aria-label="Capture type">
               <button type="button" aria-pressed={captureMode === "photo"}
                 className={`rounded px-2 py-1 text-sm ${captureMode === "photo" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
@@ -636,9 +680,14 @@ function ProjectDetail() {
                 </Button>
               </>
             ) : (
-              <Button size="sm" disabled={uploading} onClick={() => setRecorderOpen(true)}>
-                <Video className="mr-1 h-4 w-4" />Record Video
-              </Button>
+              <>
+                <Button size="sm" disabled={uploading} onClick={() => videoCaptureRef.current?.click()}>
+                  <Video className="mr-1 h-4 w-4" />{uploading ? "Uploading…" : "Record Video"}
+                </Button>
+                <Button size="sm" variant="outline" disabled={uploading} onClick={() => videoPickRef.current?.click()}>
+                  Choose Video
+                </Button>
+              </>
             )}
 
           </div>
@@ -826,13 +875,13 @@ function ProjectDetail() {
               <Button variant="outline" size="sm" onClick={() => setMapFilters({ phase: "", uploader: "", since: "" })}>Reset filters</Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              {geoPhotos.length} geotagged photo{geoPhotos.length === 1 ? "" : "s"} shown
-              {noGeoCount > 0 && ` · ${noGeoCount} photo${noGeoCount === 1 ? "" : "s"} have no GPS location and can't be mapped`}
+              {geoPhotos.length} geotagged item{geoPhotos.length === 1 ? "" : "s"} shown
+              {noGeoCount > 0 && ` · ${noGeoCount} item${noGeoCount === 1 ? "" : "s"} have no GPS location and can't be mapped`}
             </p>
             <div className="relative z-0 isolate overflow-hidden rounded-lg border" style={{ height: "50vh" }}>
               {geoPhotos.length === 0 ? (
                 <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
-                  No geotagged photos for this project yet.
+                  No geotagged photos or videos for this project yet.
                 </div>
               ) : mapReady ? (
                 <Suspense fallback={<div className="flex h-full items-center justify-center text-muted-foreground">Loading map…</div>}>
@@ -848,6 +897,8 @@ function ProjectDetail() {
                       uploader: personName(p.user_id),
                       phase: phaseLabel(p.phase),
                       tags: p.tags,
+                      media_type: p.media_type,
+                      mime_type: p.mime_type,
                     }))}
                   />
                 </Suspense>
@@ -890,7 +941,7 @@ function ProjectDetail() {
         </CardContent></Card>
       </div>
 
-      <VideoRecorder open={recorderOpen} onClose={() => setRecorderOpen(false)} onUpload={uploadRecording} />
+      
 
       {viewerIndex !== null && filteredPhotos[viewerIndex] && (
         <PhotoViewer
