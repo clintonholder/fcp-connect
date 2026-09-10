@@ -16,6 +16,7 @@ type SharedData = {
     id: string; area_id: string; image_url: string; annotated_image_url: string | null;
     caption: string | null; tags: string[] | null;
     latitude: number | null; longitude: number | null; taken_at: string;
+    media_type?: string | null;
   }[];
 };
 
@@ -52,8 +53,14 @@ function SharedJobPage() {
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
                   {ph.map((p) => (
                     <a key={p.id} href={p.annotated_image_url ?? p.image_url} target="_blank" rel="noreferrer" className="block">
-                      <img src={p.annotated_image_url ?? p.image_url} alt={p.caption ?? a.name}
-                        className="aspect-square w-full object-cover rounded-md border" loading="lazy" />
+                      {p.media_type === "video" ? (
+                        <video src={p.image_url} controls playsInline preload="metadata"
+                          className="aspect-square w-full object-contain rounded-md border bg-black"
+                          onClick={(e) => e.preventDefault()} />
+                      ) : (
+                        <img src={p.annotated_image_url ?? p.image_url} alt={p.caption ?? a.name}
+                          className="aspect-square w-full object-cover rounded-md border" loading="lazy" />
+                      )}
                       {p.caption && <p className="text-xs mt-1 truncate">{p.caption}</p>}
                       {(p.tags?.length ?? 0) > 0 && <p className="text-[10px] text-muted-foreground truncate">#{p.tags!.join(" #")}</p>}
                     </a>
