@@ -48,11 +48,13 @@ export const adminListUsers = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const db = await admin();
-    const [{ data: profiles }, { data: userRoles }, { data: invites }] = await Promise.all([
+    const [{ data: profiles }, { data: userRoles }, { data: invites }, { data: divisions }] = await Promise.all([
       db.from("profiles").select("id, email, display_name, is_disabled, created_at").order("created_at"),
-      db.from("user_roles").select("user_id, role_id, app_roles(id, name, is_active, is_admin)"),
+      db.from("user_roles").select("user_id, role_id, app_roles(id, name, is_active, is_admin, is_director)"),
       db.from("invitations").select("*").order("created_at", { ascending: false }),
+      db.from("user_divisions").select("user_id, division"),
     ]);
+
 
     const { data: authList } = await db.auth.admin.listUsers({ page: 1, perPage: 1000 });
     const authById = new Map(authList?.users?.map((u) => [u.id, u]) ?? []);
