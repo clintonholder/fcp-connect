@@ -654,6 +654,10 @@ function ProjectDetail() {
               onChange={(e) => handleFiles(e.target.files)} />
             <input ref={pickRef} type="file" accept="image/*" multiple className="hidden"
               onChange={(e) => handleFiles(e.target.files)} />
+            <input ref={videoCaptureRef} type="file" accept="video/*" capture="environment" className="hidden"
+              onChange={(e) => handleVideoFiles(e.target.files)} />
+            <input ref={videoPickRef} type="file" accept="video/*" className="hidden"
+              onChange={(e) => handleVideoFiles(e.target.files)} />
             <div className="inline-flex rounded-md border p-0.5" role="group" aria-label="Capture type">
               <button type="button" aria-pressed={captureMode === "photo"}
                 className={`rounded px-2 py-1 text-sm ${captureMode === "photo" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}
@@ -676,9 +680,14 @@ function ProjectDetail() {
                 </Button>
               </>
             ) : (
-              <Button size="sm" disabled={uploading} onClick={() => setRecorderOpen(true)}>
-                <Video className="mr-1 h-4 w-4" />Record Video
-              </Button>
+              <>
+                <Button size="sm" disabled={uploading} onClick={() => videoCaptureRef.current?.click()}>
+                  <Video className="mr-1 h-4 w-4" />{uploading ? "Uploading…" : "Record Video"}
+                </Button>
+                <Button size="sm" variant="outline" disabled={uploading} onClick={() => videoPickRef.current?.click()}>
+                  Choose Video
+                </Button>
+              </>
             )}
 
           </div>
