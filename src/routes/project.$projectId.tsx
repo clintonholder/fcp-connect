@@ -249,44 +249,83 @@ function ProjectDetail() {
 
 
   // ---- Video upload -------------------------------------------------------
-  const uploadRecording = async (video: RecordedVideo) => {
-    if (!user) throw new Error("Please sign in again to add videos");
-    if (!company) throw new Error("Workspace still loading — try again in a moment");
-    const coords = await new Promise<GeolocationPosition | null>((resolve) => {
-      if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null);
-      let done = false;
-      const finish = (v: GeolocationPosition | null) => { if (!done) { done = true; resolve(v); } };
-      setTimeout(() => finish(null), 6000);
-      try {
-        navigator.geolocation.getCurrentPosition((p) => finish(p), () => finish(null), { enableHighAccuracy: true, timeout: 6000 });
-      } catch { finish(null); }
+  const readVideoDuration = (file: File) =>
+    new Promise<number | null>((resolve) => {
+      const url = URL.createObjectURL(file);
+      const el = document.createElement("video");
+      el.preload = "metadata";
+      const done = (v: number | null) => { URL.revokeObjectURL(url); resolve(v); };
+      el.onloadedmetadata = () => {
+        const d = el.duration;
+        done(Number.isFinite(d) && d > 0 ? d : null);
+      };
+      el.onerror = () => done(null);
+      setTimeout(() => done(null), 8000);
+      el.src = url;
     });
-    const path = `${user.id}/${projectId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${video.extension}`;
-    const { error: upErr } = await supabase.storage.from("job-photos")
-      .upload(path, video.blob, { contentType: video.mimeType, upsert: false });
-    if (upErr) throw new Error(upErr.message);
-    const { data: pub } = supabase.storage.from("job-photos").getPublicUrl(path);
-    const { error: insErr } = await supabase.from("photos").insert({
-      job_id: projectId, user_id: user.id, company_id: company.id,
-      storage_path: path, image_url: pub.publicUrl, phase: uploadPhase || null,
-      media_type: "video", mime_type: video.mimeType, file_size: video.blob.size,
-      duration_seconds: video.durationSeconds,
-      taken_at: new Date().toISOString(),
-      latitude: coords?.coords.latitude ?? null,
-      longitude: coords?.coords.longitude ?? null,
-      accuracy: coords?.coords.accuracy ?? null,
-    });
-    if (insErr) {
-      // Never leave an orphaned file behind when the record could not be saved.
-      await supabase.storage.from("job-photos").remove([path]);
-      throw new Error(insErr.message);
-    }
+
+  const handleVideoFiles = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    const file = files[0];
+    if (!user) { toast.error("Please sign in again to add videos"); return; }
+    if (!company) { toast.error("Workspace still loading — try again in a moment"); return; }
+    if (!file.type.startsWith("video/")) { toast.error("That file isn't a video — pick a video clip."); return; }
+
+    setUploading(true);
     try {
-      await logActivity({ company_id: company.id, job_id: projectId, kind: "video_uploaded", meta: { phase: uploadPhase, duration_seconds: video.durationSeconds } });
-    } catch { /* history entry is not critical */ }
-    await qc.invalidateQueries({ queryKey: ["photos", projectId] });
-    qc.invalidateQueries({ queryKey: ["activity", projectId] });
-    toast.success("Video uploaded");
+      const duration = await readVideoDuration(file);
+      if (duration !== null && duration > MAX_VIDEO_SECONDS + 0.5) {
+        const mins = Math.floor(duration / 60);
+        const secs = Math.round(duration % 60);
+        toast.error(`Videos must be 60 seconds or less — this one is ${mins}:${String(secs).padStart(2, "0")}`);
+        return;
+      }
+
+      const coords = await new Promise<GeolocationPosition | null>((resolve) => {
+        if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null);
+        let done = false;
+        const finish = (v: GeolocationPosition | null) => { if (!done) { done = true; resolve(v); } };
+        setTimeout(() => finish(null), 6000);
+        try {
+          navigator.geolocation.getCurrentPosition((p) => finish(p), () => finish(null), { enableHighAccuracy: true, timeout: 6000 });
+        } catch { finish(null); }
+      });
+
+      const nameExt = file.name.includes(".") ? file.name.split(".").pop()!.toLowerCase() : "";
+      const extension = nameExt || (file.type.split("/")[1] || "mp4").split(";")[0];
+      const path = `${user.id}/${projectId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${extension}`;
+      const { error: upErr } = await supabase.storage.from("job-photos")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (upErr) throw new Error(upErr.message);
+      const { data: pub } = supabase.storage.from("job-photos").getPublicUrl(path);
+      const { error: insErr } = await supabase.from("photos").insert({
+        job_id: projectId, user_id: user.id, company_id: company.id,
+        storage_path: path, image_url: pub.publicUrl, phase: uploadPhase || null,
+        media_type: "video", mime_type: file.type, file_size: file.size,
+        duration_seconds: duration,
+        taken_at: new Date(file.lastModified || Date.now()).toISOString(),
+        latitude: coords?.coords.latitude ?? null,
+        longitude: coords?.coords.longitude ?? null,
+        accuracy: coords?.coords.accuracy ?? null,
+      });
+      if (insErr) {
+        // Never leave an orphaned file behind when the record could not be saved.
+        await supabase.storage.from("job-photos").remove([path]);
+        throw new Error(insErr.message);
+      }
+      try {
+        await logActivity({ company_id: company.id, job_id: projectId, kind: "video_uploaded", meta: { phase: uploadPhase, duration_seconds: duration } });
+      } catch { /* history entry is not critical */ }
+      await qc.invalidateQueries({ queryKey: ["photos", projectId] });
+      qc.invalidateQueries({ queryKey: ["activity", projectId] });
+      toast.success("Video uploaded");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Video upload failed");
+    } finally {
+      setUploading(false);
+      if (videoCaptureRef.current) videoCaptureRef.current.value = "";
+      if (videoPickRef.current) videoPickRef.current.value = "";
+    }
   };
 
   // ---- Batch actions ------------------------------------------------------
