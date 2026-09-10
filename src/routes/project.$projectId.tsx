@@ -897,6 +897,8 @@ function ProjectDetail() {
                       uploader: personName(p.user_id),
                       phase: phaseLabel(p.phase),
                       tags: p.tags,
+                      media_type: p.media_type,
+                      mime_type: p.mime_type,
                     }))}
                   />
                 </Suspense>
