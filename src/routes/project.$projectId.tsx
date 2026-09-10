@@ -875,13 +875,13 @@ function ProjectDetail() {
               <Button variant="outline" size="sm" onClick={() => setMapFilters({ phase: "", uploader: "", since: "" })}>Reset filters</Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              {geoPhotos.length} geotagged photo{geoPhotos.length === 1 ? "" : "s"} shown
-              {noGeoCount > 0 && ` · ${noGeoCount} photo${noGeoCount === 1 ? "" : "s"} have no GPS location and can't be mapped`}
+              {geoPhotos.length} geotagged item{geoPhotos.length === 1 ? "" : "s"} shown
+              {noGeoCount > 0 && ` · ${noGeoCount} item${noGeoCount === 1 ? "" : "s"} have no GPS location and can't be mapped`}
             </p>
             <div className="relative z-0 isolate overflow-hidden rounded-lg border" style={{ height: "50vh" }}>
               {geoPhotos.length === 0 ? (
                 <div className="flex h-full items-center justify-center px-4 text-center text-sm text-muted-foreground">
-                  No geotagged photos for this project yet.
+                  No geotagged photos or videos for this project yet.
                 </div>
               ) : mapReady ? (
                 <Suspense fallback={<div className="flex h-full items-center justify-center text-muted-foreground">Loading map…</div>}>
