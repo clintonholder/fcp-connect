@@ -39,6 +39,12 @@ export function ProjectForm({
   onCancel: () => void;
 }) {
   const set = (patch: Partial<ProjectFormValues>) => onChange({ ...value, ...patch });
+  const { isAdmin, myDivisions } = useMyRoles();
+  // Admins work in any division; everyone else only in the ones assigned to them,
+  // plus whatever the project already carries so existing values are never dropped.
+  const allowed = isAdmin
+    ? (DIVISIONS as readonly string[]).slice()
+    : Array.from(new Set([...myDivisions, ...value.divisions]));
 
   return (
     <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); onSave(); }}>
