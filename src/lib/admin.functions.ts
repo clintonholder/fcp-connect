@@ -82,8 +82,9 @@ export const adminListUsers = createServerFn({ method: "GET" })
           status,
           roles: (userRoles ?? [])
             .filter((r) => r.user_id === p.id)
-            .map((r) => r.app_roles as unknown as { id: string; name: string; is_admin: boolean } | null)
-            .filter((r): r is { id: string; name: string; is_admin: boolean } => !!r),
+            .map((r) => r.app_roles as unknown as { id: string; name: string; is_admin: boolean; is_director: boolean } | null)
+            .filter((r): r is { id: string; name: string; is_admin: boolean; is_director: boolean } => !!r),
+          divisions: (divisions ?? []).filter((d) => d.user_id === p.id).map((d) => d.division).sort(),
         };
       }),
       invitations: invites ?? [],
