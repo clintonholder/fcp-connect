@@ -890,6 +890,8 @@ function ProjectDetail() {
         </CardContent></Card>
       </div>
 
+      <VideoRecorder open={recorderOpen} onClose={() => setRecorderOpen(false)} onUpload={uploadRecording} />
+
       {viewerIndex !== null && filteredPhotos[viewerIndex] && (
         <PhotoViewer
           photos={filteredPhotos}

@@ -22,6 +22,7 @@ export type PhotoDetail = {
   latitude: number | null; longitude: number | null; taken_at: string;
   area_id: string | null; job_id: string; company_id: string; user_id: string;
   storage_path: string; archived_at?: string | null;
+  media_type?: string | null; mime_type?: string | null; duration_seconds?: number | string | null;
 };
 
 export function PhotoViewer({
@@ -88,7 +89,8 @@ export function PhotoViewer({
 
   if (!photo || typeof document === "undefined") return null;
   const editable = canManage(photo);
-  const displayUrl = photo.annotated_image_url ?? photo.image_url;
+  const isVideo = photo.media_type === "video";
+  const displayUrl = isVideo ? photo.image_url : (photo.annotated_image_url ?? photo.image_url);
 
   const save = async () => {
     const { error } = await supabase.from("photos")
@@ -105,7 +107,7 @@ export function PhotoViewer({
   };
 
   const removePhoto = async () => {
-    if (!window.confirm("Delete this photo? It is permanently removed from the photo groups and map.")) return;
+    if (!window.confirm(`Delete this ${photo.media_type === "video" ? "video" : "photo"}? It is permanently removed from the photo groups and map.`)) return;
     const { data, error } = await supabase.from("photos").delete().eq("id", photo.id).select("id");
     if (error) { toast.error(error.message); return; }
     if (!data?.length) { toast.error("You are not allowed to delete this photo"); return; }
@@ -125,7 +127,10 @@ export function PhotoViewer({
       const blob = await res.blob();
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `photo-${photo.id}.jpg`;
+      const ext = isVideo
+        ? (photo.storage_path.split(".").pop() || (photo.mime_type?.split("/")[1] ?? "webm"))
+        : "jpg";
+      a.download = `${isVideo ? "video" : "photo"}-${photo.id}.${ext}`;
       a.click();
       URL.revokeObjectURL(a.href);
       await logActivity({
@@ -185,12 +190,24 @@ export function PhotoViewer({
 
         {/* Image stage */}
         <div className="relative flex min-h-[40vh] flex-1 items-center justify-center bg-black">
-          <img
-            src={displayUrl}
-            alt={photo.caption ?? "Project photo"}
-            className={zoom ? "max-h-[60vh] w-full cursor-zoom-out object-cover md:max-h-[95vh]" : "max-h-[45vh] w-full cursor-zoom-in object-contain md:max-h-[95vh]"}
-            onClick={() => setZoom((z) => !z)}
-          />
+          {isVideo ? (
+            <video
+              key={photo.id}
+              src={displayUrl}
+              controls
+              playsInline
+              preload="metadata"
+              className="max-h-[45vh] w-full object-contain md:max-h-[95vh]"
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            <img
+              src={displayUrl}
+              alt={photo.caption ?? "Project photo"}
+              className={zoom ? "max-h-[60vh] w-full cursor-zoom-out object-cover md:max-h-[95vh]" : "max-h-[45vh] w-full cursor-zoom-in object-contain md:max-h-[95vh]"}
+              onClick={() => setZoom((z) => !z)}
+            />
+          )}
           {photos.length > 1 && (
             <>
               <button aria-label="Previous photo" onClick={prev}
@@ -206,21 +223,24 @@ export function PhotoViewer({
           <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded bg-black/60 px-2 py-0.5 text-xs text-white">
             {index + 1} of {photos.length}
           </span>
-          <button aria-label={zoom ? "Fit image" : "Zoom image"} onClick={() => setZoom((z) => !z)}
+          {!isVideo && <button aria-label={zoom ? "Fit image" : "Zoom image"} onClick={() => setZoom((z) => !z)}
             className="absolute bottom-2 right-2 rounded bg-black/60 p-1.5 text-white hover:bg-black/80">
             {zoom ? <ZoomOut className="h-4 w-4" /> : <ZoomIn className="h-4 w-4" />}
-          </button>
+          </button>}
         </div>
 
         {/* Details */}
         <div className="flex w-full flex-col gap-3 overflow-y-auto p-4 md:max-w-sm">
           <div className="flex items-start justify-between gap-2 pr-14 md:pr-0">
-            <h3 className="text-sm font-semibold">Photo details</h3>
+            <h3 className="text-sm font-semibold">{isVideo ? "Video details" : "Photo details"}</h3>
           </div>
 
           {!editing ? (
             <div className="space-y-2 text-sm">
               <p className="text-muted-foreground">{formatTakenAt(photo.taken_at)}</p>
+              {isVideo && photo.duration_seconds != null && (
+                <p className="text-muted-foreground">Length: {Math.round(Number(photo.duration_seconds))}s</p>
+              )}
               <div className="flex flex-wrap gap-1">
                 <Badge variant="secondary">{phaseLabel(photo.phase)}</Badge>
                 {(photo.tags ?? []).map((t) => <Badge key={t} variant="outline">#{t}</Badge>)}
@@ -277,7 +297,7 @@ export function PhotoViewer({
             )}
             {(canArchive ? canArchive(photo) : editable) && (
               <Button size="sm" variant="outline" className="text-destructive" onClick={removePhoto}>
-                <Trash2 className="h-4 w-4 mr-1" />Delete Photo
+                <Trash2 className="h-4 w-4 mr-1" />Delete {isVideo ? "Video" : "Photo"}
               </Button>
             )}
           </div>
