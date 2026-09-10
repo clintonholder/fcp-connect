@@ -60,7 +60,7 @@ export function ProjectForm({
         <Label htmlFor="p-address">Project address</Label>
         <Input id="p-address" value={value.address} onChange={(e) => set({ address: e.target.value })} />
       </div>
-      <DivisionSelect value={value.divisions} onChange={(divisions) => set({ divisions })} />
+      <DivisionSelect value={value.divisions} allowed={allowed} onChange={(divisions) => set({ divisions })} />
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <Label htmlFor="p-owner">Project manager / owner</Label>
