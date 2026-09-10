@@ -228,6 +228,7 @@ export const adminSaveRole = createServerFn({ method: "POST" })
     id?: string;
     name: string;
     isActive?: boolean;
+    isDirector?: boolean;
     permissions?: Partial<Record<
       "can_add_projects" | "can_edit_projects" | "can_delete_projects"
       | "can_add_photos" | "can_edit_photos" | "can_delete_photos", boolean>>;
@@ -247,18 +248,19 @@ export const adminSaveRole = createServerFn({ method: "POST" })
       const v = data.permissions?.[k];
       if (typeof v === "boolean") perms[k] = v;
     }
+    const director = typeof data.isDirector === "boolean" ? { is_director: data.isDirector } : {};
     if (data.id) {
       const { error } = await db
         .from("app_roles")
-        .update({ name: data.name, ...(data.isActive === undefined ? {} : { is_active: data.isActive }), ...perms })
+        .update({ name: data.name, ...(data.isActive === undefined ? {} : { is_active: data.isActive }), ...director, ...perms })
         .eq("id", data.id);
       if (error) throw new Error(error.message);
-      await audit(context.userId, "role_updated", "role", data.id, { name: data.name, is_active: data.isActive, ...perms });
+      await audit(context.userId, "role_updated", "role", data.id, { name: data.name, is_active: data.isActive, ...director, ...perms });
       return { ok: true };
     }
     const { data: created, error } = await db
       .from("app_roles")
-      .insert({ name: data.name, is_active: true, is_admin: false, ...perms })
+      .insert({ name: data.name, is_active: true, is_admin: false, ...director, ...perms })
       .select()
       .single();
     if (error) throw new Error(error.message);
