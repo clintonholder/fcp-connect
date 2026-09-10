@@ -19,7 +19,9 @@ import {
   adminListUsers, adminListAudit, adminInviteUser, adminResendInvite,
   adminSetUserDisabled, adminSetUserRoles, adminSaveRole,
   adminSendPasswordReset, adminDeleteUser, adminCreateUser, adminUpdateUser,
+  adminSetUserDivisions,
 } from "@/lib/admin.functions";
+import { DIVISIONS } from "@/lib/project-meta";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -66,6 +68,7 @@ function AdminPage() {
   const sendReset = useServerFn(adminSendPasswordReset);
   const deleteUser = useServerFn(adminDeleteUser);
   const updateUser = useServerFn(adminUpdateUser);
+  const setDivisions = useServerFn(adminSetUserDivisions);
   const [busy, setBusy] = useState<string | null>(null);
 
   const [inviteOpen, setInviteOpen] = useState(false);
@@ -74,8 +77,8 @@ function AdminPage() {
 
   const [roleOpen, setRoleOpen] = useState(false);
   const emptyPerms = Object.fromEntries(PERMISSIONS.map((p) => [p.key, true])) as Record<PermissionKey, boolean>;
-  const [roleForm, setRoleForm] = useState<{ id?: string; name: string; permissions: Record<PermissionKey, boolean> }>(
-    { name: "", permissions: emptyPerms },
+  const [roleForm, setRoleForm] = useState<{ id?: string; name: string; isDirector: boolean; permissions: Record<PermissionKey, boolean> }>(
+    { name: "", isDirector: false, permissions: emptyPerms },
   );
 
   const users = useQuery({ queryKey: ["admin-users"], queryFn: () => listUsers({}) });
@@ -164,8 +167,8 @@ function AdminPage() {
 
 
   const roleMut = useMutation({
-    mutationFn: () => saveRole({ data: { id: roleForm.id, name: roleForm.name, permissions: roleForm.permissions } }),
-    onSuccess: () => { toast.success("Role saved"); setRoleOpen(false); setRoleForm({ name: "", permissions: emptyPerms }); refresh(); },
+    mutationFn: () => saveRole({ data: { id: roleForm.id, name: roleForm.name, isDirector: roleForm.isDirector, permissions: roleForm.permissions } }),
+    onSuccess: () => { toast.success("Role saved"); setRoleOpen(false); setRoleForm({ name: "", isDirector: false, permissions: emptyPerms }); refresh(); },
     onError: fail,
   });
 
@@ -236,6 +239,34 @@ function AdminPage() {
                 <div className="mt-1 flex flex-wrap gap-1">
                   {u.roles.length === 0 && <span className="text-xs text-muted-foreground">No role</span>}
                   {u.roles.map((r) => <Badge key={r.id} variant="outline">{r.name}</Badge>)}
+                </div>
+                <div className="mt-2">
+                  <div className="text-xs font-medium text-muted-foreground">Divisions</div>
+                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                    {DIVISIONS.map((d) => (
+                      <label key={d} className="flex items-center gap-1.5 text-xs">
+                        <input
+                          type="checkbox"
+                          className="h-3.5 w-3.5 accent-[hsl(var(--primary))]"
+                          checked={(u.divisions ?? []).includes(d)}
+                          disabled={busy === `div-${u.id}`}
+                          onChange={async (e) => {
+                            const next = e.target.checked
+                              ? [...(u.divisions ?? []), d]
+                              : (u.divisions ?? []).filter((x) => x !== d);
+                            setBusy(`div-${u.id}`);
+                            try {
+                              await setDivisions({ data: { userId: u.id, divisions: next } });
+                              toast.success("Divisions updated");
+                              refresh();
+                            } catch (err) { fail(err); }
+                            finally { setBusy(null); }
+                          }}
+                        />
+                        {d}
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -324,7 +355,7 @@ function AdminPage() {
       <section>
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Roles</h2>
-          <Button size="sm" variant="outline" onClick={() => { setRoleForm({ name: "", permissions: emptyPerms }); setRoleOpen(true); }}>
+          <Button size="sm" variant="outline" onClick={() => { setRoleForm({ name: "", isDirector: false, permissions: emptyPerms }); setRoleOpen(true); }}>
             <Plus className="h-4 w-4 mr-1" />Add role
           </Button>
         </div>
@@ -334,6 +365,7 @@ function AdminPage() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-medium">{r.name}</span>
                 {r.is_admin && <Badge variant="secondary">Administrator</Badge>}
+                {r.is_director && <Badge variant="secondary">Division director</Badge>}
                 {!r.is_active && <Badge variant="outline">Inactive</Badge>}
                 {!r.is_admin && PERMISSIONS.filter((p) => (r as Record<string, unknown>)[p.key] === true).map((p) => (
                   <Badge key={p.key} variant="outline" className="font-normal">{p.label}</Badge>
@@ -344,6 +376,7 @@ function AdminPage() {
                   setRoleForm({
                     id: r.id,
                     name: r.name,
+                    isDirector: r.is_director === true,
                     permissions: Object.fromEntries(
                       PERMISSIONS.map((p) => [p.key, (r as Record<string, unknown>)[p.key] !== false]),
                     ) as Record<PermissionKey, boolean>,
@@ -367,6 +400,18 @@ function AdminPage() {
           <DialogHeader><DialogTitle>{roleForm.id ? "Edit role" : "New role"}</DialogTitle></DialogHeader>
           <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); roleMut.mutate(); }}>
             <div><Label htmlFor="r-name">Role name *</Label><Input id="r-name" required value={roleForm.name} onChange={(e) => setRoleForm({ ...roleForm, name: e.target.value })} /></div>
+            <label className="flex items-start gap-2 rounded-md border p-2 text-sm">
+              <Checkbox
+                checked={roleForm.isDirector}
+                onCheckedChange={(v) => setRoleForm({ ...roleForm, isDirector: v === true })}
+              />
+              <span>
+                Division director
+                <span className="block text-xs text-muted-foreground">
+                  Sees every project in the divisions assigned to them.
+                </span>
+              </span>
+            </label>
             <div>
               <Label>Permissions</Label>
               <p className="mb-2 text-xs text-muted-foreground">Choose what people with this role are allowed to do.</p>
