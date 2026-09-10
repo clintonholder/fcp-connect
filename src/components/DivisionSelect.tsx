@@ -4,21 +4,32 @@ import { Label } from "@/components/ui/label";
 import { DIVISIONS } from "@/lib/project-meta";
 
 export function DivisionSelect({
-  value, onChange, id = "p-divisions",
+  value, onChange, id = "p-divisions", allowed,
 }: {
   value: string[];
   onChange: (v: string[]) => void;
   id?: string;
+  /** Divisions this person may choose. Omit for no restriction. */
+  allowed?: string[];
 }) {
   const toggle = (d: string) =>
     onChange(value.includes(d) ? value.filter((x) => x !== d) : [...value, d]);
+
+  const options = (allowed ?? (DIVISIONS as readonly string[])).filter((d) =>
+    (DIVISIONS as readonly string[]).includes(d),
+  );
 
   return (
     <div>
       <Label htmlFor={id}>Divisions *</Label>
       <div id={id} className="rounded-md border border-input bg-background p-2">
+        {options.length === 0 && (
+          <p className="px-2 py-1 text-sm text-muted-foreground">
+            No divisions are assigned to you yet — ask an administrator to assign one.
+          </p>
+        )}
         <div className="grid gap-1 sm:grid-cols-2">
-          {DIVISIONS.map((d) => (
+          {options.map((d) => (
             <label
               key={d}
               className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-muted"

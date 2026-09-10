@@ -48,11 +48,13 @@ export const adminListUsers = createServerFn({ method: "GET" })
   .handler(async ({ context }) => {
     await assertAdmin(context);
     const db = await admin();
-    const [{ data: profiles }, { data: userRoles }, { data: invites }] = await Promise.all([
+    const [{ data: profiles }, { data: userRoles }, { data: invites }, { data: divisions }] = await Promise.all([
       db.from("profiles").select("id, email, display_name, is_disabled, created_at").order("created_at"),
-      db.from("user_roles").select("user_id, role_id, app_roles(id, name, is_active, is_admin)"),
+      db.from("user_roles").select("user_id, role_id, app_roles(id, name, is_active, is_admin, is_director)"),
       db.from("invitations").select("*").order("created_at", { ascending: false }),
+      db.from("user_divisions").select("user_id, division"),
     ]);
+
 
     const { data: authList } = await db.auth.admin.listUsers({ page: 1, perPage: 1000 });
     const authById = new Map(authList?.users?.map((u) => [u.id, u]) ?? []);
@@ -80,8 +82,9 @@ export const adminListUsers = createServerFn({ method: "GET" })
           status,
           roles: (userRoles ?? [])
             .filter((r) => r.user_id === p.id)
-            .map((r) => r.app_roles as unknown as { id: string; name: string; is_admin: boolean } | null)
-            .filter((r): r is { id: string; name: string; is_admin: boolean } => !!r),
+            .map((r) => r.app_roles as unknown as { id: string; name: string; is_admin: boolean; is_director: boolean } | null)
+            .filter((r): r is { id: string; name: string; is_admin: boolean; is_director: boolean } => !!r),
+          divisions: (divisions ?? []).filter((d) => d.user_id === p.id).map((d) => d.division).sort(),
         };
       }),
       invitations: invites ?? [],
@@ -225,6 +228,7 @@ export const adminSaveRole = createServerFn({ method: "POST" })
     id?: string;
     name: string;
     isActive?: boolean;
+    isDirector?: boolean;
     permissions?: Partial<Record<
       "can_add_projects" | "can_edit_projects" | "can_delete_projects"
       | "can_add_photos" | "can_edit_photos" | "can_delete_photos", boolean>>;
@@ -244,18 +248,19 @@ export const adminSaveRole = createServerFn({ method: "POST" })
       const v = data.permissions?.[k];
       if (typeof v === "boolean") perms[k] = v;
     }
+    const director = typeof data.isDirector === "boolean" ? { is_director: data.isDirector } : {};
     if (data.id) {
       const { error } = await db
         .from("app_roles")
-        .update({ name: data.name, ...(data.isActive === undefined ? {} : { is_active: data.isActive }), ...perms })
+        .update({ name: data.name, ...(data.isActive === undefined ? {} : { is_active: data.isActive }), ...director, ...perms })
         .eq("id", data.id);
       if (error) throw new Error(error.message);
-      await audit(context.userId, "role_updated", "role", data.id, { name: data.name, is_active: data.isActive, ...perms });
+      await audit(context.userId, "role_updated", "role", data.id, { name: data.name, is_active: data.isActive, ...director, ...perms });
       return { ok: true };
     }
     const { data: created, error } = await db
       .from("app_roles")
-      .insert({ name: data.name, is_active: true, is_admin: false, ...perms })
+      .insert({ name: data.name, is_active: true, is_admin: false, ...director, ...perms })
       .select()
       .single();
     if (error) throw new Error(error.message);
@@ -411,5 +416,28 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
       previous_email: current.email,
       display_name: data.displayName,
     });
+    return { ok: true };
+  });
+
+/* --------------------------- user divisions --------------------------- */
+
+/** Replaces the divisions assigned to a user. Administrators only. */
+export const adminSetUserDivisions = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { userId: string; divisions: string[] }) => {
+    if (!d?.userId) throw new Error("Missing user");
+    return { userId: d.userId, divisions: Array.from(new Set((d.divisions ?? []).filter(Boolean))) };
+  })
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const db = await admin();
+    await db.from("user_divisions").delete().eq("user_id", data.userId);
+    if (data.divisions.length) {
+      const { error } = await db
+        .from("user_divisions")
+        .insert(data.divisions.map((division) => ({ user_id: data.userId, division })));
+      if (error) throw new Error(error.message);
+    }
+    await audit(context.userId, "user_divisions_changed", "user", data.userId, { divisions: data.divisions });
     return { ok: true };
   });

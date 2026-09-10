@@ -62,6 +62,7 @@ export type Database = {
           id: string
           is_active: boolean
           is_admin: boolean
+          is_director: boolean
           name: string
           updated_at: string
         }
@@ -76,6 +77,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_admin?: boolean
+          is_director?: boolean
           name: string
           updated_at?: string
         }
@@ -90,6 +92,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           is_admin?: boolean
+          is_director?: boolean
           name?: string
           updated_at?: string
         }
@@ -574,6 +577,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_divisions: {
+        Row: {
+          created_at: string
+          division: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          division: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          division?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -608,6 +632,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_see_job: {
+        Args: { _job_id: string; _user_id: string }
+        Returns: boolean
+      }
       company_role_of: {
         Args: { _company_id: string; _user_id: string }
         Returns: Database["public"]["Enums"]["company_role"]
@@ -627,6 +655,8 @@ export type Database = {
         Args: { _company_id: string; _user_id: string }
         Returns: boolean
       }
+      is_director: { Args: { _user_id: string }; Returns: boolean }
+      my_divisions: { Args: { _user_id: string }; Returns: string[] }
     }
     Enums: {
       company_role: "owner" | "admin" | "member"

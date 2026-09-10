@@ -4,6 +4,8 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { DivisionSelect } from "@/components/DivisionSelect";
 import { TagInput } from "@/components/TagInput";
+import { useMyRoles } from "@/lib/roles";
+import { DIVISIONS } from "@/lib/project-meta";
 
 export type ProjectFormValues = {
   name: string;
@@ -37,6 +39,12 @@ export function ProjectForm({
   onCancel: () => void;
 }) {
   const set = (patch: Partial<ProjectFormValues>) => onChange({ ...value, ...patch });
+  const { isAdmin, myDivisions } = useMyRoles();
+  // Admins work in any division; everyone else only in the ones assigned to them,
+  // plus whatever the project already carries so existing values are never dropped.
+  const allowed = isAdmin
+    ? (DIVISIONS as readonly string[]).slice()
+    : Array.from(new Set([...myDivisions, ...value.divisions]));
 
   return (
     <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); onSave(); }}>
@@ -52,7 +60,7 @@ export function ProjectForm({
         <Label htmlFor="p-address">Project address</Label>
         <Input id="p-address" value={value.address} onChange={(e) => set({ address: e.target.value })} />
       </div>
-      <DivisionSelect value={value.divisions} onChange={(divisions) => set({ divisions })} />
+      <DivisionSelect value={value.divisions} allowed={allowed} onChange={(divisions) => set({ divisions })} />
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <Label htmlFor="p-owner">Project manager / owner</Label>

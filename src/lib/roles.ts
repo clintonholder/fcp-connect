@@ -18,6 +18,7 @@ export type AppRole = {
   name: string;
   is_active: boolean;
   is_admin: boolean;
+  is_director: boolean;
 } & Record<PermissionKey, boolean>;
 
 export type Permissions = Record<PermissionKey, boolean>;
@@ -42,13 +43,29 @@ export function useMyRoles() {
         .filter((r): r is AppRole => !!r && r.is_active);
     },
   });
+
+  const d = useQuery({
+    queryKey: ["my-divisions", user?.id],
+    enabled: !!user?.id,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("user_divisions")
+        .select("division")
+        .eq("user_id", user!.id);
+      if (error) throw error;
+      return (data ?? []).map((x) => x.division).sort();
+    },
+  });
+
   const roles = q.data ?? [];
   const isAdmin = roles.some((r) => r.is_admin);
+  const isDirector = roles.some((r) => r.is_director);
 
-  // Admins always have everything. A user with no role keeps prior access.
-  const can: Permissions =
-    isAdmin || roles.length === 0
-      ? allow(true)
+  // Admins have everything. Someone with no role has nothing until an admin assigns one.
+  const can: Permissions = isAdmin
+    ? allow(true)
+    : roles.length === 0
+      ? allow(false)
       : (Object.fromEntries(
           PERMISSIONS.map((p) => [p.key, roles.some((r) => r[p.key])]),
         ) as Permissions);
@@ -57,7 +74,9 @@ export function useMyRoles() {
     roles,
     roleNames: roles.map((r) => r.name),
     isAdmin,
+    isDirector,
+    myDivisions: d.data ?? [],
     can,
-    loading: q.isLoading,
+    loading: q.isLoading || d.isLoading,
   };
 }

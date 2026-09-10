@@ -83,7 +83,8 @@ function ProjectDetail() {
   } | null>(null);
   useEffect(() => setMapReady(true), []);
 
-  const { data: project } = useQuery({
+  const { data: project, isLoading: projectLoading, isError: projectError } = useQuery({
+    retry: false,
     queryKey: ["project", projectId],
     queryFn: async () => {
       const { data, error } = await supabase.from("jobs").select("*").eq("id", projectId).single();
@@ -558,6 +559,21 @@ function ProjectDetail() {
     setEditOpen(false);
   };
 
+
+  // Someone who isn't on this project (and isn't an admin or a matching director)
+  // cannot read the row at all, so tell them plainly instead of showing a blank page.
+  if (projectError || (!projectLoading && !project)) {
+    return (
+      <div className="mx-auto max-w-lg p-10 text-center">
+        <Building2 className="mx-auto h-10 w-10 text-muted-foreground/50" />
+        <h1 className="mt-3 text-xl font-semibold">Project not available</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          This project doesn't exist, or you're not assigned to it. Ask an administrator if you need access.
+        </p>
+        <Link to="/" className="mt-4 inline-flex text-sm text-primary underline">Back to all projects</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6">
