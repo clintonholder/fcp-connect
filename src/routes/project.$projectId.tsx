@@ -32,7 +32,7 @@ import { ProjectCollaborators } from "@/components/ProjectCollaborators";
 
 import { PHOTO_PHASES, UNPHASED, phaseLabel, formatTakenAt } from "@/lib/photo-meta";
 import { readPhotoExif } from "@/lib/exif";
-import { VideoRecorder, type RecordedVideo } from "@/components/VideoRecorder";
+const MAX_VIDEO_SECONDS = 60;
 
 const ProjectPhotoMap = lazy(() => import("@/components/ProjectPhotoMap"));
 
@@ -69,9 +69,10 @@ function ProjectDetail() {
   const [mapFilters, setMapFilters] = useState({ phase: "", uploader: "", since: "" });
   const fileRef = useRef<HTMLInputElement>(null);
   const pickRef = useRef<HTMLInputElement>(null);
+  const videoCaptureRef = useRef<HTMLInputElement>(null);
+  const videoPickRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [captureMode, setCaptureMode] = useState<"photo" | "video">("photo");
-  const [recorderOpen, setRecorderOpen] = useState(false);
   const [exporting, setExporting] = useState<{ done: number; total: number } | null>(null);
   const [exportReady, setExportReady] = useState<{
     url: string;
@@ -158,8 +159,8 @@ function ProjectDetail() {
   }, [filteredPhotos]);
 
   const mapPhotos = useMemo(() => {
-    // The map only ever shows still photos; videos are excluded entirely.
-    return (photos ?? []).filter((p) => p.media_type !== "video").filter((p) => {
+    // Photos and videos are both mapped when they carry a location.
+    return (photos ?? []).filter((p) => {
       if (mapFilters.phase && phaseLabel(p.phase) !== mapFilters.phase) return false;
       if (mapFilters.uploader && p.user_id !== mapFilters.uploader) return false;
       if (mapFilters.since && new Date(p.taken_at) < new Date(mapFilters.since)) return false;
