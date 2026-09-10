@@ -79,7 +79,17 @@ export default function ProjectPhotoMap({ photos }: { photos: MapPhoto[] }) {
           <Marker key={p.id} position={[p.latitude as number, p.longitude as number]}>
             <Popup>
               <div style={{ minWidth: 170 }}>
-                <img src={p.annotated_image_url ?? p.image_url} alt={p.caption ?? ""} style={{ width: "100%", borderRadius: 4, marginBottom: 4 }} />
+                {p.media_type === "video" ? (
+                  <video
+                    src={p.image_url}
+                    controls
+                    preload="metadata"
+                    playsInline
+                    style={{ width: "100%", borderRadius: 4, marginBottom: 4, background: "#000" }}
+                  />
+                ) : (
+                  <img src={p.annotated_image_url ?? p.image_url} alt={p.caption ?? ""} style={{ width: "100%", borderRadius: 4, marginBottom: 4 }} />
+                )}
                 {p.caption && <div style={{ fontWeight: 600 }}>{p.caption}</div>}
                 {p.phase && <div style={{ fontSize: 12, color: "#555" }}>{p.phase}</div>}
                 <div style={{ fontSize: 11, color: "#777" }}>{new Date(p.taken_at).toLocaleString()}</div>
@@ -88,7 +98,7 @@ export default function ProjectPhotoMap({ photos }: { photos: MapPhoto[] }) {
                   {(p.latitude as number).toFixed(5)}, {(p.longitude as number).toFixed(5)}
                 </div>
                 <a href={p.annotated_image_url ?? p.image_url} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#00338D" }}>
-                  View full photo
+                  {p.media_type === "video" ? "Play full video" : "View full photo"}
                 </a>
               </div>
             </Popup>
