@@ -21,7 +21,9 @@ One migration on the `photos` table:
 - `file_size` — bytes.
 - `duration_seconds` — video length; empty for images.
 
-No new table, no new bucket, no policy change, bucket stays private. If the project-wide file size limit turns out to be below what a 60-second clip needs, the bucket limit is raised — a size setting only, not a visibility change.
+No new table, no new bucket, no policy change, bucket stays private. Storage limits stay as they are unless a real upload test fails on size.
+
+The migration is applied first and the database types refreshed before any code changes, and existing rows are confirmed to read as "image" afterwards.
 
 ## What will be built
 
@@ -41,7 +43,8 @@ No new table, no new bucket, no policy change, bucket stays private. If the proj
 - Unique filenames; if the database insert fails, the just-uploaded file is deleted so nothing is orphaned. Retry keeps the recording in memory.
 
 **Everything that touches media**
-- Gallery cards, viewer, selection, delete (row + file), export/download and the photo map all branch on `media_type`.
+- Image uploads keep their exact current behaviour and additionally record media type "image", the real MIME type and byte size. Video uploads record media type "video", real MIME type, byte size and duration.
+- Gallery cards, signed-link rendering, viewer, selection, delete (row + file), export/download, list refresh after changes, the photo map and the public share page all branch on `media_type` — never on the filename.
 - Cards show a video badge and play icon; the viewer renders a `<video>` with controls while captions, comments, delete, navigation and permissions keep working for both kinds.
 - Export keeps the real extension. Videos carry no embedded location, so they use device location when granted and otherwise read "Location unavailable" — no invented pins.
 
