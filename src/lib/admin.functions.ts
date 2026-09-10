@@ -418,3 +418,26 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
     });
     return { ok: true };
   });
+
+/* --------------------------- user divisions --------------------------- */
+
+/** Replaces the divisions assigned to a user. Administrators only. */
+export const adminSetUserDivisions = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { userId: string; divisions: string[] }) => {
+    if (!d?.userId) throw new Error("Missing user");
+    return { userId: d.userId, divisions: Array.from(new Set((d.divisions ?? []).filter(Boolean))) };
+  })
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const db = await admin();
+    await db.from("user_divisions").delete().eq("user_id", data.userId);
+    if (data.divisions.length) {
+      const { error } = await db
+        .from("user_divisions")
+        .insert(data.divisions.map((division) => ({ user_id: data.userId, division })));
+      if (error) throw new Error(error.message);
+    }
+    await audit(context.userId, "user_divisions_changed", "user", data.userId, { divisions: data.divisions });
+    return { ok: true };
+  });
