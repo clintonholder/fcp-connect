@@ -17,6 +17,9 @@ export const DIVISIONS = [
   "Facilities Maintenance",
 ] as const;
 
+export const DIVISION_LOCK_MSG =
+  "This project includes divisions you are not assigned to. An administrator must restore your division assignment or update the project's divisions.";
+
 export function projectDivisions(p: { divisions?: string[] | null; division?: string | null }): string[] {
   if (p.divisions && p.divisions.length) return p.divisions;
   return p.division ? [p.division] : [];
