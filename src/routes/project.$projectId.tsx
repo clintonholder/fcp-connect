@@ -495,8 +495,8 @@ function ProjectDetail() {
       if (!edit || !project) return;
       if (!edit.name.trim()) throw new Error("Project name is required");
       if (!edit.customer.trim()) throw new Error("Customer name is required");
-      if (edit.divisions.length === 0) throw new Error("Select at least one division");
-      if (!isAdmin && edit.divisions.some((d) => !myDivisions.includes(d))) throw new Error(DIVISION_LOCK_MSG);
+      if (canEditDivisions && edit.divisions.length === 0) throw new Error("Select at least one division");
+      if (canEditDivisions && !isAdmin && edit.divisions.some((d) => !myDivisions.includes(d))) throw new Error(DIVISION_LOCK_MSG);
       const addressChanged = edit.address.trim() !== (project.address ?? "");
       const geo = addressChanged && edit.address.trim() ? await geocodeAddress(edit.address) : null;
       const { error } = await supabase.from("jobs").update({
@@ -504,8 +504,8 @@ function ProjectDetail() {
         customer: edit.customer.trim(),
         client: edit.customer.trim(),
         address: edit.address.trim() || null,
-        division: edit.divisions[0] ?? null,
-        divisions: edit.divisions,
+        ...(canEditDivisions ? { division: edit.divisions[0] ?? null, divisions: edit.divisions } : {}),
+
         tags: edit.tags,
         owner_id: edit.owner_id || null,
         cmic_number: edit.cmic_number.trim() || null,
