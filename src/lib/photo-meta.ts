@@ -5,7 +5,9 @@ export const PHOTO_PHASES = [
   "Completion",
   "Punch List",
   "Warranty",
+  "Checklists",
 ] as const;
+
 
 export type PhotoPhase = (typeof PHOTO_PHASES)[number];
 
