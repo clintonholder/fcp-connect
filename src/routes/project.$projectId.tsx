@@ -939,6 +939,7 @@ function ProjectDetail() {
           <ProjectActivityFeed
             projectId={projectId}
             photos={photos ?? []}
+            onOpenChecklists={() => setTab("checklists")}
             onOpen={(photo, commentId) => {
               setFocusCommentId(commentId);
               const idx = filteredPhotos.findIndex((x) => x.id === photo.id);
