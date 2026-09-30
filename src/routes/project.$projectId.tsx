@@ -7,7 +7,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/lib/auth-context";
 import { useCompany } from "@/lib/company-context";
 import { useMyRoles } from "@/lib/roles";
-import { projectDivisions } from "@/lib/project-meta";
+import { projectDivisions, DIVISION_LOCK_MSG } from "@/lib/project-meta";
 import { buildPhotoZip } from "@/lib/photo-export";
 import { signPhotoUrls } from "@/lib/photo-urls";
 
@@ -92,6 +92,11 @@ function ProjectDetail() {
       return data;
     },
   });
+
+  const divisionLocked = !!project && !isAdmin && !rolesLoading && (() => {
+    const ds = projectDivisions(project);
+    return ds.length === 0 || ds.some((d) => !myDivisions.includes(d));
+  })();
 
   const { data: people } = useQuery({
     queryKey: ["people"],

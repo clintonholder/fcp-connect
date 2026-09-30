@@ -5,7 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { DivisionSelect } from "@/components/DivisionSelect";
 import { TagInput } from "@/components/TagInput";
 import { useMyRoles } from "@/lib/roles";
-import { DIVISIONS } from "@/lib/project-meta";
+import { DIVISIONS, DIVISION_LOCK_MSG } from "@/lib/project-meta";
 
 export type ProjectFormValues = {
   name: string;
@@ -40,14 +40,17 @@ export function ProjectForm({
 }) {
   const set = (patch: Partial<ProjectFormValues>) => onChange({ ...value, ...patch });
   const { isAdmin, myDivisions } = useMyRoles();
-  // Admins work in any division; everyone else only in the ones assigned to them,
-  // plus whatever the project already carries so existing values are never dropped.
-  const allowed = isAdmin
-    ? (DIVISIONS as readonly string[]).slice()
-    : Array.from(new Set([...myDivisions, ...value.divisions]));
+  // Admins work in any division; everyone else only in the ones assigned to them.
+  const allowed = isAdmin ? (DIVISIONS as readonly string[]).slice() : myDivisions;
+  const outOfScope = !isAdmin && value.divisions.some((d) => !myDivisions.includes(d));
 
   return (
-    <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); onSave(); }}>
+    <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (!outOfScope) onSave(); }}>
+      {outOfScope && (
+        <p className="rounded-md border border-destructive/40 bg-destructive/5 p-2 text-sm text-destructive">
+          {DIVISION_LOCK_MSG}
+        </p>
+      )}
       <div>
         <Label htmlFor="p-name">Project name *</Label>
         <Input id="p-name" required value={value.name} onChange={(e) => set({ name: e.target.value })} />
