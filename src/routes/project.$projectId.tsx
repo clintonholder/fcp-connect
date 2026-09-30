@@ -68,6 +68,7 @@ function ProjectDetail() {
   const [soloPhoto, setSoloPhoto] = useState<PhotoDetail | null>(null);
   const [focusCommentId, setFocusCommentId] = useState<string | null>(null);
   const [tab, setTab] = useState("photos");
+  const [focusNoteId, setFocusNoteId] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   
   const [editOpen, setEditOpen] = useState(false);
@@ -347,7 +348,7 @@ function ProjectDetail() {
         .upload(path, file, { contentType: file.type, upsert: false });
       if (upErr) throw new Error(upErr.message);
       const { data: pub } = supabase.storage.from("job-photos").getPublicUrl(path);
-      const { error: insErr } = await supabase.from("photos").insert({
+      const { data: insRow, error: insErr } = await supabase.from("photos").insert({
         job_id: projectId, user_id: user.id, company_id: company.id,
         storage_path: path, image_url: pub.publicUrl, phase: uploadPhase || null,
         media_type: "video", mime_type: file.type, file_size: file.size,
@@ -356,14 +357,14 @@ function ProjectDetail() {
         latitude: coords?.coords.latitude ?? null,
         longitude: coords?.coords.longitude ?? null,
         accuracy: coords?.coords.accuracy ?? null,
-      });
+      }).select("id").single();
       if (insErr) {
         // Never leave an orphaned file behind when the record could not be saved.
         await supabase.storage.from("job-photos").remove([path]);
         throw new Error(insErr.message);
       }
       try {
-        await logActivity({ company_id: company.id, job_id: projectId, kind: "video_uploaded", meta: { phase: uploadPhase, duration_seconds: duration } });
+        await logActivity({ company_id: company.id, job_id: projectId, photo_id: insRow?.id ?? null, kind: "video_uploaded", meta: { phase: uploadPhase, duration_seconds: duration } });
       } catch { /* history entry is not critical */ }
       await qc.invalidateQueries({ queryKey: ["photos", projectId] });
       qc.invalidateQueries({ queryKey: ["activity", projectId] });
@@ -941,6 +942,7 @@ function ProjectDetail() {
             projectId={projectId}
             photos={photos ?? []}
             onOpenChecklists={() => setTab("checklists")}
+            onOpenNote={(id) => { setFocusNoteId(id); setTab("notes"); }}
             onOpen={(photo, commentId) => {
               setFocusCommentId(commentId || null);
               const idx = filteredPhotos.findIndex((x) => x.id === photo.id);
@@ -971,6 +973,7 @@ function ProjectDetail() {
         <TabsContent value="notes" className="mt-0">
           {project && (
             <ProjectNotesTab
+              focusNoteId={focusNoteId}
               projectId={projectId}
               companyId={project.company_id}
               readOnly={!!project.archived_at}
