@@ -247,7 +247,9 @@ export function PhotoMarkupEditor({
     if (tool === "select") { if (d?.id) commit(shapes); return; }
     if (!draft) return;
     const big = draft.kind === "pen" ? draft.points.length > 2
+      : draft.kind === "text" ? true
       : Math.abs(draft.x2 - draft.x1) > 0.01 || Math.abs(draft.y2 - draft.y1) > 0.01;
+
     if (big) commit([...shapes, draft]);
     setDraft(null);
   };
