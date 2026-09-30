@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { DIVISIONS, projectDivisions } from "@/lib/project-meta";
 import { useShowArchived } from "@/lib/show-archived";
+import { useProxy } from "@/lib/proxy-context";
 
 import { toast } from "sonner";
 const mdFmt = new Intl.DateTimeFormat(undefined, { month: "2-digit", day: "2-digit" });
@@ -51,6 +52,7 @@ function ProjectsPage() {
   const { user } = useAuth();
   const { company } = useCompany();
   const { can } = useMyRoles();
+  const { proxy } = useProxy();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -135,7 +137,9 @@ function ProjectsPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const visible = proxy ? new Set(proxy.visibleJobIds) : null;
     return (projects ?? []).filter((p) => {
+      if (visible && !visible.has(p.id)) return false;
       if (!showArchived && p.archived_at) return false;
       if (filters.division && !projectDivisions(p).includes(filters.division)) return false;
       if (filters.tag && !(p.tags ?? []).includes(filters.tag)) return false;
@@ -154,7 +158,7 @@ function ProjectsPage() {
         .filter(Boolean).some((x) => String(x).toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [projects, search, showArchived, people, filters, collaborators, user]);
+  }, [projects, search, showArchived, people, filters, collaborators, user, proxy]);
 
   const activeFilterCount =
     (filters.division ? 1 : 0) + (filters.tag ? 1 : 0) + (filters.person ? 1 : 0) + (filters.scope !== "all" ? 1 : 0);

@@ -477,3 +477,91 @@ export const adminDeleteRole = createServerFn({ method: "POST" })
     await audit(context.userId, "role_deleted", "role", data.roleId, { name: role.name });
     return { ok: true };
   });
+
+/* --------------------------- view as (proxy) --------------------------- */
+
+export type ProxyTarget = {
+  userId: string;
+  name: string;
+  email: string;
+  roles: { id: string; name: string; is_active: boolean; is_admin: boolean; is_director: boolean }[];
+  perms: Record<string, boolean>;
+  divisions: string[];
+  visibleJobIds: string[];
+};
+
+const PERM_COLS = [
+  "can_add_projects",
+  "can_edit_projects",
+  "can_delete_projects",
+  "can_add_photos",
+  "can_edit_photos",
+  "can_delete_photos",
+] as const;
+
+/** Builds the exact role/permission/visibility picture of another user, for admin "View as". */
+export const adminStartProxy = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { userId: string }) => {
+    if (!d?.userId) throw new Error("Missing user");
+    return { userId: d.userId };
+  })
+  .handler(async ({ data, context }): Promise<ProxyTarget> => {
+    await assertAdmin(context);
+    if (data.userId === context.userId) throw new Error("You cannot view the site as yourself.");
+    const db = await admin();
+
+    const { data: profile } = await db
+      .from("profiles")
+      .select("id, display_name, email, is_disabled")
+      .eq("id", data.userId)
+      .maybeSingle();
+    if (!profile) throw new Error("That user no longer exists");
+    if (profile.is_disabled) throw new Error("That account is disabled.");
+
+    const [{ data: ur }, { data: divs }] = await Promise.all([
+      db.from("user_roles").select("app_roles(*)").eq("user_id", data.userId),
+      db.from("user_divisions").select("division").eq("user_id", data.userId),
+    ]);
+
+    type RoleRow = { id: string; name: string; is_active: boolean; is_admin: boolean; is_director: boolean } & Record<string, boolean>;
+    const roles = (ur ?? [])
+      .map((r) => r.app_roles as unknown as RoleRow | null)
+      .filter((r): r is RoleRow => !!r && r.is_active);
+
+    const isTargetAdmin = roles.some((r) => r.is_admin);
+    const perms = Object.fromEntries(
+      PERM_COLS.map((k) => [k, isTargetAdmin ? true : roles.length > 0 && roles.some((r) => !!r[k])]),
+    ) as Record<string, boolean>;
+
+    // Which projects this user can actually open, decided by the database rule.
+    const { data: jobs } = await db.from("jobs").select("id");
+    const visibleJobIds: string[] = [];
+    for (const j of jobs ?? []) {
+      const { data: ok } = await db.rpc("can_see_job", { _job_id: j.id, _user_id: data.userId });
+      if (ok === true) visibleJobIds.push(j.id);
+    }
+
+    await audit(context.userId, "proxy_started", "user", data.userId, {
+      viewed_as: profile.display_name || profile.email,
+    });
+
+    return {
+      userId: data.userId,
+      name: profile.display_name || profile.email || "Someone",
+      email: profile.email ?? "",
+      roles: roles.map((r) => ({ id: r.id, name: r.name, is_active: r.is_active, is_admin: r.is_admin, is_director: r.is_director })),
+      perms,
+      divisions: (divs ?? []).map((d) => d.division).sort(),
+      visibleJobIds,
+    };
+  });
+
+export const adminEndProxy = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { userId: string }) => ({ userId: d?.userId ?? "" }))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    await audit(context.userId, "proxy_ended", "user", data.userId || null, {});
+    return { ok: true };
+  });

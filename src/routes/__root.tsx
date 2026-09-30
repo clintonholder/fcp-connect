@@ -10,6 +10,8 @@ import { Toaster } from "@/components/ui/sonner";
 import { MapPin, LogOut, FolderKanban, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import fcpLogo from "@/assets/fcp-logo.png.asset.json";
+import { ProxyProvider } from "@/lib/proxy-context";
+import { ViewAsBanner } from "@/components/ViewAsBanner";
 
 function NotFoundComponent() {
   return (
@@ -98,11 +100,14 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <CompanyProvider>
-          <Header />
-          <Outlet />
-          <Toaster />
-        </CompanyProvider>
+        <ProxyProvider>
+          <CompanyProvider>
+            <ViewAsBanner />
+            <Header />
+            <Outlet />
+            <Toaster />
+          </CompanyProvider>
+        </ProxyProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

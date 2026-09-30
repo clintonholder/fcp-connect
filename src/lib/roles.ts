@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { useProxy } from "@/lib/proxy-context";
 
 export const PERMISSIONS = [
   { key: "can_add_projects", label: "Add projects" },
@@ -26,9 +27,12 @@ export type Permissions = Record<PermissionKey, boolean>;
 const allow = (v: boolean): Permissions =>
   Object.fromEntries(PERMISSIONS.map((p) => [p.key, v])) as Permissions;
 
-/** The signed-in user's roles, read from the account (never chosen by the user). */
+/** The signed-in user's roles, read from the account (never chosen by the user).
+ *  While an administrator is viewing the site as someone else, this reports that
+ *  person's role, permissions and divisions instead. */
 export function useMyRoles() {
   const { user } = useAuth();
+  const { proxy } = useProxy();
   const q = useQuery({
     queryKey: ["my-roles", user?.id],
     enabled: !!user?.id,
@@ -56,6 +60,22 @@ export function useMyRoles() {
       return (data ?? []).map((x) => x.division).sort();
     },
   });
+
+  if (proxy) {
+    const proxyRoles = proxy.roles.map((r) => ({
+      ...r,
+      ...(Object.fromEntries(PERMISSIONS.map((p) => [p.key, !!proxy.perms[p.key]])) as Permissions),
+    })) as AppRole[];
+    return {
+      roles: proxyRoles,
+      roleNames: proxy.roles.map((r) => r.name),
+      isAdmin: proxy.roles.some((r) => r.is_admin),
+      isDirector: proxy.roles.some((r) => r.is_director),
+      myDivisions: proxy.divisions,
+      can: Object.fromEntries(PERMISSIONS.map((p) => [p.key, !!proxy.perms[p.key]])) as Permissions,
+      loading: false,
+    };
+  }
 
   const roles = q.data ?? [];
   const isAdmin = roles.some((r) => r.is_admin);

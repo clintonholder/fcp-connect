@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { projectDivisions } from "@/lib/project-meta";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useShowArchived } from "@/lib/show-archived";
+import { useProxy } from "@/lib/proxy-context";
 import { useCompany } from "@/lib/company-context";
 import { useAuth } from "@/lib/auth-context";
 import { MapPin, Search, SlidersHorizontal } from "lucide-react";
@@ -41,6 +42,7 @@ function MapPage() {
   const { company } = useCompany();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { proxy } = useProxy();
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState(emptyFilters);
   const [showArchived, setShowArchived] = useShowArchived();
@@ -93,7 +95,9 @@ function MapPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const visible = proxy ? new Set(proxy.visibleJobIds) : null;
     return (projects ?? []).filter((p) => {
+      if (visible && !visible.has(p.id)) return false;
       if (!showArchived && p.archived_at) return false;
       if (filters.division && !projectDivisions(p).includes(filters.division)) return false;
       if (filters.tag && !(p.tags ?? []).includes(filters.tag)) return false;
@@ -108,7 +112,7 @@ function MapPage() {
         .filter(Boolean).some((x) => String(x).toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [projects, filters, search, people, memberships, user, showArchived]);
+  }, [projects, filters, search, people, memberships, user, showArchived, proxy]);
 
   const mappable = filtered.filter((p) => p.latitude != null && p.longitude != null);
   const unmappable = filtered.length - mappable.length;
