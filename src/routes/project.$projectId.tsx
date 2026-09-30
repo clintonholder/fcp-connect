@@ -713,9 +713,11 @@ function ProjectDetail() {
       <Tabs defaultValue="photos" className="mb-2">
         <TabsList className="mb-4" aria-label="Project content">
           <TabsTrigger value="photos" className="focus-visible:ring-2 focus-visible:ring-ring">Media</TabsTrigger>
-          <TabsTrigger value="activity" className="focus-visible:ring-2 focus-visible:ring-ring">Activity</TabsTrigger>
           <TabsTrigger value="checklists" className="focus-visible:ring-2 focus-visible:ring-ring">Checklists</TabsTrigger>
+          <TabsTrigger value="notes" className="focus-visible:ring-2 focus-visible:ring-ring">Notes</TabsTrigger>
+          <TabsTrigger value="activity" className="focus-visible:ring-2 focus-visible:ring-ring">Activity</TabsTrigger>
         </TabsList>
+
         <TabsContent value="photos" className="mt-0">
       {/* Photos */}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
