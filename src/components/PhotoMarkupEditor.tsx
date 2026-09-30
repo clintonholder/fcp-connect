@@ -295,7 +295,11 @@ export function PhotoMarkupEditor({
   if (typeof document === "undefined") return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[10000] flex flex-col bg-black/95" role="dialog" aria-modal="true" aria-label="Photo markup editor">
+    <div className="fixed inset-0 z-[10000] flex flex-col bg-black/95" role="dialog" aria-modal="true" aria-label="Photo markup editor"
+      onClick={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}>
+
       {/* Top bar */}
       <div className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-2">
         <Button size="sm" variant="ghost" className="text-white hover:bg-white/10" onClick={onCancel}>
