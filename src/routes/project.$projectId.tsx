@@ -93,10 +93,30 @@ function ProjectDetail() {
     },
   });
 
-  const divisionLocked = !!project && !isAdmin && !rolesLoading && (() => {
+  const { data: myCollab } = useQuery({
+    enabled: !!user?.id,
+    queryKey: ["my-collab", projectId, user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("project_collaborators")
+        .select("id")
+        .eq("job_id", projectId)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return !!data;
+    },
+  });
+
+  const isProjectOwner =
+    !!project && !!user && (project.owner_id === user.id || project.user_id === user.id);
+  // Only the project manager, creator or an admin may change the divisions.
+  const canEditDivisions = isAdmin || isProjectOwner;
+
+  const divisionLocked = !!project && !isAdmin && !rolesLoading && !isProjectOwner && !myCollab && (() => {
     const ds = projectDivisions(project);
     return ds.length === 0 || ds.some((d) => !myDivisions.includes(d));
   })();
+
 
   const { data: people } = useQuery({
     queryKey: ["people"],
