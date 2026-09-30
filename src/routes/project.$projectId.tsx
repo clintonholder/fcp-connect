@@ -712,7 +712,7 @@ function ProjectDetail() {
         </DialogContent>
       </Dialog>
 
-      <Tabs defaultValue="photos" className="mb-2">
+      <Tabs value={tab} onValueChange={setTab} className="mb-2">
         <TabsList className="mb-4" aria-label="Project content">
           <TabsTrigger value="photos" className="focus-visible:ring-2 focus-visible:ring-ring">Media</TabsTrigger>
           <TabsTrigger value="checklists" className="focus-visible:ring-2 focus-visible:ring-ring">Checklists</TabsTrigger>
