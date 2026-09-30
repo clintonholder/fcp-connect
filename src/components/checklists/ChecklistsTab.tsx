@@ -316,6 +316,19 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
   const pct = items.length ? Math.round((done / items.length) * 100) : 0;
   const visible = hideDone ? items.filter((i) => !i.completed_at) : items;
 
+  /** Completes or reopens a task and records it, plus a milestone when the whole checklist is done. */
+  const toggleItem = async (item: Item, completed: boolean) => {
+    const ok = await run(
+      supabase.from("checklist_items").update({ completed_at: completed ? null : new Date().toISOString() }).eq("id", item.id),
+      completed ? "Task reopened" : "Task completed",
+    );
+    if (!ok) return;
+    log(completed ? "checklist_item_reopened" : "checklist_item_completed", { title: item.title });
+    if (!completed && items.length > 0 && done + 1 === items.length) {
+      log("checklist_completed", { title: checklist.title });
+    }
+  };
+
   const move = async (item: Item, dir: -1 | 1) => {
     const idx = items.findIndex((i) => i.id === item.id);
     const other = items[idx + dir];
