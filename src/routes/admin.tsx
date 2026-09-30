@@ -278,58 +278,13 @@ function AdminPage() {
 
 
 
-      <section aria-labelledby="roles-heading" className="space-y-4">
-        <div className="flex items-center justify-between gap-3">
-          <h2 id="roles-heading" className="text-lg font-semibold">Roles</h2>
-          <Button size="sm" variant="outline" onClick={() => { setRoleForm({ name: "", isDirector: false, permissions: emptyPerms }); setRoleOpen(true); }}>
-            <Plus className="mr-1 h-4 w-4" />Add role
-          </Button>
-        </div>
-
-        <Card>
-          <CardContent className="grid gap-4 p-4 md:grid-cols-2">
-            <section aria-labelledby="administrator-access-heading" className="space-y-2">
-              <h3 id="administrator-access-heading" className="font-medium">Administrator access</h3>
-              <p className="text-sm text-muted-foreground">Administrators have full access; their permissions are not controlled by the matrix.</p>
-              {(roles.data ?? []).filter((r) => r.is_admin).length === 0 && (
-                <p className="text-sm text-muted-foreground">No administrator roles.</p>
-              )}
-              {(roles.data ?? []).filter((r) => r.is_admin).map((r) => (
-                <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm font-medium">{r.name}</span>
-                    <Badge variant="secondary">Administrator</Badge>
-                    {!r.is_active && <Badge variant="outline">Inactive</Badge>}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="ghost" aria-label={`Edit ${r.name}`} onClick={() => openRoleEditor(r)}>
-                      <Pencil className="h-3.5 w-3.5" />
-                    </Button>
-                    <Button size="sm" variant="outline" onClick={async () => {
-                      try { await saveRole({ data: { id: r.id, name: r.name, isActive: !r.is_active } }); toast.success("Role updated"); refresh(); }
-                      catch (e) { fail(e); }
-                    }}>{r.is_active ? "Deactivate" : "Reactivate"}</Button>
-                  </div>
-                </div>
-              ))}
-            </section>
-            <section aria-labelledby="director-access-heading" className="space-y-2">
-              <h3 id="director-access-heading" className="font-medium">Division Director access</h3>
-              <p className="text-sm text-muted-foreground">This separate role flag grants project visibility in assigned divisions, beyond individual action permissions.</p>
-              {(roles.data ?? []).filter((r) => r.is_director).length === 0 ? (
-                <p className="text-sm text-muted-foreground">No Division Director roles.</p>
-              ) : (
-                <ul className="flex flex-wrap gap-2">
-                  {(roles.data ?? []).filter((r) => r.is_director).map((r) => (
-                    <li key={r.id}><Badge variant="secondary">{r.name}{!r.is_active ? " (inactive)" : ""}</Badge></li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          </CardContent>
-        </Card>
-
-        <AdminSection id="manage-roles" title="Manage Roles" level={3}>
+      <div className="space-y-4">
+        <AdminSection id="manage-roles" title="Manage Roles" level={3}
+          actions={
+            <Button size="sm" variant="outline" onClick={() => { setRoleForm({ name: "", isDirector: false, permissions: emptyPerms }); setRoleOpen(true); }}>
+              <Plus className="mr-1 h-4 w-4" />Add role
+            </Button>
+          }>
         <Card>
           <CardContent className="space-y-2 p-3">
             {(roles.data ?? []).filter((r) => !r.is_admin).length === 0 && (
@@ -430,7 +385,7 @@ function AdminPage() {
             </CardContent>
           </Card>
         </AdminSection>
-      </section>
+      </div>
 
       <AdminSection id="users" title="Users">
         <Card><CardContent className="space-y-2 p-3">
@@ -617,6 +572,49 @@ function AdminPage() {
           </ul>
         </CardContent></Card>
       </AdminSection>
+
+      <Card>
+        <CardContent className="grid gap-4 p-4 md:grid-cols-2">
+          <section aria-labelledby="administrator-access-heading" className="space-y-2">
+            <h3 id="administrator-access-heading" className="font-medium">Administrator access</h3>
+            <p className="text-sm text-muted-foreground">Administrators have full access; their permissions are not controlled by the matrix.</p>
+            {(roles.data ?? []).filter((r) => r.is_admin).length === 0 && (
+              <p className="text-sm text-muted-foreground">No administrator roles.</p>
+            )}
+            {(roles.data ?? []).filter((r) => r.is_admin).map((r) => (
+              <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium">{r.name}</span>
+                  <Badge variant="secondary">Administrator</Badge>
+                  {!r.is_active && <Badge variant="outline">Inactive</Badge>}
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="ghost" aria-label={`Edit ${r.name}`} onClick={() => openRoleEditor(r)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={async () => {
+                    try { await saveRole({ data: { id: r.id, name: r.name, isActive: !r.is_active } }); toast.success("Role updated"); refresh(); }
+                    catch (e) { fail(e); }
+                  }}>{r.is_active ? "Deactivate" : "Reactivate"}</Button>
+                </div>
+              </div>
+            ))}
+          </section>
+          <section aria-labelledby="director-access-heading" className="space-y-2">
+            <h3 id="director-access-heading" className="font-medium">Division Director access</h3>
+            <p className="text-sm text-muted-foreground">This separate role flag grants project visibility in assigned divisions, beyond individual action permissions.</p>
+            {(roles.data ?? []).filter((r) => r.is_director).length === 0 ? (
+              <p className="text-sm text-muted-foreground">No Division Director roles.</p>
+            ) : (
+              <ul className="flex flex-wrap gap-2">
+                {(roles.data ?? []).filter((r) => r.is_director).map((r) => (
+                  <li key={r.id}><Badge variant="secondary">{r.name}{!r.is_active ? " (inactive)" : ""}</Badge></li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </CardContent>
+      </Card>
     </div>
   );
 }
