@@ -358,7 +358,8 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
               <div className="w-56">
                 <label htmlFor="cl-assign" className="sr-only">Assign checklist</label>
                 <MemberSelect id="cl-assign" value={checklist.assignee_id} members={members}
-                  onChange={(v) => run(supabase.from("checklists").update({ assignee_id: v }).eq("id", checklist.id), "Assignment saved")} />
+                  onChange={(v) => run(supabase.from("checklists").update({ assignee_id: v }).eq("id", checklist.id), "Assignment saved")
+                    .then((ok) => { if (ok) log("checklist_assigned", { title: checklist.title, person: nameOf(v) }); })} />
               </div>
             ) : <span>{nameOf(checklist.assignee_id) ?? "Unassigned"}</span>}
           </div>
