@@ -67,6 +67,7 @@ function ProjectDetail() {
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [soloPhoto, setSoloPhoto] = useState<PhotoDetail | null>(null);
   const [focusCommentId, setFocusCommentId] = useState<string | null>(null);
+  const [tab, setTab] = useState("photos");
   const [selected, setSelected] = useState<string[]>([]);
   
   const [editOpen, setEditOpen] = useState(false);
