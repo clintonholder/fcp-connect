@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { PhotoDetail } from "@/components/PhotoViewer";
 import { readPhotoExif } from "@/lib/exif";
+import { logActivity } from "@/lib/activity";
 
 /** Photos taken straight from a checklist task land in this project media phase. */
 const CHECKLIST_PHASE = "Checklists";
