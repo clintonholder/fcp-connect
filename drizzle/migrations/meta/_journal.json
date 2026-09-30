@@ -15,6 +15,13 @@
       "when": 1790780282073,
       "tag": "0001_collaborator_project_edit_and_division_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790796984960,
+      "tag": "0002_comments_update_with_check",
+      "breakpoints": true
     }
   ]
 }
