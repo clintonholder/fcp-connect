@@ -237,6 +237,74 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
     return true;
   };
 
+  /** Opens the device camera for a task; the shot is filed under the Checklists phase and attached. */
+  const startCapture = (item: Item) => {
+    captureItem.current = item;
+    captureRef.current?.click();
+  };
+
+  const handleCapturedFile = async (files: FileList | null) => {
+    const file = files?.[0];
+    const item = captureItem.current;
+    captureItem.current = null;
+    if (captureRef.current) captureRef.current.value = "";
+    if (!file || !item) return;
+    setCapturingFor(item.id);
+    const progress = toast.loading("Adding photo…");
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      const userId = u.user?.id;
+      if (!userId) throw new Error("Please sign in again to add photos");
+
+      let exif = { takenAt: null as string | null, latitude: null as number | null, longitude: null as number | null };
+      try { exif = await readPhotoExif(file); } catch { /* metadata is optional */ }
+      // Device location is a fallback only — never block the upload on it.
+      const coords = await new Promise<GeolocationPosition | null>((resolve) => {
+        if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null);
+        let done = false;
+        const finish = (v: GeolocationPosition | null) => { if (!done) { done = true; resolve(v); } };
+        setTimeout(() => finish(null), 6000);
+        try {
+          navigator.geolocation.getCurrentPosition((p) => finish(p), () => finish(null), { enableHighAccuracy: true, timeout: 6000 });
+        } catch { finish(null); }
+      });
+
+      const nameExt = (file.name.split(".").pop() || "").toLowerCase();
+      const ext = /^[a-z0-9]{2,5}$/.test(nameExt) ? nameExt : (file.type.split("/")[1] || "jpg");
+      const path = `${userId}/${checklist.job_id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("job-photos")
+        .upload(path, file, { contentType: file.type || "image/jpeg", upsert: false });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("job-photos").getPublicUrl(path);
+      const hasExifGps = exif.latitude != null && exif.longitude != null;
+
+      const { data: photo, error: insErr } = await supabase.from("photos").insert({
+        job_id: checklist.job_id, user_id: userId, company_id: companyId,
+        storage_path: path, image_url: pub.publicUrl, phase: CHECKLIST_PHASE,
+        media_type: "image", mime_type: file.type || null, file_size: file.size,
+        taken_at: exif.takenAt ?? new Date().toISOString(),
+        latitude: hasExifGps ? exif.latitude : (coords?.coords.latitude ?? null),
+        longitude: hasExifGps ? exif.longitude : (coords?.coords.longitude ?? null),
+        accuracy: hasExifGps ? null : (coords?.coords.accuracy ?? null),
+      }).select("id").single();
+      if (insErr) throw insErr;
+
+      const { error: linkErr } = await supabase.from("checklist_item_photos")
+        .insert({ item_id: item.id, photo_id: photo.id, job_id: checklist.job_id, attached_by: userId });
+      if (linkErr) throw linkErr;
+
+      toast.success("Photo added to the task and the project's Checklists media", { id: progress });
+      await qc.invalidateQueries({ queryKey: ["photos", checklist.job_id] });
+      await refresh();
+    } catch (e) {
+      toast.error(errMsg(e), { id: progress });
+    } finally {
+      setCapturingFor(null);
+    }
+  };
+
+
+
   const items = q.data?.items ?? [];
   const done = items.filter((i) => i.completed_at).length;
   const pct = items.length ? Math.round((done / items.length) * 100) : 0;
