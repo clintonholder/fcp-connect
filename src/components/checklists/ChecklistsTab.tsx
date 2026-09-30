@@ -484,6 +484,11 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
         </div>
       )}
 
+      <input ref={captureRef} type="file" accept="image/*" capture="environment" className="hidden"
+        onChange={(e) => handleCapturedFile(e.target.files)} />
+
+
+
       <ChecklistDialog open={editOpen} onOpenChange={setEditOpen} members={members} initial={checklist}
         onSave={async (v) => {
           const { error } = await supabase.from("checklists").update(v).eq("id", checklist.id);
