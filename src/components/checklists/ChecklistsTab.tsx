@@ -409,7 +409,7 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
                   </button>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`font-semibold ${completed ? "line-through" : ""}`}>{item.title}</span>
+                      <span className="font-semibold">{item.title}</span>
                       {assignee && <span className="text-xs text-muted-foreground">· {assignee}</span>}
                       {item.photos_required && <Badge variant="outline" className="text-xs"><Camera className="mr-1 h-3 w-3" />Photos required</Badge>}
                     </div>
