@@ -26,6 +26,7 @@ import { logActivity } from "@/lib/activity";
 import { PhotoViewer, type PhotoDetail } from "@/components/PhotoViewer";
 import { ProjectActivityFeed } from "@/components/ProjectActivityFeed";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ChecklistsTab } from "@/components/checklists/ChecklistsTab";
 
 import { formatDistanceToNow } from "date-fns";
 import { geocodeAddress } from "@/lib/geocode";
@@ -137,6 +138,17 @@ function ProjectDetail() {
     const p = (people ?? []).find((x) => x.id === id);
     return p?.display_name || p?.email || "Unknown";
   };
+
+  const { data: collabIds } = useQuery({
+    queryKey: ["collab-ids", projectId],
+    queryFn: async () => {
+      const { data } = await supabase.from("project_collaborators").select("user_id").eq("job_id", projectId);
+      return (data ?? []).map((r) => r.user_id);
+    },
+  });
+  const checklistMembers = Array.from(new Set([...(project?.owner_id ? [project.owner_id] : []), ...(collabIds ?? [])]))
+    .map((id) => ({ id, name: personName(id) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const { data: photos, isLoading: photosLoading, isError: photosError } = useQuery({
     queryKey: ["photos", projectId],
@@ -702,6 +714,7 @@ function ProjectDetail() {
         <TabsList className="mb-4" aria-label="Project content">
           <TabsTrigger value="photos" className="focus-visible:ring-2 focus-visible:ring-ring">Media</TabsTrigger>
           <TabsTrigger value="activity" className="focus-visible:ring-2 focus-visible:ring-ring">Activity</TabsTrigger>
+          <TabsTrigger value="checklists" className="focus-visible:ring-2 focus-visible:ring-ring">Checklists</TabsTrigger>
         </TabsList>
         <TabsContent value="photos" className="mt-0">
       {/* Photos */}
@@ -929,6 +942,25 @@ function ProjectDetail() {
               else setSoloPhoto(photo);
             }}
           />
+        </TabsContent>
+        <TabsContent value="checklists" className="mt-0">
+          {project && (
+            <ChecklistsTab
+              projectId={projectId}
+              companyId={project.company_id}
+              canEdit={can.can_edit_projects && !divisionLocked}
+              canAttach={can.can_add_photos}
+              readOnly={!!project.archived_at}
+              members={checklistMembers}
+              photos={photos ?? []}
+              onOpenPhoto={(photo) => {
+                setFocusCommentId(null);
+                const idx = filteredPhotos.findIndex((x) => x.id === photo.id);
+                if (idx >= 0) setViewerIndex(idx);
+                else setSoloPhoto(photo);
+              }}
+            />
+          )}
         </TabsContent>
       </Tabs>
 
