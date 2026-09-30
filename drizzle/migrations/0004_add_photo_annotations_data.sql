@@ -1,0 +1,2 @@
+ALTER TABLE public.photos ADD COLUMN IF NOT EXISTS annotations_data jsonb;
+COMMENT ON COLUMN public.photos.annotations_data IS 'Re-editable vector markup shapes (normalized coordinates) rendered into annotated_image_url.';
