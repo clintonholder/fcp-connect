@@ -306,9 +306,22 @@ export function PhotoViewer({
               </button>
             </>
           )}
+          {hasMarkup && (
+            <div className="absolute left-2 top-2 flex overflow-hidden rounded-full bg-black/70 text-xs text-white">
+              <button type="button" aria-pressed={!showOriginal} onClick={() => setShowOriginal(false)}
+                className={`px-3 py-1 outline-none focus-visible:ring-2 focus-visible:ring-white ${!showOriginal ? "bg-white text-black" : ""}`}>
+                Marked up
+              </button>
+              <button type="button" aria-pressed={showOriginal} onClick={() => setShowOriginal(true)}
+                className={`px-3 py-1 outline-none focus-visible:ring-2 focus-visible:ring-white ${showOriginal ? "bg-white text-black" : ""}`}>
+                Original
+              </button>
+            </div>
+          )}
           <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded bg-black/60 px-2 py-0.5 text-xs text-white">
             {index + 1} of {photos.length}
           </span>
+
           {!isVideo && <button aria-label={zoom ? "Fit image" : "Zoom image"} onClick={() => setZoom((z) => !z)}
             className="absolute bottom-2 right-2 rounded bg-black/60 p-1.5 text-white hover:bg-black/80">
             {zoom ? <ZoomOut className="h-4 w-4" /> : <ZoomIn className="h-4 w-4" />}
