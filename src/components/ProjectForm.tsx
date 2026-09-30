@@ -29,7 +29,7 @@ const selectClass =
   "w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 export function ProjectForm({
-  value, onChange, people, saving, onSave, onCancel,
+  value, onChange, people, saving, onSave, onCancel, canEditDivisions = true,
 }: {
   value: ProjectFormValues;
   onChange: (v: ProjectFormValues) => void;
@@ -37,12 +37,14 @@ export function ProjectForm({
   saving: boolean;
   onSave: () => void;
   onCancel: () => void;
+  /** Only the project manager, creator or an admin may change divisions. */
+  canEditDivisions?: boolean;
 }) {
   const set = (patch: Partial<ProjectFormValues>) => onChange({ ...value, ...patch });
   const { isAdmin, myDivisions } = useMyRoles();
   // Admins work in any division; everyone else only in the ones assigned to them.
   const allowed = isAdmin ? (DIVISIONS as readonly string[]).slice() : myDivisions;
-  const outOfScope = !isAdmin && value.divisions.some((d) => !myDivisions.includes(d));
+  const outOfScope = canEditDivisions && !isAdmin && value.divisions.some((d) => !myDivisions.includes(d));
 
   return (
     <form className="space-y-3" onSubmit={(e) => { e.preventDefault(); if (!outOfScope) onSave(); }}>
@@ -63,7 +65,24 @@ export function ProjectForm({
         <Label htmlFor="p-address">Project address</Label>
         <Input id="p-address" value={value.address} onChange={(e) => set({ address: e.target.value })} />
       </div>
-      <DivisionSelect value={value.divisions} allowed={allowed} onChange={(divisions) => set({ divisions })} />
+      {canEditDivisions ? (
+        <DivisionSelect value={value.divisions} allowed={allowed} onChange={(divisions) => set({ divisions })} />
+      ) : (
+        <div>
+          <Label>Divisions</Label>
+          <div className="rounded-md border border-input bg-muted/40 p-2">
+            <div className="flex flex-wrap gap-1">
+              {value.divisions.length === 0
+                ? <span className="text-sm text-muted-foreground">None</span>
+                : value.divisions.map((d) => <Badge key={d} variant="secondary">{d}</Badge>)}
+            </div>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Only the project manager, the project creator or an administrator can change divisions.
+          </p>
+        </div>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <Label htmlFor="p-owner">Project manager / owner</Label>
