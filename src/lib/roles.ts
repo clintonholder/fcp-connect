@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { useProxy } from "@/lib/proxy-context";
 
 export const PERMISSIONS = [
   { key: "can_add_projects", label: "Add projects" },
