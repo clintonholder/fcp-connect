@@ -23,7 +23,9 @@ export type PhotoDetail = {
   area_id: string | null; job_id: string; company_id: string; user_id: string;
   storage_path: string; archived_at?: string | null;
   media_type?: string | null; mime_type?: string | null; duration_seconds?: number | string | null;
+  annotations_data?: unknown; annotated_storage_path?: string | null;
 };
+
 
 export function PhotoViewer({
   photos, index, onIndexChange, onClose, uploaderName, canManage, canArchive, focusCommentId,
