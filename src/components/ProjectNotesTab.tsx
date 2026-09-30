@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -29,6 +29,11 @@ export function ProjectNotesTab({ projectId, companyId, readOnly, focusNoteId }:
   readOnly: boolean;
 }) {
   const qc = useQueryClient();
+  const [loadedNotes, setLoadedNotes] = useState(0);
+  useEffect(() => {
+    if (!focusNoteId || !loadedNotes) return;
+    document.getElementById(`note-${focusNoteId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusNoteId, loadedNotes]);
   const { user } = useAuth();
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
@@ -135,6 +140,7 @@ export function ProjectNotesTab({ projectId, companyId, readOnly, focusNoteId }:
         </div>
       ) : (
         <div className="space-y-2">
+          {loadedNotes !== notes.length && setTimeout(() => setLoadedNotes(notes.length), 0) && null}
           {notes.map((n) => {
             const mine = n.user_id === user?.id;
             const edited = n.updated_at !== n.created_at;
