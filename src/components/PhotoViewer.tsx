@@ -53,7 +53,10 @@ export function PhotoViewer({
   const [comment, setComment] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
+  const [markupOpen, setMarkupOpen] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
   const touchX = useRef<number | null>(null);
+
 
   useEffect(() => {
     if (!photo) return;
