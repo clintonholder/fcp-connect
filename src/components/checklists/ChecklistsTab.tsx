@@ -132,6 +132,7 @@ export function ChecklistsTab({
             .select("id").single();
           if (error) throw error;
           toast.success("Checklist created");
+          void logActivity({ company_id: companyId, job_id: projectId, kind: "checklist_created", meta: { title: v.title } });
           await qc.invalidateQueries({ queryKey: ["checklists", projectId] });
           setOpenId(data.id);
         }} />
