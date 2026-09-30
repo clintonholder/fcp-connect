@@ -42,6 +42,7 @@ function MapPage() {
   const { company } = useCompany();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { proxy } = useProxy();
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState(emptyFilters);
   const [showArchived, setShowArchived] = useShowArchived();
@@ -111,7 +112,7 @@ function MapPage() {
         .filter(Boolean).some((x) => String(x).toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [projects, filters, search, people, memberships, user, showArchived]);
+  }, [projects, filters, search, people, memberships, user, showArchived, proxy]);
 
   const mappable = filtered.filter((p) => p.latitude != null && p.longitude != null);
   const unmappable = filtered.length - mappable.length;
