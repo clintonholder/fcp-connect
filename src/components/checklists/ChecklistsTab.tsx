@@ -75,8 +75,9 @@ export function ChecklistsTab({
   if (openId) {
     const cl = q.data?.lists.find((l) => l.id === openId);
     if (cl) return (
-      <ChecklistDetail checklist={cl} canEdit={edit} canWork={!readOnly} canAttach={canAttach && !readOnly}
+      <ChecklistDetail checklist={cl} companyId={companyId} canEdit={edit} canWork={!readOnly} canAttach={canAttach && !readOnly}
         members={members} photos={photos} onOpenPhoto={onOpenPhoto} onBack={() => setOpenId(null)} />
+
     );
   }
 
