@@ -550,6 +550,7 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
               }
             }
             toast.success(itemDialog.item ? "Task saved" : "Task added");
+            if (!itemDialog.item) log("checklist_item_added", { title: v.title });
             await refresh();
           }} />
       )}
