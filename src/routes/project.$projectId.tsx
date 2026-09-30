@@ -369,8 +369,8 @@ function ProjectDetail() {
   const batchDelete = async () => {
     const allowed = selectedPhotos.filter(canArchivePhoto);
     const blocked = selectedPhotos.length - allowed.length;
-    if (!allowed.length) { toast.error("You are not allowed to delete the selected photos"); return; }
-    if (!window.confirm(`Delete ${allowed.length} photo${allowed.length === 1 ? "" : "s"}? They are permanently removed from the photo groups, counts and photo map.`)) return;
+    if (!allowed.length) { toast.error("You are not allowed to delete the selected media"); return; }
+    if (!window.confirm(`Delete ${allowed.length === 1 ? "this media item" : `these ${allowed.length} media items`}? ${allowed.length === 1 ? "It is" : "They are"} permanently removed from the project gallery, counts and map.`)) return;
     const { data, error } = await supabase.from("photos")
       .delete().in("id", allowed.map((p) => p.id)).select("id");
     if (error) { toast.error(error.message); return; }
@@ -386,11 +386,11 @@ function ProjectDetail() {
     qc.invalidateQueries({ queryKey: ["activity", projectId] });
     setSelected([]);
     if (failed.length || blocked) toast.warning(`${done.length} deleted · ${failed.length + blocked} could not be deleted`);
-    else toast.success(`${done.length} photo${done.length === 1 ? "" : "s"} deleted`);
+    else toast.success(`${done.length} media item${done.length === 1 ? "" : "s"} deleted`);
   };
 
   const batchExport = async () => {
-    if (!selectedPhotos.length) { toast.error("Select at least one photo to export"); return; }
+    if (!selectedPhotos.length) { toast.error("Select at least one media item to export"); return; }
     setExportReady(null);
     setExporting({ done: 0, total: selectedPhotos.length });
     try {
@@ -399,7 +399,7 @@ function ProjectDetail() {
         project as never,
         (done, total) => setExporting({ done, total }),
       );
-      if (!blob) { toast.error("No photos could be exported"); return; }
+      if (!blob) { toast.error("No media could be exported"); return; }
       setExportReady((previous) => {
         if (previous) URL.revokeObjectURL(previous.url);
         return {
@@ -410,7 +410,7 @@ function ProjectDetail() {
         count: ok,
         };
       });
-      if (failed.length) toast.warning(`${ok} photo${ok === 1 ? "" : "s"} ready · ${failed.length} failed. Click Download ZIP.`);
+      if (failed.length) toast.warning(`${ok} media item${ok === 1 ? "" : "s"} ready · ${failed.length} failed. Click Download ZIP.`);
       else toast.success(`${fileName} is ready. Click Download ZIP.`);
     } catch (e) {
       toast.error((e as Error).message || "Export failed");
@@ -444,7 +444,7 @@ function ProjectDetail() {
 
   const batchApplyPhase = async (value: string) => {
     const allowed = selectedPhotos.filter(canEditPhoto);
-    if (!allowed.length) { toast.error("You are not allowed to edit the selected photos"); return; }
+    if (!allowed.length) { toast.error("You are not allowed to edit the selected media"); return; }
     const { error } = await supabase.from("photos").update({ phase: value || null }).in("id", allowed.map((p) => p.id));
     if (error) { toast.error(error.message); return; }
     await logActivity({
@@ -453,15 +453,15 @@ function ProjectDetail() {
     });
     qc.invalidateQueries({ queryKey: ["photos", projectId] });
     setSelected([]);
-    toast.success(`Phase applied to ${allowed.length} photo${allowed.length === 1 ? "" : "s"}`);
+    toast.success(`Phase applied to ${allowed.length} media item${allowed.length === 1 ? "" : "s"}`);
   };
 
   const batchApplyTag = async () => {
-    const raw = window.prompt("Tag to apply to the selected photos");
+    const raw = window.prompt("Tag to apply to the selected media");
     const tag = raw?.trim().toLowerCase();
     if (!tag) return;
     const allowed = selectedPhotos.filter(canEditPhoto);
-    if (!allowed.length) { toast.error("You are not allowed to edit the selected photos"); return; }
+    if (!allowed.length) { toast.error("You are not allowed to edit the selected media"); return; }
     const failed: string[] = [];
     for (const p of allowed) {
       const tags = Array.from(new Set([...(p.tags ?? []), tag]));
@@ -654,7 +654,7 @@ function ProjectDetail() {
               disabled={deleteProject.isPending}
               onClick={() => {
                 if (!window.confirm(
-                  `Permanently delete "${project?.name}"?\n\nThis cannot be undone. Every photo, photo location, comment, collaborator and history record for this project is destroyed.\n\nUse Archive instead if you only want to hide it.`,
+                  `Permanently delete "${project?.name}"?\n\nThis cannot be undone. Every media item, location, comment, collaborator and history record for this project is destroyed.\n\nUse Archive instead if you only want to hide it.`,
                 )) return;
                 const typed = window.prompt('Type DELETE to permanently remove this project.');
                 if (typed?.trim().toUpperCase() !== "DELETE") { toast.info("Deletion cancelled"); return; }
@@ -772,7 +772,7 @@ function ProjectDetail() {
       {filteredPhotos.length > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-3 rounded-md border bg-muted/40 p-2 text-sm">
           <label className="flex items-center gap-2 font-medium">
-            <Checkbox checked={allVisibleSelected} aria-label="Select all photos"
+            <Checkbox checked={allVisibleSelected} aria-label="Select all media"
               onCheckedChange={(v) => setSelected(v ? filteredPhotos.map((p) => p.id) : [])} />
             Select all ({filteredPhotos.length})
           </label>
@@ -795,7 +795,7 @@ function ProjectDetail() {
               {can.can_edit_photos && (
                 <>
                   <select className="rounded-md border border-input bg-background px-2 py-1 text-sm" defaultValue=""
-                    aria-label="Apply phase to selected photos"
+                    aria-label="Apply phase to selected media"
                     onChange={(e) => { if (e.target.value) { batchApplyPhase(e.target.value); e.target.value = ""; } }}>
                     <option value="">Apply phase…</option>
                     {PHOTO_PHASES.map((p) => <option key={p} value={p}>{p}</option>)}
@@ -805,7 +805,7 @@ function ProjectDetail() {
               )}
               {can.can_delete_photos && (
                 <Button size="sm" variant="outline" className="text-destructive" onClick={batchDelete}>
-                  <Trash2 className="mr-1 h-4 w-4" />Delete Photo{selected.length === 1 ? "" : "s"}
+                  <Trash2 className="mr-1 h-4 w-4" />Delete media
                 </Button>
               )}
             </>
@@ -839,7 +839,7 @@ function ProjectDetail() {
                     <div className="mb-3 flex flex-wrap items-center gap-2">
                       <label className="flex items-center gap-2">
                         <Checkbox
-                          aria-label={`Select all ${group.name} photos`}
+                          aria-label={`Select all ${group.name} media`}
                           checked={allGroupSelected ? true : groupSelectedCount > 0 ? "indeterminate" : false}
                           onCheckedChange={() => setGroupSelected(ids, !allGroupSelected)}
                         />
@@ -885,7 +885,7 @@ function ProjectDetail() {
                           onClick={(e) => e.stopPropagation()}
                         >
                           <Checkbox
-                            aria-label="Select photo"
+                            aria-label={p.media_type === "video" ? "Select video" : "Select photo"}
                             checked={selected.includes(p.id)}
                             onCheckedChange={() => toggleSelect(p.id)}
                           />
@@ -979,9 +979,9 @@ function ProjectDetail() {
                 photo_annotated: "annotated a photo",
                 photo_updated: "updated photo details",
                 comment_added: "commented on a photo",
-                photo_deleted: "deleted a photo",
-                photo_archived: "archived photos",
-                photo_exported: "exported photos",
+                photo_deleted: "deleted media",
+                photo_archived: "archived media",
+                photo_exported: "exported media",
               };
               return (
                 <li key={e.id} className="flex justify-between gap-2 text-sm">
