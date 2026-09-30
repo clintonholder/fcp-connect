@@ -33,7 +33,10 @@ const ALIASES: Record<string, PhotoPhase> = {
   punchlist: "Punch List",
   punch: "Punch List",
   warranty: "Warranty",
+  checklists: "Checklists",
+  checklist: "Checklists",
 };
+
 
 /** Maps any stored phase value onto the canonical display labels. */
 export function normalizePhase(value: string | null | undefined): PhotoPhase | null {
