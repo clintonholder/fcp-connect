@@ -88,6 +88,7 @@ export function ProjectNotesTab({ projectId, companyId, readOnly }: {
     const { error } = await supabase.from("project_notes").delete().eq("id", id);
     if (error) return toast.error(errMsg(error));
     toast.success("Note deleted");
+    void logActivity({ company_id: companyId, job_id: projectId, kind: "note_deleted" });
     refresh();
   }
 
