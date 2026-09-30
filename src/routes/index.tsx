@@ -52,6 +52,7 @@ function ProjectsPage() {
   const { user } = useAuth();
   const { company } = useCompany();
   const { can } = useMyRoles();
+  const { proxy } = useProxy();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
