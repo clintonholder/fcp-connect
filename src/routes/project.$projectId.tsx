@@ -942,7 +942,7 @@ function ProjectDetail() {
             photos={photos ?? []}
             onOpenChecklists={() => setTab("checklists")}
             onOpen={(photo, commentId) => {
-              setFocusCommentId(commentId);
+              setFocusCommentId(commentId || null);
               const idx = filteredPhotos.findIndex((x) => x.id === photo.id);
               if (idx >= 0) setViewerIndex(idx);
               else setSoloPhoto(photo);
