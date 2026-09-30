@@ -22,7 +22,8 @@ type Note = {
 
 const errMsg = (e: unknown) => (e as { message?: string })?.message ?? "Something went wrong";
 
-export function ProjectNotesTab({ projectId, companyId, readOnly }: {
+export function ProjectNotesTab({ projectId, companyId, readOnly, focusNoteId }: {
+  focusNoteId?: string | null;
   projectId: string;
   companyId: string;
   readOnly: boolean;
@@ -59,16 +60,18 @@ export function ProjectNotesTab({ projectId, companyId, readOnly }: {
     const body = draft.trim();
     if (!body) return;
     setSaving(true);
-    const { error } = await supabase
+    const { data: row, error } = await supabase
       .from("project_notes")
-      .insert({ job_id: projectId, company_id: companyId, body });
+      .insert({ job_id: projectId, company_id: companyId, body })
+      .select("id")
+      .single();
     setSaving(false);
     if (error) return toast.error(errMsg(error));
     setDraft("");
     toast.success("Note added");
     void logActivity({
       company_id: companyId, job_id: projectId, kind: "note_added",
-      meta: { preview: body.length > 80 ? `${body.slice(0, 80)}…` : body },
+      meta: { note_id: row?.id, preview: body.length > 80 ? `${body.slice(0, 80)}…` : body },
     });
     refresh();
   }
@@ -136,7 +139,7 @@ export function ProjectNotesTab({ projectId, companyId, readOnly }: {
             const mine = n.user_id === user?.id;
             const edited = n.updated_at !== n.created_at;
             return (
-              <Card key={n.id} className="p-3">
+              <Card key={n.id} id={`note-${n.id}`} className={`p-3 ${focusNoteId === n.id ? "ring-2 ring-primary" : ""}`}>
                 {editId === n.id ? (
                   <div className="space-y-2">
                     <Textarea value={editBody} onChange={(e) => setEditBody(e.target.value)} rows={3} aria-label="Edit note" />

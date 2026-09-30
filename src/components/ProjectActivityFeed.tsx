@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useMyRoles } from "@/lib/roles";
-import { formatDistanceToNow, format } from "date-fns";
+import { formatDistanceToNow, format, isToday } from "date-fns";
 import {
   MessageSquare, Play, ImageOff, AlertTriangle, ClipboardList, Camera,
   Users, StickyNote, FolderCog, Activity as ActivityIcon, Trash2,
@@ -11,6 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { PhotoDetail } from "@/components/PhotoViewer";
+
+const whenLabel = (d: Date) =>
+  isToday(d) ? formatDistanceToNow(d, { addSuffix: true }) : format(d, "MM/dd/yy");
 
 type Category = "comments" | "checklists" | "media" | "team" | "notes" | "project";
 
@@ -22,6 +25,7 @@ type Entry = {
   text: string;
   photoId?: string | null;
   commentId?: string | null;
+  noteId?: string | null;
   isComment: boolean;
 };
 
@@ -109,12 +113,13 @@ function describe(kind: string, meta: Meta): string {
 }
 
 export function ProjectActivityFeed({
-  projectId, photos, onOpen, onOpenChecklists,
+  projectId, photos, onOpen, onOpenChecklists, onOpenNote,
 }: {
   projectId: string;
   photos: PhotoDetail[];
   onOpen: (photo: PhotoDetail, commentId: string) => void;
   onOpenChecklists?: () => void;
+  onOpenNote?: (noteId: string) => void;
 }) {
   const [filter, setFilter] = useState<Category | "all">("all");
 
@@ -156,6 +161,7 @@ export function ProjectActivityFeed({
         text: describe(x.kind, (x.meta ?? {}) as Meta),
         photoId: x.photo_id,
         commentId: null,
+        noteId: x.kind === "note_added" ? ((x.meta as Meta | null)?.["note_id"] as string | undefined) ?? null : null,
         isComment: false,
       }));
       return [...fromComments, ...fromEvents].sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -240,9 +246,10 @@ export function ProjectActivityFeed({
             const showThumb = entry.isComment || !!photo;
             const isVideo = photo?.media_type === "video";
             const when = new Date(entry.createdAt);
-            const clickable = !!photo || (entry.category === "checklists" && !!onOpenChecklists);
+            const clickable = !!photo || (!!entry.noteId && !!onOpenNote) || (entry.category === "checklists" && !!onOpenChecklists);
             const open = () => {
               if (photo) onOpen(photo, entry.commentId ?? "");
+              else if (entry.noteId) onOpenNote?.(entry.noteId);
               else if (entry.category === "checklists") onOpenChecklists?.();
             };
             const body = (
@@ -270,7 +277,7 @@ export function ProjectActivityFeed({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
                     <span className="font-medium text-foreground">{entry.author}</span>
-                    <time dateTime={entry.createdAt} title={format(when, "PPpp")}>{formatDistanceToNow(when, { addSuffix: true })}</time>
+                    <time dateTime={entry.createdAt} title={format(when, "PPpp")}>{whenLabel(when)}</time>
                     <Badge variant="secondary" className="text-[10px]">{meta.label}</Badge>
                     {showThumb && photo?.phase && <Badge variant="outline" className="text-[10px]">{photo.phase}</Badge>}
                     {showThumb && isVideo && <Badge variant="outline" className="text-[10px]">Video</Badge>}
@@ -284,7 +291,7 @@ export function ProjectActivityFeed({
               <li key={entry.id} className="flex items-start gap-1">
                 {clickable ? (
                   <button type="button" onClick={open}
-                    aria-label={`${entry.author} ${entry.isComment ? "commented" : ""} ${formatDistanceToNow(when, { addSuffix: true })}: ${entry.text}`}
+                    aria-label={`${entry.author} ${entry.isComment ? "commented" : ""} ${whenLabel(when)}: ${entry.text}`}
                     className="flex w-full gap-3 rounded-lg border bg-card p-3 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
                     {body}
                   </button>
