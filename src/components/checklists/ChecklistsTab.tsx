@@ -231,6 +231,10 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
     qc.invalidateQueries({ queryKey: key }),
     qc.invalidateQueries({ queryKey: ["checklists", checklist.job_id] }),
   ]);
+  /** Records a checklist event on the project activity feed. */
+  const log = (kind: string, meta?: Record<string, unknown>) =>
+    void logActivity({ company_id: companyId, job_id: checklist.job_id, kind, meta });
+
   const run = async (p: PromiseLike<{ error: unknown }>, ok?: string) => {
     const { error } = await p;
     if (error) { toast.error(errMsg(error)); return false; }
