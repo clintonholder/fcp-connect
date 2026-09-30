@@ -27,6 +27,8 @@ import { PhotoViewer, type PhotoDetail } from "@/components/PhotoViewer";
 import { ProjectActivityFeed } from "@/components/ProjectActivityFeed";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChecklistsTab } from "@/components/checklists/ChecklistsTab";
+import { ProjectNotesTab } from "@/components/ProjectNotesTab";
+
 
 import { formatDistanceToNow } from "date-fns";
 import { geocodeAddress } from "@/lib/geocode";
