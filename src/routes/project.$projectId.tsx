@@ -60,6 +60,7 @@ function ProjectDetail() {
   const { user } = useAuth();
   const { company } = useCompany();
   const { isAdmin, can, myDivisions, loading: rolesLoading } = useMyRoles();
+  const { proxy } = useProxy();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [phaseFilter, setPhaseFilter] = useState<string>("");
@@ -102,22 +103,27 @@ function ProjectDetail() {
     },
   });
 
+  // While an administrator views the site as someone else, treat that person as
+  // the current user for project access, ownership and collaborator checks.
+  const actingId = proxy?.userId ?? user?.id;
+  const proxyBlocked = !!proxy && !proxy.visibleJobIds.includes(projectId);
+
   const { data: myCollab } = useQuery({
-    enabled: !!user?.id,
-    queryKey: ["my-collab", projectId, user?.id],
+    enabled: !!actingId,
+    queryKey: ["my-collab", projectId, actingId],
     queryFn: async () => {
       const { data } = await supabase
         .from("project_collaborators")
         .select("id")
         .eq("job_id", projectId)
-        .eq("user_id", user!.id)
+        .eq("user_id", actingId!)
         .maybeSingle();
       return !!data;
     },
   });
 
   const isProjectOwner =
-    !!project && !!user && (project.owner_id === user.id || project.user_id === user.id);
+    !!project && !!actingId && (project.owner_id === actingId || project.user_id === actingId);
   // Only the project manager, creator or an admin may change the divisions,
   // and non-admins can only pick divisions assigned to them.
   const canEditDivisions =
@@ -612,7 +618,7 @@ function ProjectDetail() {
 
   // Someone who isn't on this project (and isn't an admin or a matching director)
   // cannot read the row at all, so tell them plainly instead of showing a blank page.
-  if (projectError || (!projectLoading && !project)) {
+  if (projectError || (!projectLoading && !project) || proxyBlocked) {
     return (
       <div className="mx-auto max-w-lg p-10 text-center">
         <Building2 className="mx-auto h-10 w-10 text-muted-foreground/50" />
