@@ -398,7 +398,8 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="text-destructive" onSelect={() => {
                     if (window.confirm(`Delete task "${item.title}"? Attached media stays in the project.`))
-                      run(supabase.from("checklist_items").delete().eq("id", item.id), "Task deleted");
+                      run(supabase.from("checklist_items").delete().eq("id", item.id), "Task deleted")
+                        .then((ok) => { if (ok) log("checklist_item_deleted", { title: item.title }); });
                   }}><Trash2 className="mr-2 h-4 w-4" />Delete task</DropdownMenuItem>
                 </>}
               </>
