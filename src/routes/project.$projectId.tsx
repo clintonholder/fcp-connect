@@ -42,9 +42,9 @@ export const Route = createFileRoute("/project/$projectId")({
   head: () => ({
     meta: [
       { title: "Project — FCP Connect" },
-      { name: "description", content: "Project details, field photos by phase and photo map for an FCP Services project." },
+      { name: "description", content: "Project details, field media by phase and media map for an FCP Services project." },
       { property: "og:title", content: "Project — FCP Connect" },
-      { property: "og:description", content: "Project details, field photos by phase and photo map for an FCP Services project." },
+      { property: "og:description", content: "Project details, field media by phase and media map for an FCP Services project." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
