@@ -7,6 +7,7 @@ import { RequireAuth } from "@/components/RequireAuth";
 import { useAuth } from "@/lib/auth-context";
 import { useCompany } from "@/lib/company-context";
 import { useMyRoles } from "@/lib/roles";
+import { useProxy } from "@/lib/proxy-context";
 import { projectDivisions, DIVISION_LOCK_MSG } from "@/lib/project-meta";
 import { buildPhotoZip } from "@/lib/photo-export";
 import { signPhotoUrls } from "@/lib/photo-urls";
