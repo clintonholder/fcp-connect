@@ -352,48 +352,6 @@ function AdminPage() {
         </CardContent></Card>
       </section>
 
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Roles</h2>
-          <Button size="sm" variant="outline" onClick={() => { setRoleForm({ name: "", isDirector: false, permissions: emptyPerms }); setRoleOpen(true); }}>
-            <Plus className="h-4 w-4 mr-1" />Add role
-          </Button>
-        </div>
-        <Card><CardContent className="space-y-2 p-3">
-          {(roles.data ?? []).map((r) => (
-            <div key={r.id} className="flex items-center justify-between gap-2 rounded-md border p-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium">{r.name}</span>
-                {r.is_admin && <Badge variant="secondary">Administrator</Badge>}
-                {r.is_director && <Badge variant="secondary">Division director</Badge>}
-                {!r.is_active && <Badge variant="outline">Inactive</Badge>}
-                {!r.is_admin && PERMISSIONS.filter((p) => (r as Record<string, unknown>)[p.key] === true).map((p) => (
-                  <Badge key={p.key} variant="outline" className="font-normal">{p.label}</Badge>
-                ))}
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" variant="ghost" aria-label={`Edit ${r.name}`} onClick={() => {
-                  setRoleForm({
-                    id: r.id,
-                    name: r.name,
-                    isDirector: r.is_director === true,
-                    permissions: Object.fromEntries(
-                      PERMISSIONS.map((p) => [p.key, (r as Record<string, unknown>)[p.key] !== false]),
-                    ) as Record<PermissionKey, boolean>,
-                  });
-                  setRoleOpen(true);
-                }}>
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-                <Button size="sm" variant="outline" onClick={async () => {
-                  try { await saveRole({ data: { id: r.id, name: r.name, isActive: !r.is_active } }); toast.success("Role updated"); refresh(); }
-                  catch (e) { fail(e); }
-                }}>{r.is_active ? "Deactivate" : "Reactivate"}</Button>
-              </div>
-            </div>
-          ))}
-        </CardContent></Card>
-      </section>
 
       <Dialog open={roleOpen} onOpenChange={setRoleOpen}>
         <DialogContent>
