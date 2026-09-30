@@ -54,7 +54,7 @@ function ProjectDetail() {
   const { projectId } = Route.useParams();
   const { user } = useAuth();
   const { company } = useCompany();
-  const { isAdmin, can } = useMyRoles();
+  const { isAdmin, can, myDivisions, loading: rolesLoading } = useMyRoles();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [phaseFilter, setPhaseFilter] = useState<string>("");
@@ -471,6 +471,7 @@ function ProjectDetail() {
       if (!edit.name.trim()) throw new Error("Project name is required");
       if (!edit.customer.trim()) throw new Error("Customer name is required");
       if (edit.divisions.length === 0) throw new Error("Select at least one division");
+      if (!isAdmin && edit.divisions.some((d) => !myDivisions.includes(d))) throw new Error(DIVISION_LOCK_MSG);
       const addressChanged = edit.address.trim() !== (project.address ?? "");
       const geo = addressChanged && edit.address.trim() ? await geocodeAddress(edit.address) : null;
       const { error } = await supabase.from("jobs").update({
@@ -600,12 +601,17 @@ function ProjectDetail() {
             </div>
           </div>
         </div>
+        {divisionLocked && (can.can_edit_projects || can.can_delete_projects) && (
+          <p className="w-full rounded-md border border-destructive/40 bg-destructive/5 p-2 text-sm text-destructive">
+            {DIVISION_LOCK_MSG}
+          </p>
+        )}
         <div className="flex flex-wrap gap-2">
           {can.can_edit_projects && (
-            <Button size="sm" variant="outline" onClick={openEdit}><Pencil className="mr-1 h-4 w-4" />Edit</Button>
+            <Button size="sm" variant="outline" disabled={divisionLocked} onClick={openEdit}><Pencil className="mr-1 h-4 w-4" />Edit</Button>
           )}
           {(project?.archived_at ? can.can_edit_projects : can.can_delete_projects) && (
-            <Button size="sm" variant="outline" onClick={() => {
+            <Button size="sm" variant="outline" disabled={divisionLocked} onClick={() => {
               const msg = project?.archived_at ? "Restore this project?" : "Archive this project? It stays available under 'Show archived'.";
               if (window.confirm(msg)) toggleArchive.mutate();
             }}>
