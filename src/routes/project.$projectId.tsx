@@ -109,8 +109,12 @@ function ProjectDetail() {
 
   const isProjectOwner =
     !!project && !!user && (project.owner_id === user.id || project.user_id === user.id);
-  // Only the project manager, creator or an admin may change the divisions.
-  const canEditDivisions = isAdmin || isProjectOwner;
+  // Only the project manager, creator or an admin may change the divisions,
+  // and non-admins can only pick divisions assigned to them.
+  const canEditDivisions =
+    isAdmin ||
+    (isProjectOwner && !!project && projectDivisions(project).every((d) => myDivisions.includes(d)));
+
 
   const divisionLocked = !!project && !isAdmin && !rolesLoading && !isProjectOwner && !myCollab && (() => {
     const ds = projectDivisions(project);
