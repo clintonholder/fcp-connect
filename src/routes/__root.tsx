@@ -22,12 +22,12 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: { error: unknown; reset: () => void }) {
   const router = useRouter();
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <div className="text-center">
-        <p className="text-destructive">{error.message}</p>
+        <p className="text-destructive">{error instanceof Error ? error.message : "Something went wrong."}</p>
         <button onClick={() => { router.invalidate(); reset(); }} className="mt-4 underline">Retry</button>
       </div>
     </div>

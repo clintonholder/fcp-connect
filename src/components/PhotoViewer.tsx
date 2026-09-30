@@ -26,7 +26,7 @@ export type PhotoDetail = {
 };
 
 export function PhotoViewer({
-  photos, index, onIndexChange, onClose, uploaderName, canManage, canArchive,
+  photos, index, onIndexChange, onClose, uploaderName, canManage, canArchive, focusCommentId,
 }: {
   photos: PhotoDetail[];
   index: number;
@@ -35,6 +35,7 @@ export function PhotoViewer({
   uploaderName: (id: string) => string;
   canManage: (p: PhotoDetail) => boolean;
   canArchive?: (p: PhotoDetail) => boolean;
+  focusCommentId?: string | null;
 }) {
   const photo = photos[index];
   const { user } = useAuth();
@@ -80,12 +81,24 @@ export function PhotoViewer({
     enabled: !!photo?.id,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("comments").select("*, profiles(display_name, email)")
+        .from("comments").select("*")
         .eq("photo_id", photo!.id).order("created_at", { ascending: true });
       if (error) throw error;
-      return data;
+      const ids = [...new Set((data ?? []).map((c) => c.user_id))];
+      const { data: profs } = ids.length
+        ? await supabase.from("profiles").select("id, display_name, email").in("id", ids)
+        : { data: [] as { id: string; display_name: string | null; email: string | null }[] };
+      const pm = new Map((profs ?? []).map((p) => [p.id, p]));
+      return (data ?? []).map((c) => ({ ...c, profiles: pm.get(c.user_id) ?? null }));
     },
   });
+
+  useEffect(() => {
+    if (!focusCommentId || !comments) return;
+    const el = document.querySelector<HTMLElement>(`[data-comment-id="${focusCommentId}"]`);
+    if (el) { el.scrollIntoView({ block: "nearest", behavior: "smooth" }); el.focus({ preventScroll: true }); }
+  }, [focusCommentId, comments]);
+
 
   if (!photo || typeof document === "undefined") return null;
   const editable = canManage(photo);
@@ -151,6 +164,7 @@ export function PhotoViewer({
     if (error) { toast.error(error.message); return; }
     setComment("");
     qc.invalidateQueries({ queryKey: ["comments", photo.id] });
+    qc.invalidateQueries({ queryKey: ["project-activity", photo.job_id] });
   };
 
   const addTag = () => {
@@ -308,7 +322,9 @@ export function PhotoViewer({
               {(comments ?? []).map((c) => {
                 const profile = c.profiles as unknown as { display_name?: string | null; email?: string | null } | null;
                 return (
-                  <div key={c.id} className="rounded-md bg-muted/50 p-2 text-sm">
+                  <div key={c.id} data-comment-id={c.id}
+                    tabIndex={c.id === focusCommentId ? -1 : undefined}
+                    className={`rounded-md bg-muted/50 p-2 text-sm outline-none ${c.id === focusCommentId ? "ring-2 ring-primary" : ""}`}>
                     <div className="text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">{profile?.display_name || profile?.email || "User"}</span>
                       {" · "}{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
