@@ -596,6 +596,7 @@ export type Database = {
         Row: {
           accuracy: number | null
           annotated_image_url: string | null
+          annotated_storage_path: string | null
           annotations_data: Json | null
           archived_at: string | null
           area_id: string | null
@@ -620,6 +621,7 @@ export type Database = {
         Insert: {
           accuracy?: number | null
           annotated_image_url?: string | null
+          annotated_storage_path?: string | null
           annotations_data?: Json | null
           archived_at?: string | null
           area_id?: string | null
@@ -644,6 +646,7 @@ export type Database = {
         Update: {
           accuracy?: number | null
           annotated_image_url?: string | null
+          annotated_storage_path?: string | null
           annotations_data?: Json | null
           archived_at?: string | null
           area_id?: string | null

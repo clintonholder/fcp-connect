@@ -36,6 +36,13 @@
       "when": 1790799710007,
       "tag": "0004_add_photo_annotations_data",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790799736588,
+      "tag": "0005_add_photo_annotated_storage_path",
+      "breakpoints": true
     }
   ]
 }
