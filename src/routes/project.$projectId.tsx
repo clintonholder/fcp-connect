@@ -42,9 +42,9 @@ export const Route = createFileRoute("/project/$projectId")({
   head: () => ({
     meta: [
       { title: "Project — FCP Connect" },
-      { name: "description", content: "Project details, field photos by phase and photo map for an FCP Services project." },
+      { name: "description", content: "Project details, field media by phase and media map for an FCP Services project." },
       { property: "og:title", content: "Project — FCP Connect" },
-      { property: "og:description", content: "Project details, field photos by phase and photo map for an FCP Services project." },
+      { property: "og:description", content: "Project details, field media by phase and media map for an FCP Services project." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -700,13 +700,13 @@ function ProjectDetail() {
 
       <Tabs defaultValue="photos" className="mb-2">
         <TabsList className="mb-4" aria-label="Project content">
-          <TabsTrigger value="photos" className="focus-visible:ring-2 focus-visible:ring-ring">Photos</TabsTrigger>
+          <TabsTrigger value="photos" className="focus-visible:ring-2 focus-visible:ring-ring">Media</TabsTrigger>
           <TabsTrigger value="activity" className="focus-visible:ring-2 focus-visible:ring-ring">Activity</TabsTrigger>
         </TabsList>
         <TabsContent value="photos" className="mt-0">
       {/* Photos */}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-        <h2 className="text-lg font-semibold">Photos <span className="text-sm font-normal text-muted-foreground">({filteredPhotos.length})</span></h2>
+        <h2 className="text-lg font-semibold">Media <span className="text-sm font-normal text-muted-foreground">({filteredPhotos.length})</span></h2>
         {can.can_add_photos && (
           <div className="flex flex-wrap items-center gap-2">
             <select className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
@@ -934,7 +934,7 @@ function ProjectDetail() {
 
       {/* Photo map */}
       <div className="mt-8">
-        <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold"><MapPin className="h-4 w-4" />Photo Map</h2>
+        <h2 className="mb-3 flex items-center gap-2 text-lg font-semibold"><MapPin className="h-4 w-4" />Media Map</h2>
         <Card>
           <CardContent className="space-y-3 p-3">
             <div className="grid gap-2 sm:grid-cols-4">
