@@ -90,7 +90,7 @@ export function PhotoViewer({
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [prev, next, onClose]);
+  }, [prev, next, onClose, markupOpen]);
 
   const { data: comments } = useQuery({
     queryKey: ["comments", photo?.id],
