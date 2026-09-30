@@ -193,8 +193,8 @@ function ProgressRing({ pct }: { pct: number }) {
   );
 }
 
-function ChecklistDetail({ checklist, canEdit, canWork, canAttach, members, photos, onOpenPhoto, onBack }: {
-  checklist: Checklist; canEdit: boolean; canWork: boolean; canAttach: boolean; members: Member[];
+function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, members, photos, onOpenPhoto, onBack }: {
+  checklist: Checklist; companyId: string; canEdit: boolean; canWork: boolean; canAttach: boolean; members: Member[];
   photos: PhotoDetail[]; onOpenPhoto: (p: PhotoDetail) => void; onBack: () => void;
 }) {
   const qc = useQueryClient();
@@ -202,6 +202,10 @@ function ChecklistDetail({ checklist, canEdit, canWork, canAttach, members, phot
   const [editOpen, setEditOpen] = useState(false);
   const [itemDialog, setItemDialog] = useState<{ item?: Item } | null>(null);
   const [attachFor, setAttachFor] = useState<Item | null>(null);
+  const [capturingFor, setCapturingFor] = useState<string | null>(null);
+  const captureRef = useRef<HTMLInputElement>(null);
+  const captureItem = useRef<Item | null>(null);
+
   const key = ["checklist", checklist.id];
   const nameOf = (id: string | null) => members.find((m) => m.id === id)?.name ?? (id ? "Former member" : null);
 
