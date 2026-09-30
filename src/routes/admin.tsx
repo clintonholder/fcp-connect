@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Shield, UserPlus, Send, Ban, RotateCcw, Plus, Pencil, KeyRound, Trash2 } from "lucide-react";
+import { Shield, UserPlus, Send, Ban, RotateCcw, Plus, Pencil, KeyRound, Trash2, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import {
@@ -172,6 +172,54 @@ function AdminPage() {
     onError: fail,
   });
 
+  const [permissionSaveStatus, setPermissionSaveStatus] = useState<{
+    roleName: string;
+    permissionName: string;
+    state: "saving" | "saved" | "error";
+    message?: string;
+  } | null>(null);
+  const permissionMut = useMutation({
+    mutationFn: ({
+      role,
+      permission,
+      enabled,
+    }: {
+      role: { id: string; name: string };
+      permission: (typeof PERMISSIONS)[number];
+      enabled: boolean;
+    }) => saveRole({
+      data: {
+        id: role.id,
+        name: role.name,
+        permissions: { [permission.key]: enabled } as Partial<Record<PermissionKey, boolean>>,
+      },
+    }),
+    onMutate: ({ role, permission }) => {
+      setPermissionSaveStatus({ roleName: role.name, permissionName: permission.label, state: "saving" });
+    },
+    onSuccess: (_result, { role, permission }) => {
+      setPermissionSaveStatus({ roleName: role.name, permissionName: permission.label, state: "saved" });
+      refresh();
+    },
+    onError: (error, { role, permission }) => {
+      const message = (error as Error).message || "Permission could not be saved.";
+      setPermissionSaveStatus({ roleName: role.name, permissionName: permission.label, state: "error", message });
+      fail(error);
+    },
+  });
+
+  const openRoleEditor = (r: NonNullable<typeof roles.data>[number]) => {
+    setRoleForm({
+      id: r.id,
+      name: r.name,
+      isDirector: r.is_director === true,
+      permissions: Object.fromEntries(
+        PERMISSIONS.map((p) => [p.key, (r as Record<string, unknown>)[p.key] !== false]),
+      ) as Record<PermissionKey, boolean>,
+    });
+    setRoleOpen(true);
+  };
+
   return (
     <div className="mx-auto max-w-6xl space-y-8 p-4 sm:p-6">
       <div className="flex items-center justify-between gap-3">
@@ -223,47 +271,150 @@ function AdminPage() {
 
 
 
-      <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Roles</h2>
+      <section aria-labelledby="roles-heading" className="space-y-4">
+        <div className="flex items-center justify-between gap-3">
+          <h2 id="roles-heading" className="text-lg font-semibold">Roles</h2>
           <Button size="sm" variant="outline" onClick={() => { setRoleForm({ name: "", isDirector: false, permissions: emptyPerms }); setRoleOpen(true); }}>
-            <Plus className="h-4 w-4 mr-1" />Add role
+            <Plus className="mr-1 h-4 w-4" />Add role
           </Button>
         </div>
-        <Card><CardContent className="space-y-2 p-3">
-          {(roles.data ?? []).map((r) => (
-            <div key={r.id} className="flex items-center justify-between gap-2 rounded-md border p-2">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium">{r.name}</span>
-                {r.is_admin && <Badge variant="secondary">Administrator</Badge>}
-                {r.is_director && <Badge variant="secondary">Division director</Badge>}
-                {!r.is_active && <Badge variant="outline">Inactive</Badge>}
-                {!r.is_admin && PERMISSIONS.filter((p) => (r as Record<string, unknown>)[p.key] === true).map((p) => (
-                  <Badge key={p.key} variant="outline" className="font-normal">{p.label}</Badge>
-                ))}
+
+        <Card>
+          <CardContent className="grid gap-4 p-4 md:grid-cols-2">
+            <section aria-labelledby="administrator-access-heading" className="space-y-2">
+              <h3 id="administrator-access-heading" className="font-medium">Administrator access</h3>
+              <p className="text-sm text-muted-foreground">Administrators have full access; their permissions are not controlled by the matrix.</p>
+              {(roles.data ?? []).filter((r) => r.is_admin).length === 0 && (
+                <p className="text-sm text-muted-foreground">No administrator roles.</p>
+              )}
+              {(roles.data ?? []).filter((r) => r.is_admin).map((r) => (
+                <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-medium">{r.name}</span>
+                    <Badge variant="secondary">Administrator</Badge>
+                    {!r.is_active && <Badge variant="outline">Inactive</Badge>}
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="ghost" aria-label={`Edit ${r.name}`} onClick={() => openRoleEditor(r)}>
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={async () => {
+                      try { await saveRole({ data: { id: r.id, name: r.name, isActive: !r.is_active } }); toast.success("Role updated"); refresh(); }
+                      catch (e) { fail(e); }
+                    }}>{r.is_active ? "Deactivate" : "Reactivate"}</Button>
+                  </div>
+                </div>
+              ))}
+            </section>
+            <section aria-labelledby="director-access-heading" className="space-y-2">
+              <h3 id="director-access-heading" className="font-medium">Division director access</h3>
+              <p className="text-sm text-muted-foreground">This separate role flag grants project visibility in assigned divisions, beyond individual action permissions.</p>
+              {(roles.data ?? []).filter((r) => r.is_director).length === 0 ? (
+                <p className="text-sm text-muted-foreground">No division director roles.</p>
+              ) : (
+                <ul className="flex flex-wrap gap-2">
+                  {(roles.data ?? []).filter((r) => r.is_director).map((r) => (
+                    <li key={r.id}><Badge variant="secondary">{r.name}{!r.is_active ? " (inactive)" : ""}</Badge></li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="space-y-2 p-3">
+            <h3 className="font-medium">Manage roles</h3>
+            {(roles.data ?? []).filter((r) => !r.is_admin).length === 0 && (
+              <p className="text-sm text-muted-foreground">No non-administrator roles yet.</p>
+            )}
+            {(roles.data ?? []).filter((r) => !r.is_admin).map((r) => (
+              <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-medium">{r.name}</span>
+                  {r.is_director && <Badge variant="secondary">Division director</Badge>}
+                  {!r.is_active && <Badge variant="outline">Inactive</Badge>}
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="ghost" aria-label={`Edit ${r.name}`} onClick={() => openRoleEditor(r)}>
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={async () => {
+                    try { await saveRole({ data: { id: r.id, name: r.name, isActive: !r.is_active } }); toast.success("Role updated"); refresh(); }
+                    catch (e) { fail(e); }
+                  }}>{r.is_active ? "Deactivate" : "Reactivate"}</Button>
+                </div>
               </div>
-              <div className="flex gap-2">
-                <Button size="sm" variant="ghost" aria-label={`Edit ${r.name}`} onClick={() => {
-                  setRoleForm({
-                    id: r.id,
-                    name: r.name,
-                    isDirector: r.is_director === true,
-                    permissions: Object.fromEntries(
-                      PERMISSIONS.map((p) => [p.key, (r as Record<string, unknown>)[p.key] !== false]),
-                    ) as Record<PermissionKey, boolean>,
-                  });
-                  setRoleOpen(true);
-                }}>
-                  <Pencil className="h-3.5 w-3.5" />
-                </Button>
-                <Button size="sm" variant="outline" onClick={async () => {
-                  try { await saveRole({ data: { id: r.id, name: r.name, isActive: !r.is_active } }); toast.success("Role updated"); refresh(); }
-                  catch (e) { fail(e); }
-                }}>{r.is_active ? "Deactivate" : "Reactivate"}</Button>
+            ))}
+          </CardContent>
+        </Card>
+
+        <div>
+          <h3 className="mb-1 font-medium">Permission matrix</h3>
+          <p className="mb-3 text-sm text-muted-foreground">Toggle an action for every non-administrator role. The first column stays visible while scrolling across roles.</p>
+          <Card>
+            <CardContent className="p-0">
+              <div className="max-h-[70vh] overflow-auto rounded-md" tabIndex={0} aria-label="Scrollable role permission matrix">
+                <table aria-label="Role permission matrix" className="w-full min-w-max border-collapse text-sm">
+                  <thead>
+                    <tr>
+                      <th scope="col" className="sticky left-0 top-0 z-30 w-52 min-w-52 border-b bg-muted p-3 text-left font-semibold shadow-sm">Permission</th>
+                      {(roles.data ?? []).filter((r) => !r.is_admin).map((r) => (
+                        <th key={r.id} scope="col" className="sticky top-0 z-20 w-36 min-w-36 border-b bg-muted p-3 text-center font-semibold shadow-sm">
+                          <span className="block break-words">{r.name}</span>
+                          {!r.is_active && <span className="mt-1 block text-xs font-normal text-muted-foreground">Inactive</span>}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {PERMISSIONS.map((p) => (
+                      <tr key={p.key}>
+                        <th scope="row" className="sticky left-0 z-10 border-b bg-background p-3 text-left font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.2)]">{p.label}</th>
+                        {(roles.data ?? []).filter((r) => !r.is_admin).map((r) => {
+                          const enabled = (r as Record<string, unknown>)[p.key] === true;
+                          const saving = permissionMut.isPending && permissionMut.variables?.role.id === r.id && permissionMut.variables.permission.key === p.key;
+                          return (
+                            <td key={r.id} className="border-b p-2 text-center">
+                              <button
+                                type="button"
+                                aria-label={`${r.name} — ${p.label}`}
+                                aria-pressed={enabled}
+                                title={`${r.name} — ${p.label}: ${enabled ? "Enabled" : "Disabled"}. Activate to ${enabled ? "disable" : "enable"}.`}
+                                disabled={permissionMut.isPending}
+                                onClick={() => permissionMut.mutate({ role: r, permission: p, enabled: !enabled })}
+                                className="inline-flex h-10 w-10 items-center justify-center rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
+                              >
+                                <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full border-2 ${enabled ? "border-blue-600 bg-blue-600 text-white" : "border-muted-foreground/60 bg-background text-muted-foreground"}`}>
+                                  {saving ? <span className="sr-only">Saving</span> : enabled ? <Check aria-hidden="true" className="h-4 w-4" /> : <X aria-hidden="true" className="h-4 w-4" />}
+                                </span>
+                              </button>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                    {(roles.data ?? []).filter((r) => !r.is_admin).length === 0 && (
+                      <tr><td colSpan={(roles.data ?? []).filter((r) => !r.is_admin).length + 1} className="p-4 text-center text-muted-foreground">Add a non-administrator role to configure permissions.</td></tr>
+                    )}
+                  </tbody>
+                </table>
               </div>
-            </div>
-          ))}
-        </CardContent></Card>
+              <div className="flex flex-wrap gap-4 border-t px-3 py-2 text-xs text-muted-foreground" aria-label="Permission states">
+                <span className="inline-flex items-center gap-1"><span className="inline-flex h-5 w-5 items-center justify-center rounded-full border-2 border-blue-600 bg-blue-600 text-white"><Check aria-hidden="true" className="h-3 w-3" /></span>Enabled</span>
+                <span className="inline-flex items-center gap-1"><span className="inline-flex h-5 w-5 items-center justify-center rounded-full border-2 border-muted-foreground/60"><X aria-hidden="true" className="h-3 w-3" /></span>Disabled</span>
+              </div>
+              {permissionSaveStatus && (
+                <p aria-live={permissionSaveStatus.state === "error" ? "assertive" : "polite"} role={permissionSaveStatus.state === "error" ? "alert" : "status"}
+                  className={`border-t px-3 py-2 text-sm ${permissionSaveStatus.state === "error" ? "text-destructive" : "text-muted-foreground"}`}>
+                  {permissionSaveStatus.state === "saving" && `Saving ${permissionSaveStatus.roleName} — ${permissionSaveStatus.permissionName}…`}
+                  {permissionSaveStatus.state === "saved" && `Saved ${permissionSaveStatus.roleName} — ${permissionSaveStatus.permissionName}.`}
+                  {permissionSaveStatus.state === "error" && `Could not save ${permissionSaveStatus.roleName} — ${permissionSaveStatus.permissionName}: ${permissionSaveStatus.message}`}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </section>
 
       <section>
