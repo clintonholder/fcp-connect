@@ -81,10 +81,15 @@ export function PhotoViewer({
     enabled: !!photo?.id,
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("comments").select("*, profiles(display_name, email)")
+        .from("comments").select("*")
         .eq("photo_id", photo!.id).order("created_at", { ascending: true });
       if (error) throw error;
-      return data;
+      const ids = [...new Set((data ?? []).map((c) => c.user_id))];
+      const { data: profs } = ids.length
+        ? await supabase.from("profiles").select("id, display_name, email").in("id", ids)
+        : { data: [] as { id: string; display_name: string | null; email: string | null }[] };
+      const pm = new Map((profs ?? []).map((p) => [p.id, p]));
+      return (data ?? []).map((c) => ({ ...c, profiles: pm.get(c.user_id) ?? null }));
     },
   });
 
