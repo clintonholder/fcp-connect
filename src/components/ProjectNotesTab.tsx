@@ -57,7 +57,7 @@ export function ProjectNotesTab({ projectId, companyId, readOnly, focusNoteId }:
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["project-notes", projectId] });
 
-  const noteCount = notes.length;
+  const noteCount = (q.data?.length ?? 0);
   useEffect(() => {
     if (!focusNoteId || !noteCount) return;
     document.getElementById(`note-${focusNoteId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
