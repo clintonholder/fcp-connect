@@ -24,6 +24,8 @@ import {
 import { toast } from "sonner";
 import { logActivity } from "@/lib/activity";
 import { PhotoViewer, type PhotoDetail } from "@/components/PhotoViewer";
+import { ProjectActivityFeed } from "@/components/ProjectActivityFeed";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { formatDistanceToNow } from "date-fns";
 import { geocodeAddress } from "@/lib/geocode";
@@ -60,6 +62,8 @@ function ProjectDetail() {
   const [phaseFilter, setPhaseFilter] = useState<string>("");
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [soloPhoto, setSoloPhoto] = useState<PhotoDetail | null>(null);
+  const [focusCommentId, setFocusCommentId] = useState<string | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
   
   const [editOpen, setEditOpen] = useState(false);
@@ -694,6 +698,12 @@ function ProjectDetail() {
         </DialogContent>
       </Dialog>
 
+      <Tabs defaultValue="photos" className="mb-2">
+        <TabsList className="mb-4" aria-label="Project content">
+          <TabsTrigger value="photos" className="focus-visible:ring-2 focus-visible:ring-ring">Photos</TabsTrigger>
+          <TabsTrigger value="activity" className="focus-visible:ring-2 focus-visible:ring-ring">Activity</TabsTrigger>
+        </TabsList>
+        <TabsContent value="photos" className="mt-0">
       {/* Photos */}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">Photos <span className="text-sm font-normal text-muted-foreground">({filteredPhotos.length})</span></h2>
@@ -907,6 +917,20 @@ function ProjectDetail() {
           ))}
         </div>
       )}
+        </TabsContent>
+        <TabsContent value="activity" className="mt-0">
+          <ProjectActivityFeed
+            projectId={projectId}
+            photos={photos ?? []}
+            onOpen={(photo, commentId) => {
+              setFocusCommentId(commentId);
+              const idx = filteredPhotos.findIndex((x) => x.id === photo.id);
+              if (idx >= 0) setViewerIndex(idx);
+              else setSoloPhoto(photo);
+            }}
+          />
+        </TabsContent>
+      </Tabs>
 
       {/* Photo map */}
       <div className="mt-8">
@@ -1000,11 +1024,24 @@ function ProjectDetail() {
         <PhotoViewer
           photos={filteredPhotos}
           index={viewerIndex}
-          onIndexChange={setViewerIndex}
-          onClose={() => setViewerIndex(null)}
+          onIndexChange={(i) => { setFocusCommentId(null); setViewerIndex(i); }}
+          onClose={() => { setFocusCommentId(null); setViewerIndex(null); }}
           uploaderName={personName}
           canManage={canEditPhoto}
           canArchive={canArchivePhoto}
+          focusCommentId={focusCommentId}
+        />
+      )}
+      {soloPhoto && (
+        <PhotoViewer
+          photos={[soloPhoto]}
+          index={0}
+          onIndexChange={() => {}}
+          onClose={() => { setFocusCommentId(null); setSoloPhoto(null); }}
+          uploaderName={personName}
+          canManage={canEditPhoto}
+          canArchive={canArchivePhoto}
+          focusCommentId={focusCommentId}
         />
       )}
     </div>
