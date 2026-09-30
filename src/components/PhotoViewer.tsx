@@ -103,21 +103,21 @@ export function PhotoViewer({
     });
     qc.invalidateQueries({ queryKey: ["photos", photo.job_id] });
     setEditing(false);
-    toast.success("Photo updated");
+    toast.success("Media updated");
   };
 
   const removePhoto = async () => {
-    if (!window.confirm(`Delete this ${photo.media_type === "video" ? "video" : "photo"}? It is permanently removed from the photo groups and map.`)) return;
+    if (!window.confirm("Delete this media? It is permanently removed from the project gallery and map.")) return;
     const { data, error } = await supabase.from("photos").delete().eq("id", photo.id).select("id");
     if (error) { toast.error(error.message); return; }
-    if (!data?.length) { toast.error("You are not allowed to delete this photo"); return; }
+    if (!data?.length) { toast.error("You are not allowed to delete this media"); return; }
     if (photo.storage_path) await supabase.storage.from("job-photos").remove([photo.storage_path]);
     await logActivity({
       company_id: photo.company_id, job_id: photo.job_id,
       kind: "photo_deleted", meta: { photo_ids: [photo.id], result: "ok" },
     });
     qc.invalidateQueries({ queryKey: ["photos", photo.job_id] });
-    toast.success("Photo deleted");
+    toast.success("Media deleted");
     onClose();
   };
 
@@ -138,7 +138,7 @@ export function PhotoViewer({
         kind: "photo_exported", meta: { photo_ids: [photo.id] },
       });
     } catch {
-      toast.error("Could not download this photo");
+      toast.error("Could not download this media");
     }
   };
 
@@ -165,7 +165,7 @@ export function PhotoViewer({
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Photo viewer"
+       aria-label="Media viewer"
     >
       <div
         className="relative flex max-h-[95vh] w-full max-w-5xl flex-col overflow-hidden rounded-lg bg-card shadow-2xl md:flex-row"
@@ -180,8 +180,8 @@ export function PhotoViewer({
       >
         <button
           type="button"
-          aria-label="Close photo"
-          title="Close photo"
+           aria-label="Close media viewer"
+           title="Close media viewer"
           onClick={(e) => { e.stopPropagation(); onClose(); }}
           className="absolute right-3 top-3 z-20 flex h-12 w-12 items-center justify-center rounded-full bg-black/80 text-white shadow-lg ring-2 ring-white/80 transition hover:bg-black focus:outline-none focus-visible:ring-4 focus-visible:ring-white sm:h-14 sm:w-14"
         >
@@ -210,11 +210,11 @@ export function PhotoViewer({
           )}
           {photos.length > 1 && (
             <>
-              <button aria-label="Previous photo" onClick={prev}
+               <button aria-label="Previous media" onClick={prev}
                 className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white hover:bg-black/80">
                 <ChevronLeft className="h-5 w-5" />
               </button>
-              <button aria-label="Next photo" onClick={next}
+               <button aria-label="Next media" onClick={next}
                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/60 p-2 text-white hover:bg-black/80">
                 <ChevronRight className="h-5 w-5" />
               </button>
@@ -297,7 +297,7 @@ export function PhotoViewer({
             )}
             {(canArchive ? canArchive(photo) : editable) && (
               <Button size="sm" variant="outline" className="text-destructive" onClick={removePhoto}>
-                <Trash2 className="h-4 w-4 mr-1" />Delete {isVideo ? "Video" : "Photo"}
+                 <Trash2 className="h-4 w-4 mr-1" />Delete media
               </Button>
             )}
           </div>

@@ -6,6 +6,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { MapPin, Building2, Camera } from "lucide-react";
 
 export const Route = createFileRoute("/share/$token")({
+  head: () => ({
+    meta: [
+      { title: "Shared Project — FCP Connect" },
+      { name: "description", content: "View a shared FCP Connect project and its site media." },
+      { property: "og:title", content: "Shared Project — FCP Connect" },
+      { property: "og:description", content: "View a shared FCP Connect project and its site media." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: SharedJobPage,
 });
 
