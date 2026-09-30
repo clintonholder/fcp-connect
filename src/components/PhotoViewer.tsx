@@ -115,7 +115,46 @@ export function PhotoViewer({
   if (!photo || typeof document === "undefined") return null;
   const editable = canManage(photo);
   const isVideo = photo.media_type === "video";
-  const displayUrl = isVideo ? photo.image_url : (photo.annotated_image_url ?? photo.image_url);
+  const hasMarkup = !isVideo && !!photo.annotated_image_url;
+  const displayUrl = isVideo || showOriginal ? photo.image_url : (photo.annotated_image_url ?? photo.image_url);
+  const savedShapes: Shape[] = Array.isArray(photo.annotations_data) ? (photo.annotations_data as Shape[]) : [];
+
+  const saveMarkup = async (shapes: Shape[], blob: Blob | null) => {
+    try {
+      let path: string | null = null;
+      if (blob && shapes.length) {
+        path = `${photo.user_id}/${photo.job_id}/markup-${photo.id}-${Date.now()}.jpg`;
+        const { error: upErr } = await supabase.storage
+          .from("job-photos").upload(path, blob, { contentType: "image/jpeg", upsert: true });
+        if (upErr) { toast.error(upErr.message); return; }
+      }
+      const { data: signed } = path
+        ? await supabase.storage.from("job-photos").createSignedUrl(path, 60 * 60 * 4)
+        : { data: null };
+      const { data, error } = await supabase.from("photos")
+        .update({
+          annotations_data: shapes.length ? (shapes as unknown as never) : null,
+          annotated_storage_path: path,
+          annotated_image_url: signed?.signedUrl ?? null,
+        })
+        .eq("id", photo.id).select("id");
+      if (error) { toast.error(error.message); return; }
+      if (!data?.length) { toast.error("You are not allowed to mark up this photo"); return; }
+      const oldPath = photo.annotated_storage_path;
+      if (oldPath && oldPath !== path) await supabase.storage.from("job-photos").remove([oldPath]);
+      await logActivity({
+        company_id: photo.company_id, job_id: photo.job_id, photo_id: photo.id,
+        kind: "photo_annotated", meta: { shapes: shapes.length },
+      });
+      qc.invalidateQueries({ queryKey: ["photos", photo.job_id] });
+      setMarkupOpen(false);
+      setShowOriginal(false);
+      toast.success(shapes.length ? "Markup saved" : "Markup cleared");
+    } catch {
+      toast.error("Could not save the markup");
+    }
+  };
+
 
   const save = async () => {
     const { error } = await supabase.from("photos")
