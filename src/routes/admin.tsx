@@ -74,6 +74,10 @@ function AdminPage() {
   const deleteUser = useServerFn(adminDeleteUser);
   const updateUser = useServerFn(adminUpdateUser);
   const setDivisions = useServerFn(adminSetUserDivisions);
+  const startProxy = useServerFn(adminStartProxy);
+  const { setProxy } = useProxy();
+  const { user: me } = useAuth();
+  const navigate = useNavigate();
   const [busy, setBusy] = useState<string | null>(null);
 
   const [inviteOpen, setInviteOpen] = useState(false);
