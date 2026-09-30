@@ -12,9 +12,11 @@ import { logActivity } from "@/lib/activity";
 import { PHOTO_PHASES, normalizePhase, phaseLabel, formatTakenAt } from "@/lib/photo-meta";
 import {
   MapPin, X, ChevronLeft, ChevronRight, Download, Trash2, Save, Pencil,
-  MessageSquare, Send, ZoomIn, ZoomOut, Tag,
+  MessageSquare, Send, ZoomIn, ZoomOut, Tag, Highlighter,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { PhotoMarkupEditor, type Shape } from "@/components/PhotoMarkupEditor";
+
 
 export type PhotoDetail = {
   id: string; image_url: string; annotated_image_url: string | null;
