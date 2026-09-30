@@ -93,10 +93,34 @@ function ProjectDetail() {
     },
   });
 
-  const divisionLocked = !!project && !isAdmin && !rolesLoading && (() => {
+  const { data: myCollab } = useQuery({
+    enabled: !!user?.id,
+    queryKey: ["my-collab", projectId, user?.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("project_collaborators")
+        .select("id")
+        .eq("job_id", projectId)
+        .eq("user_id", user!.id)
+        .maybeSingle();
+      return !!data;
+    },
+  });
+
+  const isProjectOwner =
+    !!project && !!user && (project.owner_id === user.id || project.user_id === user.id);
+  // Only the project manager, creator or an admin may change the divisions,
+  // and non-admins can only pick divisions assigned to them.
+  const canEditDivisions =
+    isAdmin ||
+    (isProjectOwner && !!project && projectDivisions(project).every((d) => myDivisions.includes(d)));
+
+
+  const divisionLocked = !!project && !isAdmin && !rolesLoading && !isProjectOwner && !myCollab && (() => {
     const ds = projectDivisions(project);
     return ds.length === 0 || ds.some((d) => !myDivisions.includes(d));
   })();
+
 
   const { data: people } = useQuery({
     queryKey: ["people"],
@@ -475,8 +499,8 @@ function ProjectDetail() {
       if (!edit || !project) return;
       if (!edit.name.trim()) throw new Error("Project name is required");
       if (!edit.customer.trim()) throw new Error("Customer name is required");
-      if (edit.divisions.length === 0) throw new Error("Select at least one division");
-      if (!isAdmin && edit.divisions.some((d) => !myDivisions.includes(d))) throw new Error(DIVISION_LOCK_MSG);
+      if (canEditDivisions && edit.divisions.length === 0) throw new Error("Select at least one division");
+      if (canEditDivisions && !isAdmin && edit.divisions.some((d) => !myDivisions.includes(d))) throw new Error(DIVISION_LOCK_MSG);
       const addressChanged = edit.address.trim() !== (project.address ?? "");
       const geo = addressChanged && edit.address.trim() ? await geocodeAddress(edit.address) : null;
       const { error } = await supabase.from("jobs").update({
@@ -484,8 +508,8 @@ function ProjectDetail() {
         customer: edit.customer.trim(),
         client: edit.customer.trim(),
         address: edit.address.trim() || null,
-        division: edit.divisions[0] ?? null,
-        divisions: edit.divisions,
+        ...(canEditDivisions ? { division: edit.divisions[0] ?? null, divisions: edit.divisions } : {}),
+
         tags: edit.tags,
         owner_id: edit.owner_id || null,
         cmic_number: edit.cmic_number.trim() || null,
@@ -655,7 +679,9 @@ function ProjectDetail() {
                 saving={saveEdit.isPending}
                 onSave={() => saveEdit.mutate()}
                 onCancel={closeEdit}
+                canEditDivisions={canEditDivisions}
               />
+
               <ProjectCollaborators
                 projectId={projectId}
                 companyId={project?.company_id}
