@@ -517,6 +517,7 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
           const { error } = await supabase.from("checklists").update(v).eq("id", checklist.id);
           if (error) throw error;
           toast.success("Checklist saved");
+          log("checklist_updated", { title: v.title });
           await refresh();
         }} />
       {itemDialog && (
