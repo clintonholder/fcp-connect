@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { PhotoDetail } from "@/components/PhotoViewer";
 import { readPhotoExif } from "@/lib/exif";
+import { logActivity } from "@/lib/activity";
 
 /** Photos taken straight from a checklist task land in this project media phase. */
 const CHECKLIST_PHASE = "Checklists";
@@ -132,6 +133,7 @@ export function ChecklistsTab({
             .select("id").single();
           if (error) throw error;
           toast.success("Checklist created");
+          void logActivity({ company_id: companyId, job_id: projectId, kind: "checklist_created", meta: { title: v.title } });
           await qc.invalidateQueries({ queryKey: ["checklists", projectId] });
           setOpenId(data.id);
         }} />
@@ -229,6 +231,10 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
     qc.invalidateQueries({ queryKey: key }),
     qc.invalidateQueries({ queryKey: ["checklists", checklist.job_id] }),
   ]);
+  /** Records a checklist event on the project activity feed. */
+  const log = (kind: string, meta?: Record<string, unknown>) =>
+    void logActivity({ company_id: companyId, job_id: checklist.job_id, kind, meta });
+
   const run = async (p: PromiseLike<{ error: unknown }>, ok?: string) => {
     const { error } = await p;
     if (error) { toast.error(errMsg(error)); return false; }
@@ -310,6 +316,19 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
   const pct = items.length ? Math.round((done / items.length) * 100) : 0;
   const visible = hideDone ? items.filter((i) => !i.completed_at) : items;
 
+  /** Completes or reopens a task and records it, plus a milestone when the whole checklist is done. */
+  const toggleItem = async (item: Item, completed: boolean) => {
+    const ok = await run(
+      supabase.from("checklist_items").update({ completed_at: completed ? null : new Date().toISOString() }).eq("id", item.id),
+      completed ? "Task reopened" : "Task completed",
+    );
+    if (!ok) return;
+    log(completed ? "checklist_item_reopened" : "checklist_item_completed", { title: item.title });
+    if (!completed && items.length > 0 && done + 1 === items.length) {
+      log("checklist_completed", { title: checklist.title });
+    }
+  };
+
   const move = async (item: Item, dir: -1 | 1) => {
     const idx = items.findIndex((i) => i.id === item.id);
     const other = items[idx + dir];
@@ -339,7 +358,8 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
               <div className="w-56">
                 <label htmlFor="cl-assign" className="sr-only">Assign checklist</label>
                 <MemberSelect id="cl-assign" value={checklist.assignee_id} members={members}
-                  onChange={(v) => run(supabase.from("checklists").update({ assignee_id: v }).eq("id", checklist.id), "Assignment saved")} />
+                  onChange={(v) => run(supabase.from("checklists").update({ assignee_id: v }).eq("id", checklist.id), "Assignment saved")
+                    .then((ok) => { if (ok) log("checklist_assigned", { title: checklist.title, person: nameOf(v) }); })} />
               </div>
             ) : <span>{nameOf(checklist.assignee_id) ?? "Unassigned"}</span>}
           </div>
@@ -349,7 +369,10 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Pencil className="mr-1 h-4 w-4" />Edit</Button>
             <Button variant="outline" size="sm" aria-label="Delete checklist" onClick={async () => {
               if (!window.confirm(`Delete "${checklist.title}" and all its items? Attached media stays in the project.`)) return;
-              if (await run(supabase.from("checklists").delete().eq("id", checklist.id), "Checklist deleted")) onBack();
+              if (await run(supabase.from("checklists").delete().eq("id", checklist.id), "Checklist deleted")) {
+                log("checklist_deleted", { title: checklist.title });
+                onBack();
+              }
             }}><Trash2 className="h-4 w-4" /></Button>
           </div>
         )}
@@ -392,7 +415,8 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
                   <DropdownMenuSeparator />
                   <DropdownMenuItem className="text-destructive" onSelect={() => {
                     if (window.confirm(`Delete task "${item.title}"? Attached media stays in the project.`))
-                      run(supabase.from("checklist_items").delete().eq("id", item.id), "Task deleted");
+                      run(supabase.from("checklist_items").delete().eq("id", item.id), "Task deleted")
+                        .then((ok) => { if (ok) log("checklist_item_deleted", { title: item.title }); });
                   }}><Trash2 className="mr-2 h-4 w-4" />Delete task</DropdownMenuItem>
                 </>}
               </>
@@ -403,7 +427,7 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
                   <button type="button" role="checkbox" aria-checked={completed} disabled={toggleDisabled}
                     aria-label={`${completed ? "Reopen" : "Complete"} ${item.title}${!completed && reason ? ` — ${reason}` : ""}`}
                     title={!completed && reason ? reason : undefined}
-                    onClick={() => run(supabase.from("checklist_items").update({ completed_at: completed ? null : new Date().toISOString() }).eq("id", item.id), completed ? "Task reopened" : "Task completed")}
+                    onClick={() => toggleItem(item, completed)}
                     className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${completed ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/50 hover:border-primary"}`}>
                     {completed && <Check className="h-4 w-4" />}
                   </button>
@@ -494,6 +518,7 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
           const { error } = await supabase.from("checklists").update(v).eq("id", checklist.id);
           if (error) throw error;
           toast.success("Checklist saved");
+          log("checklist_updated", { title: v.title });
           await refresh();
         }} />
       {itemDialog && (
@@ -526,6 +551,7 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
               }
             }
             toast.success(itemDialog.item ? "Task saved" : "Task added");
+            if (!itemDialog.item) log("checklist_item_added", { title: v.title });
             await refresh();
           }} />
       )}

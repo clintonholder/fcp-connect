@@ -67,6 +67,7 @@ function ProjectDetail() {
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [soloPhoto, setSoloPhoto] = useState<PhotoDetail | null>(null);
   const [focusCommentId, setFocusCommentId] = useState<string | null>(null);
+  const [tab, setTab] = useState("photos");
   const [selected, setSelected] = useState<string[]>([]);
   
   const [editOpen, setEditOpen] = useState(false);
@@ -712,7 +713,7 @@ function ProjectDetail() {
         </DialogContent>
       </Dialog>
 
-      <Tabs defaultValue="photos" className="mb-2">
+      <Tabs value={tab} onValueChange={setTab} className="mb-2">
         <TabsList className="mb-4" aria-label="Project content">
           <TabsTrigger value="photos" className="focus-visible:ring-2 focus-visible:ring-ring">Media</TabsTrigger>
           <TabsTrigger value="checklists" className="focus-visible:ring-2 focus-visible:ring-ring">Checklists</TabsTrigger>
@@ -939,6 +940,7 @@ function ProjectDetail() {
           <ProjectActivityFeed
             projectId={projectId}
             photos={photos ?? []}
+            onOpenChecklists={() => setTab("checklists")}
             onOpen={(photo, commentId) => {
               setFocusCommentId(commentId);
               const idx = filteredPhotos.findIndex((x) => x.id === photo.id);

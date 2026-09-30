@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { logActivity } from "@/lib/activity";
 
 type Note = {
   id: string;
@@ -65,6 +66,10 @@ export function ProjectNotesTab({ projectId, companyId, readOnly }: {
     if (error) return toast.error(errMsg(error));
     setDraft("");
     toast.success("Note added");
+    void logActivity({
+      company_id: companyId, job_id: projectId, kind: "note_added",
+      meta: { preview: body.length > 80 ? `${body.slice(0, 80)}…` : body },
+    });
     refresh();
   }
 
@@ -83,6 +88,7 @@ export function ProjectNotesTab({ projectId, companyId, readOnly }: {
     const { error } = await supabase.from("project_notes").delete().eq("id", id);
     if (error) return toast.error(errMsg(error));
     toast.success("Note deleted");
+    void logActivity({ company_id: companyId, job_id: projectId, kind: "note_deleted" });
     refresh();
   }
 
