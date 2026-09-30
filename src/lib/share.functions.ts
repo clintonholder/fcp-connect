@@ -6,6 +6,8 @@ type SharedPhoto = {
   storage_path: string | null;
   image_url: string;
   annotated_image_url: string | null;
+  annotated_storage_path?: string | null;
+
   caption: string | null;
   tags: string[] | null;
   latitude: number | null;
