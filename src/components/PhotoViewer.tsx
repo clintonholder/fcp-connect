@@ -75,11 +75,15 @@ export function PhotoViewer({
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (markupOpen) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
       if (e.key === "Escape") onClose();
       else if (e.key === "ArrowLeft") prev();
       else if (e.key === "ArrowRight") next();
     };
     window.addEventListener("keydown", onKey);
+
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
