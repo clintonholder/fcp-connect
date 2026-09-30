@@ -229,12 +229,9 @@ function AdminPage() {
 
   return (
     <div className="mx-auto max-w-6xl space-y-8 p-4 sm:p-6">
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold sm:text-3xl"><Shield className="h-6 w-6 text-primary" />Admin</h1>
-          <p className="text-sm text-muted-foreground">Users, roles and audit history</p>
-        </div>
-        <Button onClick={() => { setEditUserId(null); setInviteForm({ email: "", displayName: "", roleId: "" }); setInviteOpen(true); }}><UserPlus className="h-4 w-4 mr-1" />New User</Button>
+      <div>
+        <h1 className="flex items-center gap-2 text-2xl font-bold sm:text-3xl"><Shield className="h-6 w-6 text-primary" />Admin</h1>
+        <p className="text-sm text-muted-foreground">Users, roles and audit history</p>
       </div>
 
       <Dialog open={inviteOpen} onOpenChange={(o) => { setInviteOpen(o); if (!o) setEditUserId(null); }}>
@@ -387,7 +384,12 @@ function AdminPage() {
         </AdminSection>
       </div>
 
-      <AdminSection id="users" title="Users">
+      <AdminSection id="users" title="Users"
+        actions={
+          <Button size="sm" variant="outline" onClick={() => { setEditUserId(null); setInviteForm({ email: "", displayName: "", roleId: "" }); setInviteOpen(true); }}>
+            <UserPlus className="h-4 w-4 mr-1" />New User
+          </Button>
+        }>
         <Card><CardContent className="space-y-2 p-3">
           {users.isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
           {users.error && <p className="text-sm text-destructive">{(users.error as Error).message}</p>}
