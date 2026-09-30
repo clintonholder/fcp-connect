@@ -27,6 +27,8 @@ import { PhotoViewer, type PhotoDetail } from "@/components/PhotoViewer";
 import { ProjectActivityFeed } from "@/components/ProjectActivityFeed";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChecklistsTab } from "@/components/checklists/ChecklistsTab";
+import { ProjectNotesTab } from "@/components/ProjectNotesTab";
+
 
 import { formatDistanceToNow } from "date-fns";
 import { geocodeAddress } from "@/lib/geocode";
@@ -713,9 +715,11 @@ function ProjectDetail() {
       <Tabs defaultValue="photos" className="mb-2">
         <TabsList className="mb-4" aria-label="Project content">
           <TabsTrigger value="photos" className="focus-visible:ring-2 focus-visible:ring-ring">Media</TabsTrigger>
-          <TabsTrigger value="activity" className="focus-visible:ring-2 focus-visible:ring-ring">Activity</TabsTrigger>
           <TabsTrigger value="checklists" className="focus-visible:ring-2 focus-visible:ring-ring">Checklists</TabsTrigger>
+          <TabsTrigger value="notes" className="focus-visible:ring-2 focus-visible:ring-ring">Notes</TabsTrigger>
+          <TabsTrigger value="activity" className="focus-visible:ring-2 focus-visible:ring-ring">Activity</TabsTrigger>
         </TabsList>
+
         <TabsContent value="photos" className="mt-0">
       {/* Photos */}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
@@ -962,6 +966,16 @@ function ProjectDetail() {
             />
           )}
         </TabsContent>
+        <TabsContent value="notes" className="mt-0">
+          {project && (
+            <ProjectNotesTab
+              projectId={projectId}
+              companyId={project.company_id}
+              readOnly={!!project.archived_at}
+            />
+          )}
+        </TabsContent>
+
       </Tabs>
 
       {/* Photo map */}

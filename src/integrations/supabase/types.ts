@@ -763,6 +763,44 @@ export type Database = {
           },
         ]
       }
+      project_notes: {
+        Row: {
+          body: string
+          company_id: string
+          created_at: string
+          id: string
+          job_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          company_id: string
+          created_at?: string
+          id?: string
+          job_id: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          body?: string
+          company_id?: string
+          created_at?: string
+          id?: string
+          job_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_notes_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       share_links: {
         Row: {
           company_id: string
