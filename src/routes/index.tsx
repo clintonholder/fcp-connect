@@ -157,7 +157,7 @@ function ProjectsPage() {
         .filter(Boolean).some((x) => String(x).toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [projects, search, showArchived, people, filters, collaborators, user]);
+  }, [projects, search, showArchived, people, filters, collaborators, user, proxy]);
 
   const activeFilterCount =
     (filters.division ? 1 : 0) + (filters.tag ? 1 : 0) + (filters.person ? 1 : 0) + (filters.scope !== "all" ? 1 : 0);
