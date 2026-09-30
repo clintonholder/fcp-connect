@@ -19,9 +19,13 @@ import {
   adminListUsers, adminListAudit, adminInviteUser, adminResendInvite,
   adminSetUserDisabled, adminSetUserRoles, adminSaveRole,
   adminSendPasswordReset, adminDeleteUser, adminCreateUser, adminUpdateUser,
-  adminSetUserDivisions, adminDeleteRole,
+  adminSetUserDivisions, adminDeleteRole, adminStartProxy,
 } from "@/lib/admin.functions";
 import { DIVISIONS } from "@/lib/project-meta";
+import { useProxy } from "@/lib/proxy-context";
+import { useAuth } from "@/lib/auth-context";
+import { useNavigate } from "@tanstack/react-router";
+import { Eye } from "lucide-react";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
