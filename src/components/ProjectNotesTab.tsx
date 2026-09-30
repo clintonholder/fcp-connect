@@ -66,6 +66,10 @@ export function ProjectNotesTab({ projectId, companyId, readOnly }: {
     if (error) return toast.error(errMsg(error));
     setDraft("");
     toast.success("Note added");
+    void logActivity({
+      company_id: companyId, job_id: projectId, kind: "note_added",
+      meta: { preview: body.length > 80 ? `${body.slice(0, 80)}…` : body },
+    });
     refresh();
   }
 
