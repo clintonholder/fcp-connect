@@ -6,6 +6,8 @@ type SharedPhoto = {
   storage_path: string | null;
   image_url: string;
   annotated_image_url: string | null;
+  annotated_storage_path?: string | null;
+
   caption: string | null;
   tags: string[] | null;
   latitude: number | null;
@@ -37,7 +39,11 @@ export const getSharedProject = createServerFn({ method: "GET" })
 
     const result = shared as unknown as SharedData;
     const paths = Array.from(
-      new Set((result.photos ?? []).map((p) => p.storage_path).filter((p): p is string => !!p)),
+      new Set(
+        (result.photos ?? [])
+          .flatMap((p) => [p.storage_path, p.annotated_storage_path])
+          .filter((p): p is string => !!p),
+      ),
     );
     if (paths.length) {
       const { data: signed } = await supabaseAdmin.storage
@@ -50,8 +56,10 @@ export const getSharedProject = createServerFn({ method: "GET" })
       });
       result.photos = (result.photos ?? []).map((p) => {
         const url = p.storage_path ? byPath.get(p.storage_path) : undefined;
-        return url ? { ...p, image_url: url, annotated_image_url: null } : p;
+        const marked = p.annotated_storage_path ? byPath.get(p.annotated_storage_path) : undefined;
+        return { ...p, image_url: url ?? p.image_url, annotated_image_url: marked ?? null };
       });
     }
+
     return result;
   });

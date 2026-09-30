@@ -12,9 +12,11 @@ import { logActivity } from "@/lib/activity";
 import { PHOTO_PHASES, normalizePhase, phaseLabel, formatTakenAt } from "@/lib/photo-meta";
 import {
   MapPin, X, ChevronLeft, ChevronRight, Download, Trash2, Save, Pencil,
-  MessageSquare, Send, ZoomIn, ZoomOut, Tag,
+  MessageSquare, Send, ZoomIn, ZoomOut, Tag, Highlighter,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { PhotoMarkupEditor, type Shape } from "@/components/PhotoMarkupEditor";
+
 
 export type PhotoDetail = {
   id: string; image_url: string; annotated_image_url: string | null;
@@ -23,7 +25,9 @@ export type PhotoDetail = {
   area_id: string | null; job_id: string; company_id: string; user_id: string;
   storage_path: string; archived_at?: string | null;
   media_type?: string | null; mime_type?: string | null; duration_seconds?: number | string | null;
+  annotations_data?: unknown; annotated_storage_path?: string | null;
 };
+
 
 export function PhotoViewer({
   photos, index, onIndexChange, onClose, uploaderName, canManage, canArchive, focusCommentId,
@@ -49,7 +53,10 @@ export function PhotoViewer({
   const [comment, setComment] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editBody, setEditBody] = useState("");
+  const [markupOpen, setMarkupOpen] = useState(false);
+  const [showOriginal, setShowOriginal] = useState(false);
   const touchX = useRef<number | null>(null);
+
 
   useEffect(() => {
     if (!photo) return;
@@ -58,25 +65,32 @@ export function PhotoViewer({
     setTags(photo.tags ?? []);
     setEditing(false);
     setZoom(false);
+    setMarkupOpen(false);
+    setShowOriginal(false);
   }, [photo?.id]);
+
 
   const prev = useCallback(() => onIndexChange((index - 1 + photos.length) % photos.length), [index, photos.length, onIndexChange]);
   const next = useCallback(() => onIndexChange((index + 1) % photos.length), [index, photos.length, onIndexChange]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (markupOpen) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
       if (e.key === "Escape") onClose();
       else if (e.key === "ArrowLeft") prev();
       else if (e.key === "ArrowRight") next();
     };
     window.addEventListener("keydown", onKey);
+
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [prev, next, onClose]);
+  }, [prev, next, onClose, markupOpen]);
 
   const { data: comments } = useQuery({
     queryKey: ["comments", photo?.id],
@@ -105,7 +119,46 @@ export function PhotoViewer({
   if (!photo || typeof document === "undefined") return null;
   const editable = canManage(photo);
   const isVideo = photo.media_type === "video";
-  const displayUrl = isVideo ? photo.image_url : (photo.annotated_image_url ?? photo.image_url);
+  const hasMarkup = !isVideo && !!photo.annotated_image_url;
+  const displayUrl = isVideo || showOriginal ? photo.image_url : (photo.annotated_image_url ?? photo.image_url);
+  const savedShapes: Shape[] = Array.isArray(photo.annotations_data) ? (photo.annotations_data as Shape[]) : [];
+
+  const saveMarkup = async (shapes: Shape[], blob: Blob | null) => {
+    try {
+      let path: string | null = null;
+      if (blob && shapes.length) {
+        path = `${photo.user_id}/${photo.job_id}/markup-${photo.id}-${Date.now()}.jpg`;
+        const { error: upErr } = await supabase.storage
+          .from("job-photos").upload(path, blob, { contentType: "image/jpeg", upsert: true });
+        if (upErr) { toast.error(upErr.message); return; }
+      }
+      const { data: signed } = path
+        ? await supabase.storage.from("job-photos").createSignedUrl(path, 60 * 60 * 4)
+        : { data: null };
+      const { data, error } = await supabase.from("photos")
+        .update({
+          annotations_data: shapes.length ? (shapes as unknown as never) : null,
+          annotated_storage_path: path,
+          annotated_image_url: signed?.signedUrl ?? null,
+        })
+        .eq("id", photo.id).select("id");
+      if (error) { toast.error(error.message); return; }
+      if (!data?.length) { toast.error("You are not allowed to mark up this photo"); return; }
+      const oldPath = photo.annotated_storage_path;
+      if (oldPath && oldPath !== path) await supabase.storage.from("job-photos").remove([oldPath]);
+      await logActivity({
+        company_id: photo.company_id, job_id: photo.job_id, photo_id: photo.id,
+        kind: "photo_annotated", meta: { shapes: shapes.length },
+      });
+      qc.invalidateQueries({ queryKey: ["photos", photo.job_id] });
+      setMarkupOpen(false);
+      setShowOriginal(false);
+      toast.success(shapes.length ? "Markup saved" : "Markup cleared");
+    } catch {
+      toast.error("Could not save the markup");
+    }
+  };
+
 
   const save = async () => {
     const { error } = await supabase.from("photos")
@@ -257,9 +310,22 @@ export function PhotoViewer({
               </button>
             </>
           )}
+          {hasMarkup && (
+            <div className="absolute left-2 top-2 flex overflow-hidden rounded-full bg-black/70 text-xs text-white">
+              <button type="button" aria-pressed={!showOriginal} onClick={() => setShowOriginal(false)}
+                className={`px-3 py-1 outline-none focus-visible:ring-2 focus-visible:ring-white ${!showOriginal ? "bg-white text-black" : ""}`}>
+                Marked up
+              </button>
+              <button type="button" aria-pressed={showOriginal} onClick={() => setShowOriginal(true)}
+                className={`px-3 py-1 outline-none focus-visible:ring-2 focus-visible:ring-white ${showOriginal ? "bg-white text-black" : ""}`}>
+                Original
+              </button>
+            </div>
+          )}
           <span className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded bg-black/60 px-2 py-0.5 text-xs text-white">
             {index + 1} of {photos.length}
           </span>
+
           {!isVideo && <button aria-label={zoom ? "Fit image" : "Zoom image"} onClick={() => setZoom((z) => !z)}
             className="absolute bottom-2 right-2 rounded bg-black/60 p-1.5 text-white hover:bg-black/80">
             {zoom ? <ZoomOut className="h-4 w-4" /> : <ZoomIn className="h-4 w-4" />}
@@ -329,9 +395,15 @@ export function PhotoViewer({
 
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={download}><Download className="h-4 w-4 mr-1" />Download</Button>
+            {editable && !isVideo && (
+              <Button size="sm" variant="outline" onClick={() => setMarkupOpen(true)}>
+                <Highlighter className="h-4 w-4 mr-1" />Markup
+              </Button>
+            )}
             {editable && !editing && (
               <Button size="sm" variant="outline" onClick={() => setEditing(true)}><Pencil className="h-4 w-4 mr-1" />Edit</Button>
             )}
+
             {(canArchive ? canArchive(photo) : editable) && (
               <Button size="sm" variant="outline" className="text-destructive" onClick={removePhoto}>
                  <Trash2 className="h-4 w-4 mr-1" />Delete media
@@ -382,7 +454,16 @@ export function PhotoViewer({
           </div>
         </div>
       </div>
+      {markupOpen && !isVideo && (
+        <PhotoMarkupEditor
+          imageUrl={photo.image_url}
+          initialShapes={savedShapes}
+          onCancel={() => setMarkupOpen(false)}
+          onSave={saveMarkup}
+        />
+      )}
     </div>,
+
     document.body,
   );
 }

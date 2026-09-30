@@ -1,0 +1,2 @@
+ALTER TABLE public.photos ADD COLUMN IF NOT EXISTS annotated_storage_path text;
+COMMENT ON COLUMN public.photos.annotated_storage_path IS 'Private bucket path of the flattened markup image; signed at read time into annotated_image_url.';
