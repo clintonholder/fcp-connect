@@ -462,6 +462,28 @@ function AdminPage() {
                   setInviteForm({ email: u.email, displayName: u.display_name ?? "", roleId: u.roles[0]?.id ?? "" });
                   setInviteOpen(true);
                 }}><Pencil className="h-3.5 w-3.5" /></Button>
+                {u.id !== me?.id && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={u.is_disabled || busy === `proxy-${u.id}`}
+                    aria-label={`View the site as ${u.display_name || u.email}`}
+                    onClick={async () => {
+                      setBusy(`proxy-${u.id}`);
+                      try {
+                        const target = await startProxy({ data: { userId: u.id } });
+                        setProxy(target);
+                        qc.invalidateQueries();
+                        toast.success(`Viewing as ${target.name}`);
+                        navigate({ to: "/" });
+                      } catch (err) { fail(err); }
+                      finally { setBusy(null); }
+                    }}
+                  >
+                    <Eye className="mr-1 h-3.5 w-3.5" />
+                    {busy === `proxy-${u.id}` ? "Opening…" : "View as"}
+                  </Button>
+                )}
                 <Button size="sm" variant="outline" disabled={busy === `invite-${u.id}`} onClick={async () => {
                   setBusy(`invite-${u.id}`);
                   try { await resend({ data: { email: u.email, origin: window.location.origin } }); toast.success("Invitation sent"); refresh(); }
