@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import {
   ArrowLeft, Plus, Pencil, Trash2, MoreVertical, Camera, ArrowUp, ArrowDown,
-  Check, ClipboardList, X, UserRound, Loader2,
+  Check, ClipboardList, X, UserRound, Loader2, ImagePlus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,11 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { PhotoDetail } from "@/components/PhotoViewer";
+import { readPhotoExif } from "@/lib/exif";
+
+/** Photos taken straight from a checklist task land in this project media phase. */
+const CHECKLIST_PHASE = "Checklists";
+
 
 type Member = { id: string; name: string };
 type Question = { id: string; item_id: string; prompt: string; answer: string | null; position: number };
