@@ -391,9 +391,15 @@ export function PhotoViewer({
 
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={download}><Download className="h-4 w-4 mr-1" />Download</Button>
+            {editable && !isVideo && (
+              <Button size="sm" variant="outline" onClick={() => setMarkupOpen(true)}>
+                <Highlighter className="h-4 w-4 mr-1" />Markup
+              </Button>
+            )}
             {editable && !editing && (
               <Button size="sm" variant="outline" onClick={() => setEditing(true)}><Pencil className="h-4 w-4 mr-1" />Edit</Button>
             )}
+
             {(canArchive ? canArchive(photo) : editable) && (
               <Button size="sm" variant="outline" className="text-destructive" onClick={removePhoto}>
                  <Trash2 className="h-4 w-4 mr-1" />Delete media
