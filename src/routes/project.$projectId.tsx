@@ -964,6 +964,16 @@ function ProjectDetail() {
             />
           )}
         </TabsContent>
+        <TabsContent value="notes" className="mt-0">
+          {project && (
+            <ProjectNotesTab
+              projectId={projectId}
+              companyId={project.company_id}
+              readOnly={!!project.archived_at}
+            />
+          )}
+        </TabsContent>
+
       </Tabs>
 
       {/* Photo map */}
