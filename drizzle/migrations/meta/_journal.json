@@ -8,6 +8,13 @@
       "when": 1790777775617,
       "tag": "0000_jobs_update_division_check",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1790780282073,
+      "tag": "0001_collaborator_project_edit_and_division_guard",
+      "breakpoints": true
     }
   ]
 }
