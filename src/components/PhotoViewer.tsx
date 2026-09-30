@@ -88,6 +88,13 @@ export function PhotoViewer({
     },
   });
 
+  useEffect(() => {
+    if (!focusCommentId || !comments) return;
+    const el = document.querySelector<HTMLElement>(`[data-comment-id="${focusCommentId}"]`);
+    if (el) { el.scrollIntoView({ block: "nearest", behavior: "smooth" }); el.focus({ preventScroll: true }); }
+  }, [focusCommentId, comments]);
+
+
   if (!photo || typeof document === "undefined") return null;
   const editable = canManage(photo);
   const isVideo = photo.media_type === "video";
