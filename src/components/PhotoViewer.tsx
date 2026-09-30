@@ -450,7 +450,16 @@ export function PhotoViewer({
           </div>
         </div>
       </div>
+      {markupOpen && !isVideo && (
+        <PhotoMarkupEditor
+          imageUrl={photo.image_url}
+          initialShapes={savedShapes}
+          onCancel={() => setMarkupOpen(false)}
+          onSave={saveMarkup}
+        />
+      )}
     </div>,
+
     document.body,
   );
 }
