@@ -655,7 +655,9 @@ function ProjectDetail() {
                 saving={saveEdit.isPending}
                 onSave={() => saveEdit.mutate()}
                 onCancel={closeEdit}
+                canEditDivisions={canEditDivisions}
               />
+
               <ProjectCollaborators
                 projectId={projectId}
                 companyId={project?.company_id}
