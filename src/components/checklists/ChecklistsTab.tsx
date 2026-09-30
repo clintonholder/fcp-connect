@@ -461,7 +461,9 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
                   {(canEdit || canAttach) && (
                     <div className="flex shrink-0 items-center gap-1">
                       {canEdit && <Button variant="ghost" size="icon" className="hidden sm:inline-flex" aria-label={`Edit ${item.title}`} onClick={() => setItemDialog({ item })}><Pencil className="h-4 w-4" /></Button>}
-                      {canAttach && <Button variant="ghost" size="icon" className="hidden sm:inline-flex" aria-label={`Attach photo to ${item.title}`} onClick={() => setAttachFor(item)}><Camera className="h-4 w-4" /></Button>}
+                      {canAttach && <Button variant="ghost" size="icon" className="hidden sm:inline-flex" disabled={capturingFor === item.id} aria-label={`Take photo for ${item.title}`} onClick={() => startCapture(item)}>{capturingFor === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}</Button>}
+                      {canAttach && <Button variant="ghost" size="icon" className="hidden sm:inline-flex" aria-label={`Attach photo to ${item.title}`} onClick={() => setAttachFor(item)}><ImagePlus className="h-4 w-4" /></Button>}
+
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" aria-label={`More options for ${item.title}`}><MoreVertical className="h-4 w-4" /></Button>
