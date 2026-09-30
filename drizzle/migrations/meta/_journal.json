@@ -50,6 +50,13 @@
       "when": 1790800605726,
       "tag": "0006_project_notes",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790803194357,
+      "tag": "0007_admin_delete_activity",
+      "breakpoints": true
     }
   ]
 }
