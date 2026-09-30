@@ -355,7 +355,10 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
             <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}><Pencil className="mr-1 h-4 w-4" />Edit</Button>
             <Button variant="outline" size="sm" aria-label="Delete checklist" onClick={async () => {
               if (!window.confirm(`Delete "${checklist.title}" and all its items? Attached media stays in the project.`)) return;
-              if (await run(supabase.from("checklists").delete().eq("id", checklist.id), "Checklist deleted")) onBack();
+              if (await run(supabase.from("checklists").delete().eq("id", checklist.id), "Checklist deleted")) {
+                log("checklist_deleted", { title: checklist.title });
+                onBack();
+              }
             }}><Trash2 className="h-4 w-4" /></Button>
           </div>
         )}
