@@ -47,6 +47,8 @@ export function PhotoViewer({
   const [tagInput, setTagInput] = useState("");
   const [zoom, setZoom] = useState(false);
   const [comment, setComment] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editBody, setEditBody] = useState("");
   const touchX = useRef<number | null>(null);
 
   useEffect(() => {
@@ -165,6 +167,27 @@ export function PhotoViewer({
     setComment("");
     qc.invalidateQueries({ queryKey: ["comments", photo.id] });
     qc.invalidateQueries({ queryKey: ["project-activity", photo.job_id] });
+  };
+
+  const refreshComments = () => {
+    qc.invalidateQueries({ queryKey: ["comments", photo.id] });
+    qc.invalidateQueries({ queryKey: ["project-activity", photo.job_id] });
+  };
+  const saveComment = async (id: string) => {
+    const body = editBody.trim();
+    if (!body) return;
+    const { error } = await supabase.from("comments").update({ body }).eq("id", id).eq("user_id", user!.id);
+    if (error) { toast.error(error.message); return; }
+    setEditingId(null);
+    toast.success("Comment updated");
+    refreshComments();
+  };
+  const deleteComment = async (id: string) => {
+    if (!window.confirm("Delete this comment? This can't be undone.")) return;
+    const { error } = await supabase.from("comments").delete().eq("id", id).eq("user_id", user!.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Comment deleted");
+    refreshComments();
   };
 
   const addTag = () => {
@@ -325,11 +348,27 @@ export function PhotoViewer({
                   <div key={c.id} data-comment-id={c.id}
                     tabIndex={c.id === focusCommentId ? -1 : undefined}
                     className={`rounded-md bg-muted/50 p-2 text-sm outline-none ${c.id === focusCommentId ? "ring-2 ring-primary" : ""}`}>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">{profile?.display_name || profile?.email || "User"}</span>
                       {" · "}{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
+                      {c.user_id === user?.id && editingId !== c.id && (
+                        <span className="ml-auto flex gap-1">
+                          <button type="button" aria-label="Edit comment" className="rounded p-1 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring outline-none"
+                            onClick={() => { setEditingId(c.id); setEditBody(c.body); }}><Pencil className="h-3 w-3" /></button>
+                          <button type="button" aria-label="Delete comment" className="rounded p-1 hover:text-destructive focus-visible:ring-2 focus-visible:ring-ring outline-none"
+                            onClick={() => deleteComment(c.id)}><Trash2 className="h-3 w-3" /></button>
+                        </span>
+                      )}
                     </div>
-                    <p>{c.body}</p>
+                    {editingId === c.id ? (
+                      <div className="mt-1 space-y-1">
+                        <Textarea value={editBody} onChange={(e) => setEditBody(e.target.value)} rows={2} aria-label="Edit comment text" />
+                        <div className="flex justify-end gap-1">
+                          <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>Cancel</Button>
+                          <Button size="sm" onClick={() => saveComment(c.id)} disabled={!editBody.trim()}>Save</Button>
+                        </div>
+                      </div>
+                    ) : <p>{c.body}</p>}
                   </div>
                 );
               })}
