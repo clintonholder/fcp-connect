@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { projectDivisions } from "@/lib/project-meta";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useShowArchived } from "@/lib/show-archived";
+import { useProxy } from "@/lib/proxy-context";
 import { useCompany } from "@/lib/company-context";
 import { useAuth } from "@/lib/auth-context";
 import { MapPin, Search, SlidersHorizontal } from "lucide-react";
@@ -93,7 +94,9 @@ function MapPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const visible = proxy ? new Set(proxy.visibleJobIds) : null;
     return (projects ?? []).filter((p) => {
+      if (visible && !visible.has(p.id)) return false;
       if (!showArchived && p.archived_at) return false;
       if (filters.division && !projectDivisions(p).includes(filters.division)) return false;
       if (filters.tag && !(p.tags ?? []).includes(filters.tag)) return false;
