@@ -409,7 +409,7 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
                   <button type="button" role="checkbox" aria-checked={completed} disabled={toggleDisabled}
                     aria-label={`${completed ? "Reopen" : "Complete"} ${item.title}${!completed && reason ? ` — ${reason}` : ""}`}
                     title={!completed && reason ? reason : undefined}
-                    onClick={() => run(supabase.from("checklist_items").update({ completed_at: completed ? null : new Date().toISOString() }).eq("id", item.id), completed ? "Task reopened" : "Task completed")}
+                    onClick={() => toggleItem(item, completed)}
                     className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${completed ? "border-primary bg-primary text-primary-foreground" : "border-muted-foreground/50 hover:border-primary"}`}>
                     {completed && <Check className="h-4 w-4" />}
                   </button>
