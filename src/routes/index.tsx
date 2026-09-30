@@ -16,6 +16,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { DIVISIONS, projectDivisions } from "@/lib/project-meta";
 import { useShowArchived } from "@/lib/show-archived";
+import { useProxy } from "@/lib/proxy-context";
 
 import { toast } from "sonner";
 const mdFmt = new Intl.DateTimeFormat(undefined, { month: "2-digit", day: "2-digit" });
@@ -135,7 +136,9 @@ function ProjectsPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
+    const visible = proxy ? new Set(proxy.visibleJobIds) : null;
     return (projects ?? []).filter((p) => {
+      if (visible && !visible.has(p.id)) return false;
       if (!showArchived && p.archived_at) return false;
       if (filters.division && !projectDivisions(p).includes(filters.division)) return false;
       if (filters.tag && !(p.tags ?? []).includes(filters.tag)) return false;
