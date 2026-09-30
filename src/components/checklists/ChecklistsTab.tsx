@@ -606,7 +606,7 @@ function AttachDialog({ item, photos, attached, onClose, onAttach }: {
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader><DialogTitle>Attach media to "{item.title}"</DialogTitle></DialogHeader>
-        <p className="text-sm text-muted-foreground">Choose from this project's media. To add new photos, upload them on the Media tab first.</p>
+        <p className="text-sm text-muted-foreground">Choose from this project's media, or use "Take photo" on the task to capture a new one.</p>
         {avail.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">No other project media to attach.</p> : (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {avail.map((p) => {
