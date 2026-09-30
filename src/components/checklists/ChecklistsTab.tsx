@@ -1,10 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import {
   ArrowLeft, Plus, Pencil, Trash2, MoreVertical, Camera, ArrowUp, ArrowDown,
-  Check, ClipboardList, X, UserRound, Loader2,
+  Check, ClipboardList, X, UserRound, Loader2, ImagePlus,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,11 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { PhotoDetail } from "@/components/PhotoViewer";
+import { readPhotoExif } from "@/lib/exif";
+
+/** Photos taken straight from a checklist task land in this project media phase. */
+const CHECKLIST_PHASE = "Checklists";
+
 
 type Member = { id: string; name: string };
 type Question = { id: string; item_id: string; prompt: string; answer: string | null; position: number };
@@ -70,8 +75,9 @@ export function ChecklistsTab({
   if (openId) {
     const cl = q.data?.lists.find((l) => l.id === openId);
     if (cl) return (
-      <ChecklistDetail checklist={cl} canEdit={edit} canWork={!readOnly} canAttach={canAttach && !readOnly}
+      <ChecklistDetail checklist={cl} companyId={companyId} canEdit={edit} canWork={!readOnly} canAttach={canAttach && !readOnly}
         members={members} photos={photos} onOpenPhoto={onOpenPhoto} onBack={() => setOpenId(null)} />
+
     );
   }
 
@@ -187,8 +193,8 @@ function ProgressRing({ pct }: { pct: number }) {
   );
 }
 
-function ChecklistDetail({ checklist, canEdit, canWork, canAttach, members, photos, onOpenPhoto, onBack }: {
-  checklist: Checklist; canEdit: boolean; canWork: boolean; canAttach: boolean; members: Member[];
+function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, members, photos, onOpenPhoto, onBack }: {
+  checklist: Checklist; companyId: string; canEdit: boolean; canWork: boolean; canAttach: boolean; members: Member[];
   photos: PhotoDetail[]; onOpenPhoto: (p: PhotoDetail) => void; onBack: () => void;
 }) {
   const qc = useQueryClient();
@@ -196,6 +202,10 @@ function ChecklistDetail({ checklist, canEdit, canWork, canAttach, members, phot
   const [editOpen, setEditOpen] = useState(false);
   const [itemDialog, setItemDialog] = useState<{ item?: Item } | null>(null);
   const [attachFor, setAttachFor] = useState<Item | null>(null);
+  const [capturingFor, setCapturingFor] = useState<string | null>(null);
+  const captureRef = useRef<HTMLInputElement>(null);
+  const captureItem = useRef<Item | null>(null);
+
   const key = ["checklist", checklist.id];
   const nameOf = (id: string | null) => members.find((m) => m.id === id)?.name ?? (id ? "Former member" : null);
 
@@ -226,6 +236,74 @@ function ChecklistDetail({ checklist, canEdit, canWork, canAttach, members, phot
     await refresh();
     return true;
   };
+
+  /** Opens the device camera for a task; the shot is filed under the Checklists phase and attached. */
+  const startCapture = (item: Item) => {
+    captureItem.current = item;
+    captureRef.current?.click();
+  };
+
+  const handleCapturedFile = async (files: FileList | null) => {
+    const file = files?.[0];
+    const item = captureItem.current;
+    captureItem.current = null;
+    if (captureRef.current) captureRef.current.value = "";
+    if (!file || !item) return;
+    setCapturingFor(item.id);
+    const progress = toast.loading("Adding photo…");
+    try {
+      const { data: u } = await supabase.auth.getUser();
+      const userId = u.user?.id;
+      if (!userId) throw new Error("Please sign in again to add photos");
+
+      let exif = { takenAt: null as string | null, latitude: null as number | null, longitude: null as number | null };
+      try { exif = await readPhotoExif(file); } catch { /* metadata is optional */ }
+      // Device location is a fallback only — never block the upload on it.
+      const coords = await new Promise<GeolocationPosition | null>((resolve) => {
+        if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null);
+        let done = false;
+        const finish = (v: GeolocationPosition | null) => { if (!done) { done = true; resolve(v); } };
+        setTimeout(() => finish(null), 6000);
+        try {
+          navigator.geolocation.getCurrentPosition((p) => finish(p), () => finish(null), { enableHighAccuracy: true, timeout: 6000 });
+        } catch { finish(null); }
+      });
+
+      const nameExt = (file.name.split(".").pop() || "").toLowerCase();
+      const ext = /^[a-z0-9]{2,5}$/.test(nameExt) ? nameExt : (file.type.split("/")[1] || "jpg");
+      const path = `${userId}/${checklist.job_id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("job-photos")
+        .upload(path, file, { contentType: file.type || "image/jpeg", upsert: false });
+      if (upErr) throw upErr;
+      const { data: pub } = supabase.storage.from("job-photos").getPublicUrl(path);
+      const hasExifGps = exif.latitude != null && exif.longitude != null;
+
+      const { data: photo, error: insErr } = await supabase.from("photos").insert({
+        job_id: checklist.job_id, user_id: userId, company_id: companyId,
+        storage_path: path, image_url: pub.publicUrl, phase: CHECKLIST_PHASE,
+        media_type: "image", mime_type: file.type || null, file_size: file.size,
+        taken_at: exif.takenAt ?? new Date().toISOString(),
+        latitude: hasExifGps ? exif.latitude : (coords?.coords.latitude ?? null),
+        longitude: hasExifGps ? exif.longitude : (coords?.coords.longitude ?? null),
+        accuracy: hasExifGps ? null : (coords?.coords.accuracy ?? null),
+      }).select("id").single();
+      if (insErr) throw insErr;
+
+      const { error: linkErr } = await supabase.from("checklist_item_photos")
+        .insert({ item_id: item.id, photo_id: photo.id, job_id: checklist.job_id, attached_by: userId });
+      if (linkErr) throw linkErr;
+
+      toast.success("Photo added to the task and the project's Checklists media", { id: progress });
+      await qc.invalidateQueries({ queryKey: ["photos", checklist.job_id] });
+      await refresh();
+    } catch (e) {
+      toast.error(errMsg(e), { id: progress });
+    } finally {
+      setCapturingFor(null);
+    }
+  };
+
+
 
   const items = q.data?.items ?? [];
   const done = items.filter((i) => i.completed_at).length;
@@ -305,7 +383,9 @@ function ChecklistDetail({ checklist, canEdit, canWork, canAttach, members, phot
             const actions = (
               <>
                 {canEdit && <DropdownMenuItem onSelect={() => setItemDialog({ item })}><Pencil className="mr-2 h-4 w-4" />Edit task</DropdownMenuItem>}
-                {canAttach && <DropdownMenuItem onSelect={() => setAttachFor(item)}><Camera className="mr-2 h-4 w-4" />Attach photo</DropdownMenuItem>}
+                {canAttach && <DropdownMenuItem disabled={capturingFor === item.id} onSelect={() => startCapture(item)}><Camera className="mr-2 h-4 w-4" />Take photo</DropdownMenuItem>}
+                {canAttach && <DropdownMenuItem onSelect={() => setAttachFor(item)}><ImagePlus className="mr-2 h-4 w-4" />Attach photo</DropdownMenuItem>}
+
                 {canEdit && <>
                   <DropdownMenuItem disabled={idx === 0} onSelect={() => move(item, -1)}><ArrowUp className="mr-2 h-4 w-4" />Move up</DropdownMenuItem>
                   <DropdownMenuItem disabled={idx === items.length - 1} onSelect={() => move(item, 1)}><ArrowDown className="mr-2 h-4 w-4" />Move down</DropdownMenuItem>
@@ -329,7 +409,7 @@ function ChecklistDetail({ checklist, canEdit, canWork, canAttach, members, phot
                   </button>
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className={`font-semibold ${completed ? "line-through" : ""}`}>{item.title}</span>
+                      <span className="font-semibold">{item.title}</span>
                       {assignee && <span className="text-xs text-muted-foreground">· {assignee}</span>}
                       {item.photos_required && <Badge variant="outline" className="text-xs"><Camera className="mr-1 h-3 w-3" />Photos required</Badge>}
                     </div>
@@ -381,7 +461,9 @@ function ChecklistDetail({ checklist, canEdit, canWork, canAttach, members, phot
                   {(canEdit || canAttach) && (
                     <div className="flex shrink-0 items-center gap-1">
                       {canEdit && <Button variant="ghost" size="icon" className="hidden sm:inline-flex" aria-label={`Edit ${item.title}`} onClick={() => setItemDialog({ item })}><Pencil className="h-4 w-4" /></Button>}
-                      {canAttach && <Button variant="ghost" size="icon" className="hidden sm:inline-flex" aria-label={`Attach photo to ${item.title}`} onClick={() => setAttachFor(item)}><Camera className="h-4 w-4" /></Button>}
+                      {canAttach && <Button variant="ghost" size="icon" className="hidden sm:inline-flex" disabled={capturingFor === item.id} aria-label={`Take photo for ${item.title}`} onClick={() => startCapture(item)}>{capturingFor === item.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}</Button>}
+                      {canAttach && <Button variant="ghost" size="icon" className="hidden sm:inline-flex" aria-label={`Attach photo to ${item.title}`} onClick={() => setAttachFor(item)}><ImagePlus className="h-4 w-4" /></Button>}
+
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="icon" aria-label={`More options for ${item.title}`}><MoreVertical className="h-4 w-4" /></Button>
@@ -401,6 +483,11 @@ function ChecklistDetail({ checklist, canEdit, canWork, canAttach, members, phot
           )}
         </div>
       )}
+
+      <input ref={captureRef} type="file" accept="image/*" capture="environment" className="hidden"
+        onChange={(e) => handleCapturedFile(e.target.files)} />
+
+
 
       <ChecklistDialog open={editOpen} onOpenChange={setEditOpen} members={members} initial={checklist}
         onSave={async (v) => {
@@ -519,7 +606,7 @@ function AttachDialog({ item, photos, attached, onClose, onAttach }: {
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
         <DialogHeader><DialogTitle>Attach media to "{item.title}"</DialogTitle></DialogHeader>
-        <p className="text-sm text-muted-foreground">Choose from this project's media. To add new photos, upload them on the Media tab first.</p>
+        <p className="text-sm text-muted-foreground">Choose from this project's media, or use "Take photo" on the task to capture a new one.</p>
         {avail.length === 0 ? <p className="py-6 text-center text-sm text-muted-foreground">No other project media to attach.</p> : (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
             {avail.map((p) => {
