@@ -383,7 +383,9 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
             const actions = (
               <>
                 {canEdit && <DropdownMenuItem onSelect={() => setItemDialog({ item })}><Pencil className="mr-2 h-4 w-4" />Edit task</DropdownMenuItem>}
-                {canAttach && <DropdownMenuItem onSelect={() => setAttachFor(item)}><Camera className="mr-2 h-4 w-4" />Attach photo</DropdownMenuItem>}
+                {canAttach && <DropdownMenuItem disabled={capturingFor === item.id} onSelect={() => startCapture(item)}><Camera className="mr-2 h-4 w-4" />Take photo</DropdownMenuItem>}
+                {canAttach && <DropdownMenuItem onSelect={() => setAttachFor(item)}><ImagePlus className="mr-2 h-4 w-4" />Attach photo</DropdownMenuItem>}
+
                 {canEdit && <>
                   <DropdownMenuItem disabled={idx === 0} onSelect={() => move(item, -1)}><ArrowUp className="mr-2 h-4 w-4" />Move up</DropdownMenuItem>
                   <DropdownMenuItem disabled={idx === items.length - 1} onSelect={() => move(item, 1)}><ArrowDown className="mr-2 h-4 w-4" />Move down</DropdownMenuItem>
