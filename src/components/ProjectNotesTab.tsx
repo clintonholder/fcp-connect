@@ -29,11 +29,7 @@ export function ProjectNotesTab({ projectId, companyId, readOnly, focusNoteId }:
   readOnly: boolean;
 }) {
   const qc = useQueryClient();
-  const [loadedNotes, setLoadedNotes] = useState(0);
-  useEffect(() => {
-    if (!focusNoteId || !loadedNotes) return;
-    document.getElementById(`note-${focusNoteId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [focusNoteId, loadedNotes]);
+
   const { user } = useAuth();
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
@@ -60,6 +56,12 @@ export function ProjectNotesTab({ projectId, companyId, readOnly, focusNoteId }:
   });
 
   const refresh = () => qc.invalidateQueries({ queryKey: ["project-notes", projectId] });
+
+  const noteCount = notes.length;
+  useEffect(() => {
+    if (!focusNoteId || !noteCount) return;
+    document.getElementById(`note-${focusNoteId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [focusNoteId, noteCount]);
 
   async function addNote() {
     const body = draft.trim();
@@ -140,7 +142,6 @@ export function ProjectNotesTab({ projectId, companyId, readOnly, focusNoteId }:
         </div>
       ) : (
         <div className="space-y-2">
-          {loadedNotes !== notes.length && setTimeout(() => setLoadedNotes(notes.length), 0) && null}
           {notes.map((n) => {
             const mine = n.user_id === user?.id;
             const edited = n.updated_at !== n.created_at;
