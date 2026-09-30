@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useMyRoles, PERMISSIONS, type PermissionKey } from "@/lib/roles";
@@ -12,14 +12,14 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Shield, UserPlus, Send, Ban, RotateCcw, Plus, Pencil, KeyRound, Trash2, Check, X } from "lucide-react";
+import { Shield, UserPlus, Send, Ban, RotateCcw, Plus, Pencil, KeyRound, Trash2, Check, X, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import {
   adminListUsers, adminListAudit, adminInviteUser, adminResendInvite,
   adminSetUserDisabled, adminSetUserRoles, adminSaveRole,
   adminSendPasswordReset, adminDeleteUser, adminCreateUser, adminUpdateUser,
-  adminSetUserDivisions,
+  adminSetUserDivisions, adminDeleteRole,
 } from "@/lib/admin.functions";
 import { DIVISIONS } from "@/lib/project-meta";
 
@@ -76,7 +76,7 @@ function AdminPage() {
   const [inviteForm, setInviteForm] = useState({ email: "", displayName: "", roleId: "" });
 
   const [roleOpen, setRoleOpen] = useState(false);
-  const emptyPerms = Object.fromEntries(PERMISSIONS.map((p) => [p.key, true])) as Record<PermissionKey, boolean>;
+  const emptyPerms = Object.fromEntries(PERMISSIONS.map((p) => [p.key, false])) as Record<PermissionKey, boolean>;
   const [roleForm, setRoleForm] = useState<{ id?: string; name: string; isDirector: boolean; permissions: Record<PermissionKey, boolean> }>(
     { name: "", isDirector: false, permissions: emptyPerms },
   );
@@ -172,6 +172,12 @@ function AdminPage() {
     onError: fail,
   });
 
+  const deleteRoleMut = useMutation({
+    mutationFn: (r: { id: string; name: string }) => deleteRole({ data: { roleId: r.id } }),
+    onSuccess: (_res, r) => { toast.success(`Role "${r.name}" deleted`); refresh(); },
+    onError: fail,
+  });
+
   const [permissionSaveStatus, setPermissionSaveStatus] = useState<{
     roleName: string;
     permissionName: string;
@@ -195,15 +201,15 @@ function AdminPage() {
       },
     }),
     onMutate: ({ role, permission }) => {
-      setPermissionSaveStatus({ roleName: role.name, permissionName: permission.label, state: "saving" });
+      setPermissionSaveStatus({ roleName: role.name, permissionName: permLabel(permission), state: "saving" });
     },
     onSuccess: (_result, { role, permission }) => {
-      setPermissionSaveStatus({ roleName: role.name, permissionName: permission.label, state: "saved" });
+      setPermissionSaveStatus({ roleName: role.name, permissionName: permLabel(permission), state: "saved" });
       refresh();
     },
     onError: (error, { role, permission }) => {
       const message = (error as Error).message || "Permission could not be saved.";
-      setPermissionSaveStatus({ roleName: role.name, permissionName: permission.label, state: "error", message });
+      setPermissionSaveStatus({ roleName: role.name, permissionName: permLabel(permission), state: "error", message });
       fail(error);
     },
   });
@@ -307,10 +313,10 @@ function AdminPage() {
               ))}
             </section>
             <section aria-labelledby="director-access-heading" className="space-y-2">
-              <h3 id="director-access-heading" className="font-medium">Division director access</h3>
+              <h3 id="director-access-heading" className="font-medium">Division Director access</h3>
               <p className="text-sm text-muted-foreground">This separate role flag grants project visibility in assigned divisions, beyond individual action permissions.</p>
               {(roles.data ?? []).filter((r) => r.is_director).length === 0 ? (
-                <p className="text-sm text-muted-foreground">No division director roles.</p>
+                <p className="text-sm text-muted-foreground">No Division Director roles.</p>
               ) : (
                 <ul className="flex flex-wrap gap-2">
                   {(roles.data ?? []).filter((r) => r.is_director).map((r) => (
@@ -322,9 +328,9 @@ function AdminPage() {
           </CardContent>
         </Card>
 
+        <AdminSection id="manage-roles" title="Manage Roles" level={3}>
         <Card>
           <CardContent className="space-y-2 p-3">
-            <h3 className="font-medium">Manage roles</h3>
             {(roles.data ?? []).filter((r) => !r.is_admin).length === 0 && (
               <p className="text-sm text-muted-foreground">No non-administrator roles yet.</p>
             )}
@@ -332,7 +338,7 @@ function AdminPage() {
               <div key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-medium">{r.name}</span>
-                  {r.is_director && <Badge variant="secondary">Division director</Badge>}
+                  {r.is_director && <Badge variant="secondary">Division Director</Badge>}
                   {!r.is_active && <Badge variant="outline">Inactive</Badge>}
                 </div>
                 <div className="flex gap-2">
@@ -343,14 +349,22 @@ function AdminPage() {
                     try { await saveRole({ data: { id: r.id, name: r.name, isActive: !r.is_active } }); toast.success("Role updated"); refresh(); }
                     catch (e) { fail(e); }
                   }}>{r.is_active ? "Deactivate" : "Reactivate"}</Button>
+                  <Button size="sm" variant="ghost" className="text-destructive" aria-label={`Delete ${r.name}`}
+                    disabled={deleteRoleMut.isPending}
+                    onClick={() => {
+                      if (!window.confirm(`Delete the role "${r.name}"?\n\nThe role and its permission settings are removed permanently. This is only allowed when no user, invitation or project collaborator uses it. Audit history is kept.\n\nTo keep the role but stop using it, choose Deactivate instead.`)) return;
+                      deleteRoleMut.mutate(r);
+                    }}>
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               </div>
             ))}
           </CardContent>
         </Card>
+        </AdminSection>
 
-        <div>
-          <h3 className="mb-1 font-medium">Permission matrix</h3>
+        <AdminSection id="permission-matrix" title="Permission Matrix" level={3} defaultOpen={false}>
           <p className="mb-3 text-sm text-muted-foreground">Toggle an action for every non-administrator role. The first column stays visible while scrolling across roles.</p>
           <Card>
             <CardContent className="p-0">
@@ -370,7 +384,7 @@ function AdminPage() {
                   <tbody>
                     {PERMISSIONS.map((p) => (
                       <tr key={p.key}>
-                        <th scope="row" className="sticky left-0 z-10 border-b bg-background p-3 text-left font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.2)]">{p.label}</th>
+                        <th scope="row" className="sticky left-0 z-10 border-b bg-background p-3 text-left font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.2)]">{permLabel(p)}</th>
                         {(roles.data ?? []).filter((r) => !r.is_admin).map((r) => {
                           const enabled = (r as Record<string, unknown>)[p.key] === true;
                           const saving = permissionMut.isPending && permissionMut.variables?.role.id === r.id && permissionMut.variables.permission.key === p.key;
@@ -378,9 +392,9 @@ function AdminPage() {
                             <td key={r.id} className="border-b p-2 text-center">
                               <button
                                 type="button"
-                                aria-label={`${r.name} — ${p.label}`}
+                                aria-label={`${r.name} — ${permLabel(p)}`}
                                 aria-pressed={enabled}
-                                title={`${r.name} — ${p.label}: ${enabled ? "Enabled" : "Disabled"}. Activate to ${enabled ? "disable" : "enable"}.`}
+                                title={`${r.name} — ${permLabel(p)}: ${enabled ? "Enabled" : "Disabled"}. Activate to ${enabled ? "disable" : "enable"}.`}
                                 disabled={permissionMut.isPending}
                                 onClick={() => permissionMut.mutate({ role: r, permission: p, enabled: !enabled })}
                                 className="inline-flex h-10 w-10 items-center justify-center rounded-full outline-none transition focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60"
@@ -414,11 +428,10 @@ function AdminPage() {
               )}
             </CardContent>
           </Card>
-        </div>
+        </AdminSection>
       </section>
 
-      <section>
-        <h2 className="mb-3 text-lg font-semibold">Users</h2>
+      <AdminSection id="users" title="Users">
         <Card><CardContent className="space-y-2 p-3">
           {users.isLoading && <p className="text-sm text-muted-foreground">Loading…</p>}
           {users.error && <p className="text-sm text-destructive">{(users.error as Error).message}</p>}
@@ -544,7 +557,7 @@ function AdminPage() {
             </div>
           ))}
         </CardContent></Card>
-      </section>
+      </AdminSection>
 
 
       <Dialog open={roleOpen} onOpenChange={setRoleOpen}>
@@ -558,7 +571,7 @@ function AdminPage() {
                 onCheckedChange={(v) => setRoleForm({ ...roleForm, isDirector: v === true })}
               />
               <span>
-                Division director
+                Division Director
                 <span className="block text-xs text-muted-foreground">
                   Sees every project in the divisions assigned to them.
                 </span>
@@ -576,7 +589,7 @@ function AdminPage() {
                         setRoleForm({ ...roleForm, permissions: { ...roleForm.permissions, [p.key]: v === true } })
                       }
                     />
-                    {p.label}
+                    {permLabel(p)}
                   </label>
                 ))}
               </div>
@@ -590,8 +603,7 @@ function AdminPage() {
         </DialogContent>
       </Dialog>
 
-      <section>
-        <h2 className="mb-3 text-lg font-semibold">Audit history</h2>
+      <AdminSection id="audit" title="Audit History" defaultOpen={false}>
         <Card><CardContent className="p-3">
           {(audit.data ?? []).length === 0 && <p className="text-sm text-muted-foreground">Nothing recorded yet.</p>}
           <ul className="space-y-2">
@@ -603,7 +615,51 @@ function AdminPage() {
             ))}
           </ul>
         </CardContent></Card>
-      </section>
+      </AdminSection>
     </div>
+  );
+}
+
+/** Admin-only labels: photo permissions cover photos and videos. Keys unchanged. */
+const ADMIN_PERM_LABEL: Partial<Record<PermissionKey, string>> = {
+  can_add_photos: "Add media",
+  can_edit_photos: "Edit media",
+  can_delete_photos: "Delete media",
+};
+function permLabel(p: (typeof PERMISSIONS)[number]) {
+  return ADMIN_PERM_LABEL[p.key] ?? p.label;
+}
+
+/** Independently collapsible section; content stays mounted so state is never lost. */
+function AdminSection({ id, title, defaultOpen = true, actions, level = 2, children }: {
+  id: string; title: string; defaultOpen?: boolean; actions?: ReactNode; level?: 2 | 3; children: ReactNode;
+}) {
+  const storageKey = `admin-section-${id}`;
+  const [open, setOpen] = useState(defaultOpen);
+  useEffect(() => {
+    const v = sessionStorage.getItem(storageKey);
+    if (v !== null) setOpen(v === "1");
+  }, [storageKey]);
+  const toggle = () => setOpen((o) => { sessionStorage.setItem(storageKey, o ? "0" : "1"); return !o; });
+  const Heading = level === 2 ? "h2" : "h3";
+  return (
+    <section aria-labelledby={`${id}-heading`} className="space-y-3">
+      <div className="flex items-center justify-between gap-3">
+        <Heading id={`${id}-heading`} className={level === 2 ? "text-lg font-semibold" : "font-medium"}>
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-controls={`${id}-panel`}
+            onClick={toggle}
+            className="inline-flex items-center gap-1 rounded-md px-1 outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
+            <ChevronDown aria-hidden="true" className={`h-4 w-4 transition-transform ${open ? "" : "-rotate-90"}`} />
+            {title}
+          </button>
+        </Heading>
+        {actions}
+      </div>
+      <div id={`${id}-panel`} hidden={!open}>{children}</div>
+    </section>
   );
 }

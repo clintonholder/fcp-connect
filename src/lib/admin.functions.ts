@@ -441,3 +441,39 @@ export const adminSetUserDivisions = createServerFn({ method: "POST" })
     await audit(context.userId, "user_divisions_changed", "user", data.userId, { divisions: data.divisions });
     return { ok: true };
   });
+
+/* ----------------------------- delete a role ----------------------------- */
+
+/** Deletes an unused, non-administrator role. Never cascades assignments or audit history. */
+export const adminDeleteRole = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { roleId: string }) => {
+    if (!d?.roleId) throw new Error("Missing role");
+    return { roleId: d.roleId };
+  })
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context);
+    const db = await admin();
+    const { data: role } = await db.from("app_roles").select("id, name, is_admin").eq("id", data.roleId).maybeSingle();
+    if (!role) throw new Error("That role no longer exists");
+    if (role.is_admin) throw new Error("Administrator roles cannot be deleted. Deactivate it instead.");
+
+    const count = async (table: "user_roles" | "invitations" | "project_collaborators") => {
+      const { count, error } = await db.from(table).select("id", { count: "exact", head: true }).eq("role_id", data.roleId);
+      if (error) throw new Error(error.message);
+      return count ?? 0;
+    };
+    const [users, invites, collabs] = await Promise.all([count("user_roles"), count("invitations"), count("project_collaborators")]);
+    const uses: string[] = [];
+    if (users) uses.push(`${users} user${users === 1 ? "" : "s"}`);
+    if (invites) uses.push(`${invites} invitation${invites === 1 ? "" : "s"}`);
+    if (collabs) uses.push(`${collabs} project collaborator assignment${collabs === 1 ? "" : "s"}`);
+    if (uses.length) {
+      throw new Error(`"${role.name}" is still used by ${uses.join(", ")}. Unassign it first, or deactivate the role instead.`);
+    }
+
+    const { error } = await db.from("app_roles").delete().eq("id", data.roleId);
+    if (error) throw new Error(error.message);
+    await audit(context.userId, "role_deleted", "role", data.roleId, { name: role.name });
+    return { ok: true };
+  });
