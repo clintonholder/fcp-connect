@@ -78,6 +78,12 @@ export function ProjectCollaborators({
         added_by: (await supabase.auth.getUser()).data.user?.id ?? null,
       });
       if (error) throw new Error(error.message.includes("duplicate") ? "They are already a collaborator" : error.message);
+      if (companyId) {
+        void logActivity({
+          company_id: companyId, job_id: projectId, kind: "collaborator_added",
+          meta: { person: nameOf(personId) },
+        });
+      }
     },
     onSuccess: () => { toast.success("Collaborator added"); setPersonId(""); refresh(); },
     onError: (e) => toast.error((e as Error).message),
@@ -85,8 +91,15 @@ export function ProjectCollaborators({
 
   const remove = useMutation({
     mutationFn: async (id: string) => {
+      const target = (collaborators.data ?? []).find((c) => c.id === id);
       const { error } = await supabase.from("project_collaborators").delete().eq("id", id);
       if (error) throw new Error(error.message);
+      if (companyId) {
+        void logActivity({
+          company_id: companyId, job_id: projectId, kind: "collaborator_removed",
+          meta: { person: target ? nameOf(target.user_id) : null },
+        });
+      }
     },
     onSuccess: () => { toast.success("Collaborator removed"); refresh(); },
     onError: (e) => toast.error((e as Error).message),
