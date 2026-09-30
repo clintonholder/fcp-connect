@@ -8,10 +8,19 @@ const TTL_SECONDS = 60 * 60 * 4;
  * Swap in short-lived signed links for the photos the signed-in person may see.
  */
 export async function signPhotoUrls<
-  T extends { storage_path?: string | null; image_url: string; annotated_image_url?: string | null },
+  T extends {
+    storage_path?: string | null;
+    image_url: string;
+    annotated_image_url?: string | null;
+    annotated_storage_path?: string | null;
+  },
 >(rows: T[]): Promise<T[]> {
   const paths = Array.from(
-    new Set(rows.map((r) => r.storage_path).filter((p): p is string => !!p)),
+    new Set(
+      rows
+        .flatMap((r) => [r.storage_path, r.annotated_storage_path])
+        .filter((p): p is string => !!p),
+    ),
   );
   if (!paths.length) return rows;
 
@@ -26,6 +35,13 @@ export async function signPhotoUrls<
 
   return rows.map((r) => {
     const signed = r.storage_path ? byPath.get(r.storage_path) : undefined;
-    return signed ? { ...r, image_url: signed } : r;
+    const signedAnnotated = r.annotated_storage_path ? byPath.get(r.annotated_storage_path) : undefined;
+    if (!signed && !signedAnnotated) return r;
+    return {
+      ...r,
+      ...(signed ? { image_url: signed } : {}),
+      ...(r.annotated_storage_path ? { annotated_image_url: signedAnnotated ?? null } : {}),
+    };
   });
 }
+
