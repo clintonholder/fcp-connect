@@ -64,6 +64,7 @@ function AdminPage() {
   const setDisabled = useServerFn(adminSetUserDisabled);
   const setRoles = useServerFn(adminSetUserRoles);
   const saveRole = useServerFn(adminSaveRole);
+  const deleteRole = useServerFn(adminDeleteRole);
   const createUser = useServerFn(adminCreateUser);
   const sendReset = useServerFn(adminSendPasswordReset);
   const deleteUser = useServerFn(adminDeleteUser);
