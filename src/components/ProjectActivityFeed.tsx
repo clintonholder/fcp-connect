@@ -1,9 +1,11 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { useMyRoles } from "@/lib/roles";
 import { formatDistanceToNow, format } from "date-fns";
 import {
   MessageSquare, Play, ImageOff, AlertTriangle, ClipboardList, Camera,
-  Users, StickyNote, FolderCog, Activity as ActivityIcon,
+  Users, StickyNote, FolderCog, Activity as ActivityIcon, Trash2,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -161,6 +163,22 @@ export function ProjectActivityFeed({
   });
 
   const byId = useMemo(() => new Map(photos.map((p) => [p.id, p])), [photos]);
+  const { isAdmin } = useMyRoles();
+  const qc = useQueryClient();
+  const removeEntry = async (entry: Entry) => {
+    const msg = entry.isComment
+      ? "Delete this comment? It will also be removed from the photo."
+      : "Delete this activity item?";
+    if (!window.confirm(msg)) return;
+    const raw = entry.id.slice(2);
+    const { data: del, error } = entry.isComment
+      ? await supabase.from("comments").delete().eq("id", raw).select("id")
+      : await supabase.from("activity_events").delete().eq("id", raw).select("id");
+    if (error || !del?.length) { toast.error(error?.message ?? "Could not delete this item"); return; }
+    toast.success("Activity item deleted");
+    qc.invalidateQueries({ queryKey: ["project-activity", projectId] });
+    if (entry.isComment) qc.invalidateQueries({ queryKey: ["comments"] });
+  };
   const entries = useMemo(
     () => (data ?? []).filter((x) => filter === "all" || x.category === filter),
     [data, filter],
@@ -219,16 +237,17 @@ export function ProjectActivityFeed({
           {entries.map((entry) => {
             const meta = CATEGORY_META[entry.category];
             const photo = entry.photoId ? byId.get(entry.photoId) : undefined;
+            const showThumb = entry.isComment || !!photo;
             const isVideo = photo?.media_type === "video";
             const when = new Date(entry.createdAt);
-            const clickable = (entry.isComment && !!photo) || (entry.category === "checklists" && !!onOpenChecklists);
+            const clickable = !!photo || (entry.category === "checklists" && !!onOpenChecklists);
             const open = () => {
-              if (entry.isComment && photo) onOpen(photo, entry.commentId!);
+              if (photo) onOpen(photo, entry.commentId ?? "");
               else if (entry.category === "checklists") onOpenChecklists?.();
             };
             const body = (
               <>
-                {entry.isComment ? (
+                {showThumb ? (
                   <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-md bg-muted">
                     {photo ? (
                       isVideo ? (
@@ -253,8 +272,8 @@ export function ProjectActivityFeed({
                     <span className="font-medium text-foreground">{entry.author}</span>
                     <time dateTime={entry.createdAt} title={format(when, "PPpp")}>{formatDistanceToNow(when, { addSuffix: true })}</time>
                     <Badge variant="secondary" className="text-[10px]">{meta.label}</Badge>
-                    {entry.isComment && photo?.phase && <Badge variant="outline" className="text-[10px]">{photo.phase}</Badge>}
-                    {entry.isComment && isVideo && <Badge variant="outline" className="text-[10px]">Video</Badge>}
+                    {showThumb && photo?.phase && <Badge variant="outline" className="text-[10px]">{photo.phase}</Badge>}
+                    {showThumb && isVideo && <Badge variant="outline" className="text-[10px]">Video</Badge>}
                     {entry.isComment && !photo && <span className="italic">Media archived or unavailable</span>}
                   </div>
                   <p className="mt-1 whitespace-pre-wrap break-words text-sm">{entry.text}</p>
@@ -262,7 +281,7 @@ export function ProjectActivityFeed({
               </>
             );
             return (
-              <li key={entry.id}>
+              <li key={entry.id} className="flex items-start gap-1">
                 {clickable ? (
                   <button type="button" onClick={open}
                     aria-label={`${entry.author} ${entry.isComment ? "commented" : ""} ${formatDistanceToNow(when, { addSuffix: true })}: ${entry.text}`}
@@ -271,6 +290,12 @@ export function ProjectActivityFeed({
                   </button>
                 ) : (
                   <div className="flex w-full gap-3 rounded-lg border bg-card p-3">{body}</div>
+                )}
+                {isAdmin && (
+                  <Button variant="ghost" size="icon" className="shrink-0" aria-label="Delete activity item"
+                    onClick={() => void removeEntry(entry)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 )}
               </li>
             );
