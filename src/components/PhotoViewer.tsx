@@ -65,7 +65,10 @@ export function PhotoViewer({
     setTags(photo.tags ?? []);
     setEditing(false);
     setZoom(false);
+    setMarkupOpen(false);
+    setShowOriginal(false);
   }, [photo?.id]);
+
 
   const prev = useCallback(() => onIndexChange((index - 1 + photos.length) % photos.length), [index, photos.length, onIndexChange]);
   const next = useCallback(() => onIndexChange((index + 1) % photos.length), [index, photos.length, onIndexChange]);
