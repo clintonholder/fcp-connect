@@ -143,7 +143,7 @@ export function ProjectNotesTab({ projectId, companyId, readOnly, focusNoteId }:
       ) : (
         <div className="space-y-2">
           {notes.map((n) => {
-            const mine = n.user_id === user?.id;
+            const mine = n.user_id === effectiveUserId || isAdmin;
             const edited = n.updated_at !== n.created_at;
             return (
               <Card key={n.id} id={`note-${n.id}`} className={`p-3 ${focusNoteId === n.id ? "ring-2 ring-primary" : ""}`}>
