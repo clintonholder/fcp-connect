@@ -43,6 +43,9 @@ export function PhotoViewer({
 }) {
   const photo = photos[index];
   const { user } = useAuth();
+  const { proxy } = useProxy();
+  const { isAdmin: isAdminUser } = useMyRoles();
+  const effectiveUserId = proxy ? proxy.userId : user?.id;
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [caption, setCaption] = useState("");
