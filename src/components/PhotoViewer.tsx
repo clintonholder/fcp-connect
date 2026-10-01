@@ -428,7 +428,7 @@ export function PhotoViewer({
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">{profile?.display_name || profile?.email || "User"}</span>
                       {" · "}{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
-                      {c.user_id === user?.id && editingId !== c.id && (
+                      {(c.user_id === effectiveUserId || isAdminUser) && editingId !== c.id && (
                         <span className="ml-auto flex gap-1">
                           <button type="button" aria-label="Edit comment" className="rounded p-1 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring outline-none"
                             onClick={() => { setEditingId(c.id); setEditBody(c.body); }}><Pencil className="h-3 w-3" /></button>
