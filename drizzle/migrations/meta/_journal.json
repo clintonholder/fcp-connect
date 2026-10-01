@@ -64,6 +64,13 @@
       "when": 1790813043744,
       "tag": "0008_admin_edit_notes_and_comments",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790876879391,
+      "tag": "0009_jobs_select_policy_inline",
+      "breakpoints": true
     }
   ]
 }
