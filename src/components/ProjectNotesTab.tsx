@@ -31,6 +31,9 @@ export function ProjectNotesTab({ projectId, companyId, readOnly, focusNoteId }:
   const qc = useQueryClient();
 
   const { user } = useAuth();
+  const { proxy } = useProxy();
+  const { isAdmin } = useMyRoles();
+  const effectiveUserId = proxy ? proxy.userId : user?.id;
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
