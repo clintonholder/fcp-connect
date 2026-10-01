@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { Pencil, Trash2, Loader2, StickyNote } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { useProxy } from "@/lib/proxy-context";
+import { useMyRoles } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
