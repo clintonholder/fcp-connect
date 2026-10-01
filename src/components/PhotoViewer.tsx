@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { useProxy } from "@/lib/proxy-context";
+import { useMyRoles } from "@/lib/roles";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { logActivity } from "@/lib/activity";
@@ -43,6 +45,9 @@ export function PhotoViewer({
 }) {
   const photo = photos[index];
   const { user } = useAuth();
+  const { proxy } = useProxy();
+  const { isAdmin: isAdminUser } = useMyRoles();
+  const effectiveUserId = proxy ? proxy.userId : user?.id;
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [caption, setCaption] = useState("");
@@ -423,7 +428,7 @@ export function PhotoViewer({
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">{profile?.display_name || profile?.email || "User"}</span>
                       {" · "}{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
-                      {c.user_id === user?.id && editingId !== c.id && (
+                      {(c.user_id === effectiveUserId || isAdminUser) && editingId !== c.id && (
                         <span className="ml-auto flex gap-1">
                           <button type="button" aria-label="Edit comment" className="rounded p-1 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring outline-none"
                             onClick={() => { setEditingId(c.id); setEditBody(c.body); }}><Pencil className="h-3 w-3" /></button>

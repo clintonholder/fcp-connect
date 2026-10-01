@@ -5,6 +5,8 @@ import { toast } from "sonner";
 import { Pencil, Trash2, Loader2, StickyNote } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
+import { useProxy } from "@/lib/proxy-context";
+import { useMyRoles } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card } from "@/components/ui/card";
@@ -31,6 +33,9 @@ export function ProjectNotesTab({ projectId, companyId, readOnly, focusNoteId }:
   const qc = useQueryClient();
 
   const { user } = useAuth();
+  const { proxy } = useProxy();
+  const { isAdmin } = useMyRoles();
+  const effectiveUserId = proxy ? proxy.userId : user?.id;
   const [draft, setDraft] = useState("");
   const [saving, setSaving] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -143,7 +148,7 @@ export function ProjectNotesTab({ projectId, companyId, readOnly, focusNoteId }:
       ) : (
         <div className="space-y-2">
           {notes.map((n) => {
-            const mine = n.user_id === user?.id;
+            const mine = n.user_id === effectiveUserId || isAdmin;
             const edited = n.updated_at !== n.created_at;
             return (
               <Card key={n.id} id={`note-${n.id}`} className={`p-3 ${focusNoteId === n.id ? "ring-2 ring-primary" : ""}`}>

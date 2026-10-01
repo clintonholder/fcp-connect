@@ -57,6 +57,13 @@
       "when": 1790803194357,
       "tag": "0007_admin_delete_activity",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790813043744,
+      "tag": "0008_admin_edit_notes_and_comments",
+      "breakpoints": true
     }
   ]
 }
