@@ -42,8 +42,10 @@ and review the rest from code.
 Run all three; each must pass before a build is READY.
 
 - Type-check: `npx tsc --noEmit`
-- Lint: `npx eslint <changed files>` (lint changed files only; the existing tree
-  has pre-existing warnings)
+- Lint: `npx eslint <changed files>`. Lovable does not run Prettier, so many
+  existing files carry pre-existing `prettier/prettier` errors. Only errors on
+  lines the change adds or edits count; never reformat lines you did not change
+  (no `--fix` or `prettier --write` on whole existing files).
 - Build: `npm run build`
 - Tests: none yet. There is no test runner; rely on the acceptance criteria and
   the checks above.
