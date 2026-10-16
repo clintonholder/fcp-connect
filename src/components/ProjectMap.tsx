@@ -57,8 +57,8 @@ export default function ProjectMap({
           <Popup>
             <div style={{ minWidth: 180 }}>
               <div style={{ fontWeight: 600 }}>{p.name}</div>
-              {p.owner && <div style={{ fontSize: 12, color: "#555" }}>{p.owner}</div>}
               {p.customer && <div style={{ fontSize: 12, color: "#555" }}>{p.customer}</div>}
+              {p.owner && <div style={{ fontSize: 12, color: "#555" }}>{p.owner}</div>}
               {p.address && <div style={{ fontSize: 11, color: "#777" }}>{p.address}</div>}
               <div style={{ fontSize: 11, color: "#777", marginTop: 2 }}>
                 {[p.status, p.phase, p.division].filter(Boolean).join(" · ")}

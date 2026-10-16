@@ -196,8 +196,8 @@ function MapPage() {
                 className="w-full rounded-md border p-2 text-left hover:bg-muted"
               >
                 <div className="text-sm font-medium">{p.name}</div>
-                {p.owner && <div className="truncate text-xs text-muted-foreground">{p.owner}</div>}
                 <div className="truncate text-xs text-muted-foreground">{p.customer ?? p.client ?? "—"}</div>
+                {p.owner && <div className="truncate text-xs text-muted-foreground">{p.owner}</div>}
                 <div className="truncate text-xs text-muted-foreground">{p.address ?? "No address on file"}</div>
                 <div className="mt-1 flex flex-wrap gap-1">
                   {p.status && <Badge variant="secondary" className="text-[10px]">{p.status}</Badge>}

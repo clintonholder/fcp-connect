@@ -47,8 +47,8 @@ function SharedJobPage() {
       <header className="mb-6 border-b pb-4">
         <div className="flex items-center gap-2 text-xs text-muted-foreground"><Building2 className="h-3 w-3" />Shared project report</div>
         <h1 className="text-2xl font-bold sm:text-3xl mt-1">{data.job.name}</h1>
-        {data.job.owner && <p className="text-sm text-muted-foreground">Owner: {data.job.owner}</p>}
         {data.job.client && <p className="text-sm text-muted-foreground">Customer: {data.job.client}</p>}
+        {data.job.owner && <p className="text-sm text-muted-foreground">Owner: {data.job.owner}</p>}
         {data.job.address && <p className="flex items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-3 w-3" />{data.job.address}</p>}
         <p className="mt-2 text-xs text-muted-foreground flex items-center gap-1"><Camera className="h-3 w-3" />{data.photos.length} photos</p>
       </header>

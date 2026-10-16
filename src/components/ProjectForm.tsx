@@ -61,13 +61,12 @@ export function ProjectForm({
         <Input id="p-name" required value={value.name} onChange={(e) => set({ name: e.target.value })} />
       </div>
       <div>
-        <Label htmlFor="p-owner-name">Owner *</Label>
-        <Input id="p-owner-name" required value={value.owner} onChange={(e) => set({ owner: e.target.value })} />
-        <p className="mt-1 text-xs text-muted-foreground">The building owner, e.g. Target. Required.</p>
-      </div>
-      <div>
         <Label htmlFor="p-customer">Customer name *</Label>
         <Input id="p-customer" required value={value.customer} onChange={(e) => set({ customer: e.target.value })} />
+      </div>
+      <div>
+        <Label htmlFor="p-owner-name">Owner *</Label>
+        <Input id="p-owner-name" required value={value.owner} onChange={(e) => set({ owner: e.target.value })} />
       </div>
       <div>
         <Label htmlFor="p-address">Project address</Label>

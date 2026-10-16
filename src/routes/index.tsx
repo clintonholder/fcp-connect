@@ -168,8 +168,8 @@ function ProjectsPage() {
     mutationFn: async () => {
       if (!company) throw new Error("No workspace loaded yet");
       if (!form.name.trim()) throw new Error("Project name is required");
-      if (!form.owner.trim()) throw new Error("Owner is required");
       if (!form.customer.trim()) throw new Error("Customer name is required");
+      if (!form.owner.trim()) throw new Error("Owner is required");
       if (form.divisions.length === 0) throw new Error("Select at least one division");
       const geo = form.address.trim() ? await geocodeAddress(form.address) : null;
       const { data, error } = await supabase.from("jobs").insert({
@@ -245,7 +245,7 @@ function ProjectsPage() {
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           className="pl-9"
-          placeholder="Search by name, owner, customer, address, division or project manager…"
+          placeholder="Search by name, customer, owner, address, division or project manager…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
@@ -310,8 +310,8 @@ function ProjectsPage() {
                           <h3 className="truncate font-semibold">{j.name}</h3>
                           {j.archived_at && <Badge variant="outline" className="gap-1"><Archive className="h-3 w-3" />Archived</Badge>}
                         </div>
-                        {j.owner && <p className="text-xs text-muted-foreground truncate">{j.owner}</p>}
                         {(j.customer || j.client) && <p className="text-xs text-muted-foreground truncate">{j.customer || j.client}</p>}
+                        {j.owner && <p className="text-xs text-muted-foreground truncate">{j.owner}</p>}
                         {j.cmic_number && <p className="text-xs text-muted-foreground truncate">CMiC {j.cmic_number}</p>}
                         {j.address && <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground truncate"><MapPin className="h-3 w-3" />{j.address}</p>}
                         <div className="mt-2 flex flex-wrap gap-1">

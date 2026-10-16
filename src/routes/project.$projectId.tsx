@@ -594,8 +594,8 @@ function ProjectDetail() {
     mutationFn: async () => {
       if (!edit || !project) return;
       if (!edit.name.trim()) throw new Error("Project name is required");
-      if (!edit.owner.trim()) throw new Error("Owner is required");
       if (!edit.customer.trim()) throw new Error("Customer name is required");
+      if (!edit.owner.trim()) throw new Error("Owner is required");
       if (canEditDivisions && edit.divisions.length === 0) throw new Error("Select at least one division");
       if (canEditDivisions && !isAdmin && edit.divisions.some((d) => !myDivisions.includes(d))) throw new Error(DIVISION_LOCK_MSG);
       const addressChanged = edit.address.trim() !== (project.address ?? "");
@@ -718,8 +718,8 @@ function ProjectDetail() {
               {project?.archived_at && <Badge variant="outline">Archived</Badge>}
             </div>
             {project?.address && <p className="flex items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-3 w-3" />{project.address}</p>}
-            {project?.owner && <p className="text-sm text-muted-foreground">Owner: {project.owner}</p>}
             {(project?.customer || project?.client) && <p className="text-sm text-muted-foreground">Customer: {project.customer || project.client}</p>}
+            {project?.owner && <p className="text-sm text-muted-foreground">Owner: {project.owner}</p>}
             <div className="mt-1 flex flex-wrap gap-1 text-xs">
               {project?.status && <Badge variant="secondary">{project.status}</Badge>}
               {project?.phase && <Badge variant="outline">{project.phase}</Badge>}

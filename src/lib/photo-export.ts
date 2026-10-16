@@ -58,7 +58,7 @@ export function zipFileName(project: ExportProject | null | undefined): string {
   const customer = sanitizeName(project?.customer || project?.client || "");
   const name = sanitizeName(project?.name || project?.title || "Project");
   const cmic = sanitizeName(project?.cmic_number || "");
-  const base = [owner, customer, name].filter(Boolean).join(" ");
+  const base = [customer, owner, name].filter(Boolean).join(" ");
   return `${cmic ? `${base} - ${cmic}` : base}.zip`;
 }
 

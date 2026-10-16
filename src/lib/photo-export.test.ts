@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 import { zipFileName } from "@/lib/photo-export";
 
 describe("zipFileName", () => {
-  it("puts owner before customer", () => {
+  it("puts owner after customer", () => {
     expect(
       zipFileName({ owner: "Target", customer: "Crane Construction", name: "Store 12", cmic_number: "123" }),
-    ).toBe("Target Crane Construction Store 12 - 123.zip");
+    ).toBe("Crane Construction Target Store 12 - 123.zip");
   });
 
   it("is unchanged when owner is missing or blank", () => {
@@ -18,6 +18,7 @@ describe("zipFileName", () => {
   it("sanitizes owner like the other parts", () => {
     const name = zipFileName({ owner: "Tar/get:*", customer: "Crane", name: "Store" });
     expect(name).not.toMatch(/[\/:*?"<>|]/);
-    expect(name.endsWith("Crane Store.zip")).toBe(true);
+    expect(name.startsWith("Crane ")).toBe(true);
+    expect(name.endsWith(" Store.zip")).toBe(true);
   });
 });
