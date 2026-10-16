@@ -51,7 +51,7 @@ Run the dev server in the background (not piped) and stop it when done.
 
 ## Validation
 
-Run all three; each must pass before a build is READY.
+Run all four; each must pass before a build is READY.
 
 - Type-check: `npx tsc --noEmit`
 - Lint: `npx eslint <changed files>`. Lovable does not run Prettier, so many
@@ -59,8 +59,8 @@ Run all three; each must pass before a build is READY.
   lines the change adds or edits count; never reformat lines you did not change
   (no `--fix` or `prettier --write` on whole existing files).
 - Build: `npm run build`
-- Tests: none yet. There is no test runner; rely on the acceptance criteria and
-  the checks above.
+- Tests: `npm test` (Vitest, `vitest run`). Test files live next to the code as
+  `src/**/*.test.ts`; the suite must pass before a build is READY.
 
 ## Conventions
 
@@ -77,6 +77,8 @@ Run all three; each must pass before a build is READY.
   trailing commas.
 - Access rules (roles, divisions, collaborators, view-as/proxy) are enforced in
   Supabase RLS and `src/lib/*.functions.ts`; UI checks are not enough on their own.
+- New pure helpers in `src/lib/` get a colocated `*.test.ts`. Tests must not hit the
+  network or Supabase: stub `fetch` and modules with `vi` (`vi.stubGlobal`, `vi.mock`).
 
 ## Production safety (all agents)
 
