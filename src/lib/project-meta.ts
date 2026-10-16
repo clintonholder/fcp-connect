@@ -29,6 +29,7 @@ export type ProjectRow = {
   id: string;
   name: string;
   address: string | null;
+  owner: string | null;
   customer: string | null;
   client: string | null;
   division: string | null;

@@ -578,6 +578,7 @@ function ProjectDetail() {
     if (!project) return;
     setEdit({
       name: project.name ?? "",
+      owner: project.owner ?? "",
       customer: project.customer ?? project.client ?? "",
       address: project.address ?? "",
       tags: project.tags ?? [],
@@ -593,6 +594,7 @@ function ProjectDetail() {
     mutationFn: async () => {
       if (!edit || !project) return;
       if (!edit.name.trim()) throw new Error("Project name is required");
+      if (!edit.owner.trim()) throw new Error("Owner is required");
       if (!edit.customer.trim()) throw new Error("Customer name is required");
       if (canEditDivisions && edit.divisions.length === 0) throw new Error("Select at least one division");
       if (canEditDivisions && !isAdmin && edit.divisions.some((d) => !myDivisions.includes(d))) throw new Error(DIVISION_LOCK_MSG);
@@ -600,6 +602,7 @@ function ProjectDetail() {
       const geo = addressChanged && edit.address.trim() ? await geocodeAddress(edit.address) : null;
       const { error } = await supabase.from("jobs").update({
         name: edit.name.trim(),
+        owner: edit.owner.trim(),
         customer: edit.customer.trim(),
         client: edit.customer.trim(),
         address: edit.address.trim() || null,
@@ -663,6 +666,7 @@ function ProjectDetail() {
 
   const editDirty = !!edit && !!project && (
     edit.name !== (project.name ?? "") ||
+    edit.owner !== (project.owner ?? "") ||
     edit.customer !== (project.customer ?? project.client ?? "") ||
     edit.address !== (project.address ?? "") ||
     edit.divisions.join("|") !== projectDivisions(project).join("|") ||
@@ -714,6 +718,7 @@ function ProjectDetail() {
               {project?.archived_at && <Badge variant="outline">Archived</Badge>}
             </div>
             {project?.address && <p className="flex items-center gap-1 text-sm text-muted-foreground"><MapPin className="h-3 w-3" />{project.address}</p>}
+            {project?.owner && <p className="text-sm text-muted-foreground">Owner: {project.owner}</p>}
             {(project?.customer || project?.client) && <p className="text-sm text-muted-foreground">Customer: {project.customer || project.client}</p>}
             <div className="mt-1 flex flex-wrap gap-1 text-xs">
               {project?.status && <Badge variant="secondary">{project.status}</Badge>}

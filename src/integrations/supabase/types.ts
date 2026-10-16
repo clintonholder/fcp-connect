@@ -537,6 +537,7 @@ export type Database = {
           longitude: number | null
           name: string
           notes: string | null
+          owner: string | null
           owner_id: string | null
           phase: string | null
           status: string
@@ -560,6 +561,7 @@ export type Database = {
           longitude?: number | null
           name: string
           notes?: string | null
+          owner?: string | null
           owner_id?: string | null
           phase?: string | null
           status?: string
@@ -583,6 +585,7 @@ export type Database = {
           longitude?: number | null
           name?: string
           notes?: string | null
+          owner?: string | null
           owner_id?: string | null
           phase?: string | null
           status?: string
