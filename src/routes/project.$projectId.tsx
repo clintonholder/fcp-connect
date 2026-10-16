@@ -241,15 +241,16 @@ function ProjectDetail() {
   const canArchivePhoto = (p: PhotoDetail) => isOwnerOrAdmin(p) && can.can_delete_photos;
 
   // ---- Upload -------------------------------------------------------------
-  const handleFiles = async (files: FileList | null) => {
+  const handleFiles = async (files: FileList | null, source: "camera" | "library") => {
     if (!files || !files.length) return;
     if (!user) { toast.error("Please sign in again to add photos"); return; }
     if (!company) { toast.error("Workspace still loading — try again in a moment"); return; }
     const list = Array.from(files);
     setUploading(true);
     const progress = toast.loading(`Adding ${list.length} photo${list.length === 1 ? "" : "s"}…`);
-    // Device location is a fallback only — never block the upload on it.
-    const coords = await new Promise<GeolocationPosition | null>((resolve) => {
+    // Device location is a fallback for camera photos only — a library photo was taken elsewhere.
+    // Never block the upload on it.
+    const coords = source === "library" ? null : await new Promise<GeolocationPosition | null>((resolve) => {
       if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null);
       let done = false;
       const finish = (v: GeolocationPosition | null) => { if (!done) { done = true; resolve(v); } };
@@ -291,6 +292,7 @@ function ProjectDetail() {
           const hasExifGps = exif.latitude != null && exif.longitude != null;
           const lat = hasExifGps ? exif.latitude : (coords?.coords.latitude ?? null);
           const lng = hasExifGps ? exif.longitude : (coords?.coords.longitude ?? null);
+          const locationSource = hasExifGps ? "photo" : coords ? "device" : null;
           await withRetry(async () => {
             const { error: insErr } = await supabase.from("photos").insert({
               job_id: projectId,
@@ -306,6 +308,7 @@ function ProjectDetail() {
               latitude: lat,
               longitude: lng,
               accuracy: hasExifGps ? null : (coords?.coords.accuracy ?? null),
+              location_source: locationSource,
             });
             if (insErr) throw insErr;
           });
@@ -384,7 +387,7 @@ function ProjectDetail() {
       el.src = url;
     });
 
-  const handleVideoFiles = async (files: FileList | null) => {
+  const handleVideoFiles = async (files: FileList | null, source: "camera" | "library") => {
     if (!files || !files.length) return;
     const file = files[0];
     if (!user) { toast.error("Please sign in again to add videos"); return; }
@@ -401,7 +404,8 @@ function ProjectDetail() {
         return;
       }
 
-      const coords = await new Promise<GeolocationPosition | null>((resolve) => {
+      // Library videos were not recorded here, so they never get device location.
+      const coords = source === "library" ? null : await new Promise<GeolocationPosition | null>((resolve) => {
         if (typeof navigator === "undefined" || !navigator.geolocation) return resolve(null);
         let done = false;
         const finish = (v: GeolocationPosition | null) => { if (!done) { done = true; resolve(v); } };
@@ -427,6 +431,7 @@ function ProjectDetail() {
         latitude: coords?.coords.latitude ?? null,
         longitude: coords?.coords.longitude ?? null,
         accuracy: coords?.coords.accuracy ?? null,
+        location_source: coords ? "device" : null,
       }).select("id").single();
       if (insErr) {
         // Never leave an orphaned file behind when the record could not be saved.
@@ -807,13 +812,13 @@ function ProjectDetail() {
               {PHOTO_PHASES.map((p) => <option key={p} value={p}>{p}</option>)}
             </select>
             <input ref={fileRef} type="file" accept="image/*" capture="environment" multiple className="hidden"
-              onChange={(e) => handleFiles(e.target.files)} />
+              onChange={(e) => handleFiles(e.target.files, "camera")} />
             <input ref={pickRef} type="file" accept="image/*" multiple className="hidden"
-              onChange={(e) => handleFiles(e.target.files)} />
+              onChange={(e) => handleFiles(e.target.files, "library")} />
             <input ref={videoCaptureRef} type="file" accept="video/*" capture="environment" className="hidden"
-              onChange={(e) => handleVideoFiles(e.target.files)} />
+              onChange={(e) => handleVideoFiles(e.target.files, "camera")} />
             <input ref={videoPickRef} type="file" accept="video/*" className="hidden"
-              onChange={(e) => handleVideoFiles(e.target.files)} />
+              onChange={(e) => handleVideoFiles(e.target.files, "library")} />
             <div className="inline-flex rounded-md border p-0.5" role="group" aria-label="Capture type">
               <button type="button" aria-pressed={captureMode === "photo"}
                 className={`rounded px-2 py-1 text-sm ${captureMode === "photo" ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}

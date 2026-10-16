@@ -300,6 +300,7 @@ function ChecklistDetail({ checklist, companyId, canEdit, canWork, canAttach, me
         latitude: hasExifGps ? exif.latitude : (coords?.coords.latitude ?? null),
         longitude: hasExifGps ? exif.longitude : (coords?.coords.longitude ?? null),
         accuracy: hasExifGps ? null : (coords?.coords.accuracy ?? null),
+        location_source: hasExifGps ? "photo" : coords ? "device" : null,
       }).select("id").single();
       if (insErr) throw insErr;
 
