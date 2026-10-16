@@ -71,6 +71,12 @@
   .col.human h2 { color: var(--human); }
   .col.merged-col h2 { color: var(--merged); }
   .empty { color: var(--faint); font-size: 12px; padding: 4px 2px; }
+  .more {
+    display: block; width: 100%; padding: 6px 2px; background: none; border: 0;
+    color: var(--muted); font: 12px var(--mono); text-align: left; cursor: pointer;
+  }
+  .more:hover { color: var(--merged); }
+  .more:focus-visible { outline: 2px solid var(--active); outline-offset: 2px; border-radius: 4px; }
 
   /* Cards */
   .card {
@@ -280,6 +286,11 @@ const $ = (id) => document.getElementById(id)
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c])
 
+// The Merged column shows only the newest few unless the viewer expands it.
+const MERGED_SHOWN = 3
+let showAllMerged = false
+try { showAllMerged = localStorage.getItem('factory.showAllMerged') === '1' } catch {}
+
 let jobs = []
 let lastRender = ''
 const roundCache = new Map() // "<job>/<n>" -> verdicts of a finished round
@@ -366,14 +377,24 @@ async function render() {
     else byStage[job.stage].push(card(job, pasts[i]))
   })
   // Newest first within a column.
-  const html = STAGES.map((s) => `
+  const html = STAGES.map((s) => {
+    let cards = byStage[s.key].reverse()
+    let more = ''
+    if (s.key === 'merged' && cards.length > MERGED_SHOWN) {
+      const hidden = cards.length - MERGED_SHOWN
+      more = `<button class="more" data-toggle-merged aria-expanded="${showAllMerged}">${
+        showAllMerged ? 'Show fewer' : `Show ${hidden} older`}</button>`
+      if (!showAllMerged) cards = cards.slice(0, MERGED_SHOWN)
+    }
+    return `
     <section class="col ${s.cls || ''}">
       <div class="col-head">
         <h2>${s.label}</h2><span class="who">${s.who}</span>
         <span class="count">${byStage[s.key].length || ''}</span>
       </div>
-      ${byStage[s.key].reverse().join('') || '<div class="empty">—</div>'}
-    </section>`).join('')
+      ${cards.join('') || '<div class="empty">—</div>'}${more}
+    </section>`
+  }).join('')
   const banner = problems.map((p) => `<div class="banner">${esc(p)}</div>`).join('')
   if (html + banner !== lastRender) {
     lastRender = html + banner
@@ -503,6 +524,11 @@ function closeDrawer() {
 }
 
 document.addEventListener('click', (e) => {
+  if (e.target.closest('[data-toggle-merged]')) {
+    showAllMerged = !showAllMerged
+    try { localStorage.setItem('factory.showAllMerged', showAllMerged ? '1' : '0') } catch {}
+    return render()
+  }
   const cardEl = e.target.closest('[data-job]')
   if (cardEl) return openDrawer(cardEl.dataset.job)
   const fileEl = e.target.closest('[data-file]')
