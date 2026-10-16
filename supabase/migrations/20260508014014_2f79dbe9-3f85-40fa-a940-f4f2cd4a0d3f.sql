@@ -129,7 +129,7 @@ CREATE INDEX idx_activity_company ON public.activity_events(company_id, created_
 -- =========================
 CREATE TABLE public.share_links (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  token text UNIQUE NOT NULL DEFAULT encode(gen_random_bytes(18), 'base64'),
+  token text UNIQUE NOT NULL DEFAULT encode(extensions.gen_random_bytes(18), 'base64'),
   job_id uuid NOT NULL,
   company_id uuid NOT NULL,
   created_by uuid NOT NULL,

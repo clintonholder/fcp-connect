@@ -1,22 +1,24 @@
 # FCP Connect
 
 Job-site photo and video app for a commercial contractor: projects, geotagged
-media, maps, comments, checklists, divisions and role-based access. Built with
-Lovable (https://lovable.dev); GitHub `main` syncs both ways with the Lovable
-project and the live app at https://fcp-connect.lovable.app.
+media, maps, comments, checklists, divisions and role-based access. Started in
+Lovable; since 2026-10-16 it runs on its own Supabase project (`afhlutsdgvsmvitzxhvr`,
+org "FCP Services", East US Ohio) and a Cloudflare Worker (`fcp-connect`), live at
+https://fcp-connect.fcp-connect.workers.dev. GitHub is no longer synced with Lovable.
 
 ## Stack
 
 - TanStack Start (SSR) + TanStack Router file routes, React 19, TypeScript, Vite 7
 - Tailwind CSS 4, shadcn/ui on Radix (`src/components/ui/`), lucide-react icons
-- Supabase (Lovable Cloud): auth, Postgres, storage. Client in `src/integrations/supabase/`
+- Supabase: auth, Postgres, storage (private `job-photos` bucket). Client in
+  `src/integrations/supabase/`; schema in `supabase/migrations/` (the only migration folder)
 - Server functions in `src/lib/*.functions.ts`; Cloudflare Workers deploy (`wrangler.jsonc`)
 - Leaflet maps, exifr (EXIF/GPS), jsPDF / html2canvas / jszip for exports
 
 ## Environment
 
 - Windows 11; Claude Code runs shell commands in Git Bash. Node 24, npm.
-- Use `npm`, not bun (bun is not installed; `bun.lock` is Lovable's).
+- Use `npm` (`package-lock.json`). The Supabase CLI is a dev dependency (`npx supabase`).
 - Python: use `python`, not `python3` (the Microsoft Store alias).
 - `.env` is committed and holds only the Supabase URL and publishable keys. It
   points at the **production** database.
@@ -82,13 +84,13 @@ Run all four; each must pass before a build is READY.
 
 ## Production safety (all agents)
 
-- Never run Supabase or Drizzle migrations, `supabase db push`, `drizzle-kit
-  push/migrate`, or SQL against the database. A schema change is written as a new
-  numbered file in `drizzle/migrations/` (e.g. `0010_<name>.sql`) and left for a
-  human to apply. Lovable keeps new migrations there and blocks writes to
-  `supabase/migrations/`, which holds only the older ones. The current schema is
-  both folders read in order: `supabase/migrations/` first, then `drizzle/migrations/`.
-- Never deploy (`wrangler deploy`), never `git push`, never edit `.env`.
+- Never run migrations, `supabase db push`, `supabase db query`, or SQL against the
+  database. A schema change is written as a new file
+  `supabase/migrations/<YYYYMMDDHHMMSS>_<name>.sql` (later than every existing one)
+  and left for a human to apply with `npx supabase db push`.
+- Never deploy (`wrangler deploy`), never `git push`, never edit `.env` or
+  `wrangler.jsonc` vars, never set Worker secrets. Deploying is
+  `npm run build && npx wrangler deploy`, run by a human.
 - The dev server talks to production data. In the browser, look and navigate
   only: do not submit forms, upload media, comment, or click anything that
   creates, edits or deletes data.

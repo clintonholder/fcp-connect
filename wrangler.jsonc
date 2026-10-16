@@ -1,7 +1,13 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "tanstack-start-app",
+  "name": "fcp-connect",
   "compatibility_date": "2025-09-24",
   "compatibility_flags": ["nodejs_compat"],
   "main": "src/server.ts",
+  // Public values only. SUPABASE_SERVICE_ROLE_KEY is a secret:
+  // set it with `npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY`.
+  "vars": {
+    "SUPABASE_URL": "https://afhlutsdgvsmvitzxhvr.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_YAtPcuB_8HDhdUo1uAo3Ww_cc4dDUHL",
+  },
 }
