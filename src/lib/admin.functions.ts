@@ -560,12 +560,11 @@ export const adminStartProxy = createServerFn({ method: "POST" })
     ) as Record<string, boolean>;
 
     // Which projects this user can actually open, decided by the database rule.
-    const { data: jobs } = await db.from("jobs").select("id");
-    const visibleJobIds: string[] = [];
-    for (const j of jobs ?? []) {
-      const { data: ok } = await db.rpc("can_see_job", { _job_id: j.id, _user_id: data.userId });
-      if (ok === true) visibleJobIds.push(j.id);
-    }
+    const { data: visibleRows, error: visibleErr } = await db.rpc("visible_job_ids", {
+      _user_id: data.userId,
+    });
+    if (visibleErr) throw new Error("Could not load visible projects: " + visibleErr.message);
+    const visibleJobIds: string[] = visibleRows ?? [];
 
     // Database-level read-only: close any open session, then record the new one.
     const now = new Date().toISOString();
