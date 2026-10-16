@@ -84,7 +84,10 @@ Run all four; each must pass before a build is READY.
 
 - Never run Supabase or Drizzle migrations, `supabase db push`, `drizzle-kit
   push/migrate`, or SQL against the database. A schema change is written as a new
-  file in `supabase/migrations/` and left for a human to apply.
+  numbered file in `drizzle/migrations/` (e.g. `0010_<name>.sql`) and left for a
+  human to apply. Lovable keeps new migrations there and blocks writes to
+  `supabase/migrations/`, which holds only the older ones. The current schema is
+  both folders read in order: `supabase/migrations/` first, then `drizzle/migrations/`.
 - Never deploy (`wrangler deploy`), never `git push`, never edit `.env`.
 - The dev server talks to production data. In the browser, look and navigate
   only: do not submit forms, upload media, comment, or click anything that

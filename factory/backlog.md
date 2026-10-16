@@ -5,3 +5,8 @@ One feature per line, small and testable. Anything touching the database, auth o
 roles is fine to queue; it will always come back to you for review.
 
 - [x] Add a Vitest test runner (`npm test`) with unit tests for the pure helpers in src/lib (EXIF/GPS parsing, photo metadata, geocode formatting), and document the test command in CLAUDE.md → 001-vitest-test-runner
+- [ ] Make View As read-only: hide or disable every create/edit/delete control while viewing as another user, and audit-log the viewed-as user
+- [ ] Build the View As visible-project list in one query instead of one database call per project (admin.functions.ts)
+- [ ] Trim the public share link: get_shared_job returns only listed fields and no archived photos; links get a default expiry (migration file only, not applied)
+- [ ] Photo uploads: upload each file independently with retry, report per-file results, and delete the storage file if its database save fails
+- [ ] Photo location: never give a library photo without GPS the device's current location; record whether the location came from the photo or the device (migration file only)
