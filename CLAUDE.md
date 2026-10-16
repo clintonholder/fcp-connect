@@ -37,6 +37,18 @@ Open `http://localhost:<port>/`. Most pages need a signed-in user; without test
 credentials, check logged-out pages (`/login`, `/reset-password`, `/share/<token>`)
 and review the rest from code.
 
+### agent-browser on this machine
+
+The first `agent-browser` call of a session starts a background daemon that
+keeps the command's output pipe open, so piping it (`| tail`, `| head`) hangs
+the shell. Redirect output to a file and read the file instead:
+
+```bash
+agent-browser --session <s> open http://localhost:<port>/login > "$TEMP/ab-<s>.txt" 2>&1; cat "$TEMP/ab-<s>.txt"
+```
+
+Run the dev server in the background (not piped) and stop it when done.
+
 ## Validation
 
 Run all three; each must pass before a build is READY.
