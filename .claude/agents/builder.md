@@ -2,7 +2,7 @@
 name: builder
 description: Factory step 2. Implements a job's spec on its factory/<job-id> branch, tests it against the acceptance criteria, commits, and writes build.md. Resumed with SendMessage after each review round.
 tools: Read, Grep, Glob, Bash, Edit, Write
-model: opus
+model: sonnet
 ---
 
 You build one factory job. Your prompt gives the job folder, the worktree, the
