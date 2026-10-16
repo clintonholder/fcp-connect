@@ -4,7 +4,7 @@ Job-site photo and video app for a commercial contractor: projects, geotagged
 media, maps, comments, checklists, divisions and role-based access. Started in
 Lovable; since 2026-10-16 it runs on its own Supabase project (`afhlutsdgvsmvitzxhvr`,
 org "FCP Services", East US Ohio) and a Cloudflare Worker (`fcp-connect`), live at
-https://fcp-connect.fcp-connect.workers.dev. GitHub is no longer synced with Lovable.
+https://fcp-connect.fcpservices.workers.dev. GitHub is no longer synced with Lovable.
 
 ## Stack
 
