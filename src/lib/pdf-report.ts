@@ -1,7 +1,7 @@
 import { jsPDF } from "jspdf";
 import { phaseLabel } from "@/lib/photo-meta";
 
-type Job = { name: string; address?: string | null; client?: string | null; customer?: string | null; notes?: string | null; created_at: string };
+type Job = { name: string; address?: string | null; owner?: string | null; client?: string | null; customer?: string | null; notes?: string | null; created_at: string };
 type Photo = {
   id: string; image_url: string; annotated_image_url: string | null;
   caption: string | null; tags: string[] | null; phase?: string | null;
@@ -33,6 +33,7 @@ export async function generateJobPdf({ job, photos }: { job: Job; photos: Photo[
   doc.text(job.name, margin, margin + 20);
   doc.setFontSize(11).setFont("helvetica", "normal");
   let y = margin + 45;
+  if (job.owner) { doc.text(`Owner: ${job.owner}`, margin, y); y += 16; }
   if (job.customer || job.client) { doc.text(`Customer: ${job.customer || job.client}`, margin, y); y += 16; }
   if (job.address) { doc.text(`Address: ${job.address}`, margin, y); y += 16; }
   doc.text(`Created: ${new Date(job.created_at).toLocaleString()}`, margin, y); y += 16;

@@ -14,6 +14,7 @@ export type ExportablePhoto = {
 };
 
 export type ExportProject = {
+  owner?: string | null;
   customer?: string | null;
   client?: string | null;
   name?: string | null;
@@ -53,10 +54,11 @@ export function fileExtension(photo: ExportablePhoto): string {
 }
 
 export function zipFileName(project: ExportProject | null | undefined): string {
+  const owner = sanitizeName(project?.owner || "");
   const customer = sanitizeName(project?.customer || project?.client || "");
   const name = sanitizeName(project?.name || project?.title || "Project");
   const cmic = sanitizeName(project?.cmic_number || "");
-  const base = [customer, name].filter(Boolean).join(" ");
+  const base = [owner, customer, name].filter(Boolean).join(" ");
   return `${cmic ? `${base} - ${cmic}` : base}.zip`;
 }
 

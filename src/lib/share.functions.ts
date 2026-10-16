@@ -17,7 +17,7 @@ type SharedPhoto = {
 };
 
 type SharedData = {
-  job: { id: string; name: string; address?: string | null; client?: string | null; notes?: string | null };
+  job: { id: string; name: string; address?: string | null; owner?: string | null; client?: string | null; notes?: string | null };
   areas: { id: string; name: string }[];
   photos: SharedPhoto[];
 };

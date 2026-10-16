@@ -77,7 +77,7 @@ function MapPage() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("jobs")
-        .select("id,name,address,customer,client,status,phase,division,divisions,tags,user_id,owner_id,latitude,longitude,geocode_failed,archived_at,updated_at")
+        .select("id,name,address,owner,customer,client,status,phase,division,divisions,tags,user_id,owner_id,latitude,longitude,geocode_failed,archived_at,updated_at")
         .eq("company_id", company!.id)
         .order("updated_at", { ascending: false });
       if (error) throw error;
@@ -108,7 +108,7 @@ function MapPage() {
           (memberships ?? []).some((m) => m.job_id === p.id && m.user_id === user?.id);
         if (!attached) return false;
       }
-      if (q && ![p.name, p.customer, p.client, p.address, ...projectDivisions(p), ...(p.tags ?? []), p.status, personName(p.owner_id)]
+      if (q && ![p.name, p.owner, p.customer, p.client, p.address, ...projectDivisions(p), ...(p.tags ?? []), p.status, personName(p.owner_id)]
         .filter(Boolean).some((x) => String(x).toLowerCase().includes(q))) return false;
       return true;
     });
@@ -177,7 +177,7 @@ function MapPage() {
             <Suspense fallback={<div className="flex h-full items-center justify-center text-muted-foreground">Loading map…</div>}>
               <ProjectMap
                 projects={mappable.map((p) => ({
-                  id: p.id, name: p.name, address: p.address, customer: p.customer ?? p.client,
+                  id: p.id, name: p.name, address: p.address, owner: p.owner, customer: p.customer ?? p.client,
                   status: p.status, phase: p.phase, division: projectDivisions(p).join(", ") || null,
                   latitude: p.latitude, longitude: p.longitude,
                 }))}
@@ -196,6 +196,7 @@ function MapPage() {
                 className="w-full rounded-md border p-2 text-left hover:bg-muted"
               >
                 <div className="text-sm font-medium">{p.name}</div>
+                {p.owner && <div className="truncate text-xs text-muted-foreground">{p.owner}</div>}
                 <div className="truncate text-xs text-muted-foreground">{p.customer ?? p.client ?? "—"}</div>
                 <div className="truncate text-xs text-muted-foreground">{p.address ?? "No address on file"}</div>
                 <div className="mt-1 flex flex-wrap gap-1">

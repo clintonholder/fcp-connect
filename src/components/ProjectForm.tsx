@@ -11,6 +11,7 @@ import { DIVISIONS, DIVISION_LOCK_MSG } from "@/lib/project-meta";
 
 export type ProjectFormValues = {
   name: string;
+  owner: string;
   customer: string;
   address: string;
   divisions: string[];
@@ -21,7 +22,7 @@ export type ProjectFormValues = {
 };
 
 export const emptyProject: ProjectFormValues = {
-  name: "", customer: "", address: "", divisions: [], tags: [], owner_id: "",
+  name: "", owner: "", customer: "", address: "", divisions: [], tags: [], owner_id: "",
   cmic_number: "", notes: "",
 };
 
@@ -60,6 +61,11 @@ export function ProjectForm({
         <Input id="p-name" required value={value.name} onChange={(e) => set({ name: e.target.value })} />
       </div>
       <div>
+        <Label htmlFor="p-owner-name">Owner *</Label>
+        <Input id="p-owner-name" required value={value.owner} onChange={(e) => set({ owner: e.target.value })} />
+        <p className="mt-1 text-xs text-muted-foreground">The building owner, e.g. Target. Required.</p>
+      </div>
+      <div>
         <Label htmlFor="p-customer">Customer name *</Label>
         <Input id="p-customer" required value={value.customer} onChange={(e) => set({ customer: e.target.value })} />
       </div>
@@ -87,7 +93,7 @@ export function ProjectForm({
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <Label htmlFor="p-owner">Project manager / owner</Label>
+          <Label htmlFor="p-owner">Project manager</Label>
           <select id="p-owner" className={selectClass} value={value.owner_id} onChange={(e) => set({ owner_id: e.target.value })}>
             <option value="">Unassigned</option>
             {people.map((p) => <option key={p.id} value={p.id}>{p.display_name || p.email}</option>)}

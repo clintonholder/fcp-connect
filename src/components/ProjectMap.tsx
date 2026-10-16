@@ -7,6 +7,7 @@ export type MapProject = {
   id: string;
   name: string;
   address: string | null;
+  owner: string | null;
   customer: string | null;
   status: string;
   phase: string | null;
@@ -56,6 +57,7 @@ export default function ProjectMap({
           <Popup>
             <div style={{ minWidth: 180 }}>
               <div style={{ fontWeight: 600 }}>{p.name}</div>
+              {p.owner && <div style={{ fontSize: 12, color: "#555" }}>{p.owner}</div>}
               {p.customer && <div style={{ fontSize: 12, color: "#555" }}>{p.customer}</div>}
               {p.address && <div style={{ fontSize: 11, color: "#777" }}>{p.address}</div>}
               <div style={{ fontSize: 11, color: "#777", marginTop: 2 }}>
