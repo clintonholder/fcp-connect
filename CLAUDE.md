@@ -134,7 +134,7 @@ The human merges with `/factory approve <job-id>` after reading `decision.md`.
 ## Factory dashboard
 
 ```bash
-cd factory && python -m http.server
+cd factory && python serve.py
 ```
 
 Open http://localhost:8000/dashboard.html

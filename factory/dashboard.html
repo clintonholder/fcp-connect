@@ -49,6 +49,41 @@
     border-radius: 8px; color: var(--human); font-family: var(--mono); font-size: 12px;
   }
 
+  /* What you need to do */
+  .todo { margin: 16px 32px 0; display: grid; gap: 10px; }
+  .todo h2 { margin: 0 0 2px; font-size: 13px; font-weight: 600; }
+  .step {
+    display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: start;
+    padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
+  }
+  .step .icon { grid-row: span 3; font-size: 18px; line-height: 1.3; }
+  .step .t { font-weight: 600; font-size: 13px; }
+  .step .d { color: var(--muted); font-size: 13px; }
+  .step .say { font-size: 12px; color: var(--muted); }
+  .step code {
+    font-family: var(--mono); font-size: 12px; background: var(--card); color: var(--text);
+    padding: 2px 6px; border-radius: 4px; user-select: all; overflow-wrap: anywhere;
+  }
+  .step.act { border-color: var(--human); }
+  .step.act .t { color: var(--human); }
+  .step.warn { border-color: var(--changes); }
+  .step.warn .t { color: var(--changes); }
+  .step.ok { border-color: color-mix(in srgb, var(--pass) 45%, var(--line)); }
+  .step.ok .t { color: var(--pass); }
+  .step.info .t { color: var(--muted); }
+  details.glossary { color: var(--muted); font-size: 13px; }
+  details.glossary summary { cursor: pointer; font-size: 12px; }
+  details.glossary summary:focus-visible { outline: 2px solid var(--active); outline-offset: 2px; }
+  details.glossary dl { margin: 8px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; }
+  details.glossary dt { color: var(--text); font-weight: 600; }
+  details.glossary dd { margin: 0; }
+  .tag {
+    display: inline-block; font-family: var(--mono); font-size: 10px; padding: 1px 6px;
+    border-radius: 4px; margin-left: 6px; white-space: nowrap;
+  }
+  .tag.live { color: var(--pass); background: color-mix(in srgb, var(--pass) 14%, transparent); }
+  .tag.local { color: var(--changes); background: color-mix(in srgb, var(--changes) 16%, transparent); }
+
   /* Board */
   .board {
     display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px;
@@ -245,6 +280,7 @@
   <div class="status" id="status">connecting…</div>
 </header>
 <div id="banner"></div>
+<section class="todo" id="todo" aria-label="What you need to do"></section>
 <main class="board" id="board"></main>
 <footer>
   <span>/factory &lt;feature&gt;</span>
@@ -292,7 +328,9 @@ let showAllMerged = false
 try { showAllMerged = localStorage.getItem('factory.showAllMerged') === '1' } catch {}
 
 let jobs = []
+let git = null // from serve.py's /api/git; null when the plain http.server is used
 let lastRender = ''
+let lastTodo = ''
 const roundCache = new Map() // "<job>/<n>" -> verdicts of a finished round
 let openJobId = null
 let openPath = null
@@ -353,19 +391,88 @@ function card(job, past) {
   const rows = past.map((v, i) => chips(i + 1, v, false))
   if (job.round > 0) rows.push(chips(job.round, job.reviews, job.stage === 'review'))
   const [num, ...slug] = job.id.split('-')
+  let where = ''
+  if (job.stage === 'merged' && git && git.unpushed) {
+    const local = git.unpushed.some((s) => s.includes(`factory/${job.id}`))
+    where = local
+      ? '<span class="tag local" title="Merged on your computer only. Needs a push to go live.">not live yet</span>'
+      : '<span class="tag live" title="Pushed to GitHub, so the deploy has run or is running.">pushed</span>'
+  }
   return `
     <button class="card ${live ? 'live' : ''} ${human ? 'human' : ''} ${job.stage === 'merged' ? 'merged' : ''}"
             data-job="${esc(job.id)}">
       <div class="card-top">
         ${live ? '<span class="pulse" aria-label="running"></span>' : ''}
         <span class="num">${esc(num)} · ${esc(slug.join('-'))}</span>
-        ${human ? '<span class="flag">your call</span>' : ''}
+        ${human ? '<span class="flag">your call</span>' : ''}${where}
       </div>
       <p class="feature">${esc(job.feature)}</p>
       <div class="branch">${esc(job.branch)}</div>
       ${rows.length ? `<div class="rounds">${rows.join('')}</div>` : ''}
       ${human ? `<div class="hint">/factory approve ${esc(job.id)}<br>/factory rework ${esc(job.id)} …</div>` : ''}
     </button>`
+}
+
+// Plain-language "what do I do now" list, from job stages plus git state.
+function todo() {
+  const steps = []
+  const step = (cls, icon, title, desc, say) => steps.push(
+    `<div class="step ${cls}"><span class="icon" aria-hidden="true">${icon}</span>
+      <div class="t">${title}</div><div class="d">${desc}</div>
+      ${say ? `<div class="say">Type this in Claude: <code>${esc(say)}</code></div>` : ''}</div>`)
+
+  for (const job of jobs.filter((j) => j.stage === 'needs-human')) {
+    step('act', '👉', `Decide on job ${esc(job.id)}`,
+      `The factory finished building this and needs your OK. Click its card, read
+       <b>decision.md</b>, then either approve it or ask for changes. Approving only
+       merges it on your computer. It does not go live yet.`,
+      `/factory approve ${job.id}`)
+  }
+  const running = jobs.filter((j) => ['spec', 'build', 'review', 'approve'].includes(j.stage))
+  if (running.length) {
+    step('info', '⏳', `${running.length} job${running.length > 1 ? 's' : ''} running`,
+      'Nothing to do. The agents are working and this page updates by itself.')
+  }
+
+  if (!git) {
+    step('info', 'ℹ️', 'Commit and push status unavailable',
+      'Start the dashboard with <code>python serve.py</code> instead of <code>python -m http.server</code> to see it.')
+  } else {
+    const dirty = git.dirty || []
+    const ahead = git.unpushed
+    if (git.branch && git.branch !== 'main') {
+      step('warn', '⚠️', `Your computer is on branch “${esc(git.branch)}”, not main`,
+        'Merging and pushing expect main. Ask Claude to switch back before anything else.')
+    }
+    if (dirty.length) {
+      const shown = dirty.slice(0, 4).map(esc).join(', ') + (dirty.length > 4 ? `, +${dirty.length - 4} more` : '')
+      step('warn', '💾', `Commit needed: ${dirty.length} unsaved change${dirty.length > 1 ? 's' : ''}`,
+        `These files were edited but not saved into git's history yet: ${shown}.
+         A commit saves a snapshot on your computer only. It is safe and does not go live.`,
+        'commit')
+    }
+    if (ahead && ahead.length) {
+      step('act', '🚀', `Push needed: ${ahead.length} saved change${ahead.length > 1 ? 's are' : ' is'} not live yet`,
+        `These exist only on your computer. Pushing sends them to GitHub, which
+         <b>deploys the live site</b> and applies any database change. Do it when you're ready.
+         ${dirty.length ? 'Commit first, or the unsaved files above will be left behind.' : ''}`,
+        'push')
+    }
+    if (!dirty.length && ahead && !ahead.length && !jobs.some((j) => j.stage === 'needs-human')) {
+      step('ok', '✅', 'All caught up', 'Everything is committed and pushed. Nothing for you to do.')
+    }
+    if (ahead === null) {
+      step('info', 'ℹ️', 'Push status unknown', 'This computer has no record of GitHub’s main branch yet.')
+    }
+  }
+
+  return `<h2>What you need to do</h2>${steps.join('')}
+    <details class="glossary"><summary>What do these words mean?</summary><dl>
+      <dt>Merge</dt><dd>Combine a finished job into your main code, on your computer.</dd>
+      <dt>Commit</dt><dd>Save a snapshot of your changes on your computer. Safe, nothing goes live.</dd>
+      <dt>Push</dt><dd>Send your saved snapshots to GitHub. That starts the deploy, so the changes go live.</dd>
+      <dt>Live</dt><dd>What your team actually sees at the website. It changes only after a push finishes.</dd>
+    </dl></details>`
 }
 
 async function render() {
@@ -401,12 +508,23 @@ async function render() {
     $('board').innerHTML = html
     $('banner').innerHTML = banner
   }
+  const t = todo()
+  if (t !== lastTodo) {
+    lastTodo = t
+    const open = document.querySelector('details.glossary')?.open
+    $('todo').innerHTML = t
+    if (open) document.querySelector('details.glossary').open = true
+  }
 }
 
 async function poll() {
   const status = $('status')
   try {
     jobs = await loadJobs()
+    try {
+      const res = await fetch('/api/git', { cache: 'no-store' })
+      git = res.ok && (res.headers.get('content-type') || '').includes('json') ? await res.json() : null
+    } catch { git = null }
     await render()
     if (openJobId) await refreshDrawer()
     status.className = 'status'
