@@ -96,6 +96,10 @@ Run all four; each must pass before a build is READY.
   trailing commas.
 - Access rules (roles, divisions, collaborators, view-as/proxy) are enforced in
   Supabase RLS and `src/lib/*.functions.ts`; UI checks are not enough on their own.
+- View As (admin proxy) is read-only. Writes still run on the admin's own session, so
+  every create/edit/delete/upload control checks `readOnly` from `useProxy()`
+  (`src/lib/proxy-context.tsx`) and is hidden or disabled while it is true. New write
+  controls must do the same.
 - New pure helpers in `src/lib/` get a colocated `*.test.ts`. Tests must not hit the
   network or Supabase: stub `fetch` and modules with `vi` (`vi.stubGlobal`, `vi.mock`).
 
