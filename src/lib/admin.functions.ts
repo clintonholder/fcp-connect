@@ -102,11 +102,31 @@ export const adminListAudit = createServerFn({ method: "GET" })
       .order("created_at", { ascending: false })
       .limit(100);
     const actorIds = Array.from(new Set((data ?? []).map((d) => d.actor_id).filter(Boolean))) as string[];
-    const { data: profs } = actorIds.length
-      ? await db.from("profiles").select("id, display_name, email").in("id", actorIds)
+    const targetUserIds = (data ?? [])
+      .filter((d) => d.target_type === "user" && d.target_id)
+      .map((d) => d.target_id as string);
+    const profileIds = Array.from(new Set([...actorIds, ...targetUserIds]));
+    const { data: profs } = profileIds.length
+      ? await db.from("profiles").select("id, display_name, email").in("id", profileIds)
       : { data: [] as { id: string; display_name: string | null; email: string | null }[] };
     const nameById = new Map((profs ?? []).map((p) => [p.id, p.display_name || p.email || "Someone"]));
-    return (data ?? []).map((d) => ({ ...d, actor_name: d.actor_id ? nameById.get(d.actor_id) ?? "Someone" : "System" }));
+    const targetName = (d: {
+      target_type: string | null;
+      target_id: string | null;
+      details: unknown;
+    }) => {
+      if (d.target_type !== "user") return null;
+      const viewedAs = (d.details as { viewed_as?: unknown } | null)?.viewed_as;
+      return (
+        (d.target_id ? nameById.get(d.target_id) : undefined) ??
+        (typeof viewedAs === "string" && viewedAs ? viewedAs : null)
+      );
+    };
+    return (data ?? []).map((d) => ({
+      ...d,
+      actor_name: d.actor_id ? (nameById.get(d.actor_id) ?? "Someone") : "System",
+      target_name: targetName(d),
+    }));
   });
 
 /* ------------------------------- users ------------------------------- */
@@ -544,6 +564,7 @@ export const adminStartProxy = createServerFn({ method: "POST" })
 
     await audit(context.userId, "proxy_started", "user", data.userId, {
       viewed_as: profile.display_name || profile.email,
+      viewed_as_email: profile.email,
     });
 
     return {
@@ -562,6 +583,19 @@ export const adminEndProxy = createServerFn({ method: "POST" })
   .inputValidator((d: { userId: string }) => ({ userId: d?.userId ?? "" }))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
-    await audit(context.userId, "proxy_ended", "user", data.userId || null, {});
+    if (!data.userId) {
+      await audit(context.userId, "proxy_ended", "user", null, {});
+      return { ok: true };
+    }
+    const db = await admin();
+    const { data: profile } = await db
+      .from("profiles")
+      .select("display_name, email")
+      .eq("id", data.userId)
+      .maybeSingle();
+    await audit(context.userId, "proxy_ended", "user", data.userId, {
+      viewed_as: profile?.display_name || profile?.email || null,
+      viewed_as_email: profile?.email ?? null,
+    });
     return { ok: true };
   });

@@ -61,7 +61,7 @@ function ProjectDetail() {
   const { user } = useAuth();
   const { company } = useCompany();
   const { isAdmin, can, myDivisions, loading: rolesLoading } = useMyRoles();
-  const { proxy } = useProxy();
+  const { proxy, readOnly } = useProxy();
   const qc = useQueryClient();
   const navigate = useNavigate();
   const [phaseFilter, setPhaseFilter] = useState<string>("");
@@ -663,10 +663,11 @@ function ProjectDetail() {
           </p>
         )}
         <div className="flex flex-wrap gap-2">
-          {can.can_edit_projects && (
+          {can.can_edit_projects && !readOnly && (
             <Button size="sm" variant="outline" disabled={divisionLocked} onClick={openEdit}><Pencil className="mr-1 h-4 w-4" />Edit</Button>
           )}
-          {(project?.archived_at ? can.can_edit_projects : can.can_delete_projects) && (
+          {!readOnly &&
+            (project?.archived_at ? can.can_edit_projects : can.can_delete_projects) && (
             <Button size="sm" variant="outline" disabled={divisionLocked} onClick={() => {
               const msg = project?.archived_at ? "Restore this project?" : "Archive this project? It stays available under 'Show archived'.";
               if (window.confirm(msg)) toggleArchive.mutate();
@@ -674,7 +675,7 @@ function ProjectDetail() {
               {project?.archived_at ? <><ArchiveRestore className="mr-1 h-4 w-4" />Restore</> : <><Archive className="mr-1 h-4 w-4" />Archive</>}
             </Button>
           )}
-          {isAdmin && (
+          {isAdmin && !readOnly && (
             <Button
               size="sm"
               variant="destructive"
@@ -694,7 +695,10 @@ function ProjectDetail() {
         </div>
       </div>
 
-      <Dialog open={editOpen} onOpenChange={(o) => (o ? setEditOpen(true) : closeEdit())}>
+      <Dialog
+        open={editOpen && !readOnly}
+        onOpenChange={(o) => (o ? setEditOpen(true) : closeEdit())}
+      >
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Edit Project</DialogTitle></DialogHeader>
           {edit && (
@@ -733,7 +737,7 @@ function ProjectDetail() {
       {/* Photos */}
       <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-semibold">Media <span className="text-sm font-normal text-muted-foreground">({filteredPhotos.length})</span></h2>
-        {can.can_add_photos && (
+            {can.can_add_photos && !readOnly && (
           <div className="flex flex-wrap items-center gap-2">
             <select className="rounded-md border border-input bg-background px-2 py-1.5 text-sm"
               value={uploadPhase} onChange={(e) => setUploadPhase(e.target.value)} aria-label="Phase for new photos">
@@ -828,7 +832,7 @@ function ProjectDetail() {
                   {exporting ? `Exporting ${exporting.done}/${exporting.total}…` : "Export"}
                 </Button>
               )}
-              {can.can_edit_photos && (
+                  {can.can_edit_photos && !readOnly && (
                 <>
                   <select className="rounded-md border border-input bg-background px-2 py-1 text-sm" defaultValue=""
                     aria-label="Apply phase to selected media"
@@ -839,7 +843,7 @@ function ProjectDetail() {
                   <Button size="sm" variant="outline" onClick={batchApplyTag}><Tag className="mr-1 h-4 w-4" />Apply tag</Button>
                 </>
               )}
-              {can.can_delete_photos && (
+                  {can.can_delete_photos && !readOnly && (
                 <Button size="sm" variant="outline" className="text-destructive" onClick={batchDelete}>
                   <Trash2 className="mr-1 h-4 w-4" />Delete media
                 </Button>
@@ -965,7 +969,7 @@ function ProjectDetail() {
               companyId={project.company_id}
               canEdit={can.can_edit_projects && !divisionLocked}
               canAttach={can.can_add_photos}
-              readOnly={!!project.archived_at}
+              readOnly={!!project.archived_at || readOnly}
               members={checklistMembers}
               photos={photos ?? []}
               onOpenPhoto={(photo) => {
@@ -983,7 +987,7 @@ function ProjectDetail() {
               focusNoteId={focusNoteId}
               projectId={projectId}
               companyId={project.company_id}
-              readOnly={!!project.archived_at}
+              readOnly={!!project.archived_at || readOnly}
             />
           )}
         </TabsContent>

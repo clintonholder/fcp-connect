@@ -23,6 +23,7 @@ import {
 import type { PhotoDetail } from "@/components/PhotoViewer";
 import { readPhotoExif } from "@/lib/exif";
 import { logActivity } from "@/lib/activity";
+import { useProxy } from "@/lib/proxy-context";
 
 /** Photos taken straight from a checklist task land in this project media phase. */
 const CHECKLIST_PHASE = "Checklists";
@@ -55,6 +56,7 @@ export function ChecklistsTab({
   members: Member[]; photos: PhotoDetail[]; onOpenPhoto: (p: PhotoDetail) => void;
 }) {
   const qc = useQueryClient();
+  const { readOnly: viewingAs } = useProxy();
   const [openId, setOpenId] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -88,7 +90,13 @@ export function ChecklistsTab({
         <h2 className="text-lg font-semibold">Checklists</h2>
         {edit && <Button onClick={() => setCreateOpen(true)}><Plus className="mr-1 h-4 w-4" />Create checklist</Button>}
       </div>
-      {readOnly && <p className="mb-3 text-sm text-muted-foreground">This project is archived, so checklists are read-only.</p>}
+      {readOnly && (
+        <p className="mb-3 text-sm text-muted-foreground">
+          {viewingAs
+            ? "Checklists are read-only while viewing as another user."
+            : "This project is archived, so checklists are read-only."}
+        </p>
+      )}
       {q.isLoading ? (
         <div className="space-y-2">{[0, 1, 2].map((k) => <Skeleton key={k} className="h-20 w-full" />)}</div>
       ) : q.isError ? (

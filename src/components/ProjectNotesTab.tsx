@@ -33,7 +33,7 @@ export function ProjectNotesTab({ projectId, companyId, readOnly, focusNoteId }:
   const qc = useQueryClient();
 
   const { user } = useAuth();
-  const { proxy } = useProxy();
+  const { proxy, readOnly: viewingAs } = useProxy();
   const { isAdmin } = useMyRoles();
   const effectiveUserId = proxy ? proxy.userId : user?.id;
   const [draft, setDraft] = useState("");
@@ -112,7 +112,11 @@ export function ProjectNotesTab({ projectId, companyId, readOnly, focusNoteId }:
   return (
     <div className="space-y-4">
       {readOnly ? (
-        <p className="text-sm text-muted-foreground">This project is archived, so notes are read-only.</p>
+        <p className="text-sm text-muted-foreground">
+          {viewingAs
+            ? "Notes are read-only while viewing as another user."
+            : "This project is archived, so notes are read-only."}
+        </p>
       ) : (
         <div className="space-y-2">
           <Textarea

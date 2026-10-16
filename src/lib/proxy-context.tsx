@@ -7,9 +7,16 @@ type ProxyCtx = {
   proxy: ProxyTarget | null;
   setProxy: (p: ProxyTarget | null) => void;
   ready: boolean;
+  /** True while viewing as another user: View As is read-only, so write controls must check this. */
+  readOnly: boolean;
 };
 
-const Ctx = createContext<ProxyCtx>({ proxy: null, setProxy: () => {}, ready: false });
+const Ctx = createContext<ProxyCtx>({
+  proxy: null,
+  setProxy: () => {},
+  ready: false,
+  readOnly: false,
+});
 
 export function ProxyProvider({ children }: { children: ReactNode }) {
   const [proxy, setProxyState] = useState<ProxyTarget | null>(null);
@@ -35,7 +42,9 @@ export function ProxyProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  return <Ctx.Provider value={{ proxy, setProxy, ready }}>{children}</Ctx.Provider>;
+  const readOnly = !!proxy;
+
+  return <Ctx.Provider value={{ proxy, setProxy, ready, readOnly }}>{children}</Ctx.Provider>;
 }
 
 export const useProxy = () => useContext(Ctx);

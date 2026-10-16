@@ -43,6 +43,7 @@ export const Route = createFileRoute("/admin")({
 
 function AdminGate() {
   const { isAdmin, loading } = useMyRoles();
+  const { readOnly } = useProxy();
   if (loading) return <p className="p-6 text-muted-foreground">Loading…</p>;
   if (!isAdmin) {
     return (
@@ -50,6 +51,17 @@ function AdminGate() {
         <Shield className="mx-auto h-10 w-10 text-muted-foreground/50" />
         <h1 className="mt-3 text-xl font-semibold">Administrators only</h1>
         <p className="text-sm text-muted-foreground">You don't have permission to view this page.</p>
+      </div>
+    );
+  }
+  if (readOnly) {
+    return (
+      <div className="mx-auto max-w-lg p-10 text-center">
+        <Eye className="mx-auto h-10 w-10 text-muted-foreground/50" />
+        <h1 className="mt-3 text-xl font-semibold">Admin page unavailable</h1>
+        <p className="text-sm text-muted-foreground">
+          The admin page is unavailable while viewing as another user. Use "Exit view" first.
+        </p>
       </div>
     );
   }
@@ -597,7 +609,17 @@ function AdminPage() {
           <ul className="space-y-2">
             {(audit.data ?? []).map((a) => (
               <li key={a.id} className="flex justify-between gap-2 text-sm">
-                <span><span className="font-medium">{a.actor_name}</span> — {String(a.action).replace(/_/g, " ")}</span>
+                  <span>
+                    <span className="font-medium">{a.actor_name}</span> —{" "}
+                    {String(a.action).replace(/_/g, " ")}
+                    {(a.action === "proxy_started" || a.action === "proxy_ended") &&
+                      a.target_name && (
+                        <>
+                          {" "}
+                          · viewing as <span className="font-medium">{a.target_name}</span>
+                        </>
+                      )}
+                  </span>
                 <span className="whitespace-nowrap text-xs text-muted-foreground">{formatDistanceToNow(new Date(a.created_at), { addSuffix: true })}</span>
               </li>
             ))}

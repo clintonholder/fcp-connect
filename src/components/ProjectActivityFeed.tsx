@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useMyRoles } from "@/lib/roles";
+import { useProxy } from "@/lib/proxy-context";
 import { formatDistanceToNow, format, isToday } from "date-fns";
 import {
   MessageSquare, Play, ImageOff, AlertTriangle, ClipboardList, Camera,
@@ -170,6 +171,7 @@ export function ProjectActivityFeed({
 
   const byId = useMemo(() => new Map(photos.map((p) => [p.id, p])), [photos]);
   const { isAdmin } = useMyRoles();
+  const { readOnly } = useProxy();
   const qc = useQueryClient();
   const removeEntry = async (entry: Entry) => {
     const msg = entry.isComment
@@ -298,7 +300,7 @@ export function ProjectActivityFeed({
                 ) : (
                   <div className="flex w-full gap-3 rounded-lg border bg-card p-3">{body}</div>
                 )}
-                {isAdmin && (
+                {isAdmin && !readOnly && (
                   <Button variant="ghost" size="icon" className="shrink-0" aria-label="Delete activity item"
                     onClick={() => void removeEntry(entry)}>
                     <Trash2 className="h-4 w-4" />
