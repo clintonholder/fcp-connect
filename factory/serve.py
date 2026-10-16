@@ -6,6 +6,7 @@ Read-only: it only runs `git status` and `git log`, never changes anything.
 import json
 import subprocess
 import sys
+import time
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -19,6 +20,10 @@ def git(*args):
         ["git", *args], cwd=REPO, capture_output=True, text=True, timeout=10, check=True
     )
     return out.stdout
+
+
+CACHE_SECONDS = 10
+_cache = {"at": 0.0, "state": None}
 
 
 def git_state():
@@ -39,10 +44,22 @@ def git_state():
     return state
 
 
+def cached_git_state():
+    # The dashboard polls often; git only changes when you commit or push.
+    now = time.monotonic()
+    if _cache["state"] is None or now - _cache["at"] > CACHE_SECONDS:
+        _cache["state"] = git_state()
+        _cache["at"] = now
+    return _cache["state"]
+
+
 class Handler(SimpleHTTPRequestHandler):
+    def log_message(self, format, *args):
+        pass  # no per-request log lines
+
     def do_GET(self):
         if self.path.split("?")[0] == "/api/git":
-            body = json.dumps(git_state()).encode()
+            body = json.dumps(cached_git_state()).encode()
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Cache-Control", "no-store")
