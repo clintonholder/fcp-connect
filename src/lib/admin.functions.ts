@@ -519,6 +519,11 @@ const PERM_COLS = [
   "can_delete_photos",
 ] as const;
 
+/** proxy_sessions is not in the generated types, so reach it through a loose table handle. */
+const proxySessions = (db: Awaited<ReturnType<typeof admin>>) =>
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (db as unknown as { from: (t: string) => any }).from("proxy_sessions");
+
 /** Builds the exact role/permission/visibility picture of another user, for admin "View as". */
 export const adminStartProxy = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
@@ -562,6 +567,20 @@ export const adminStartProxy = createServerFn({ method: "POST" })
       if (ok === true) visibleJobIds.push(j.id);
     }
 
+    // Database-level read-only: close any open session, then record the new one.
+    const now = new Date().toISOString();
+    const sessions = proxySessions(db);
+    const { error: closeErr } = await sessions
+      .update({ ended_at: now })
+      .eq("admin_id", context.userId)
+      .is("ended_at", null);
+    if (closeErr) throw new Error("Could not start View As: " + closeErr.message);
+    const { error: startErr } = await sessions.insert({
+      admin_id: context.userId,
+      viewed_user_id: data.userId,
+    });
+    if (startErr) throw new Error("Could not start View As: " + startErr.message);
+
     await audit(context.userId, "proxy_started", "user", data.userId, {
       viewed_as: profile.display_name || profile.email,
       viewed_as_email: profile.email,
@@ -583,11 +602,16 @@ export const adminEndProxy = createServerFn({ method: "POST" })
   .inputValidator((d: { userId: string }) => ({ userId: d?.userId ?? "" }))
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
+    const db = await admin();
+    const { error: endErr } = await proxySessions(db)
+      .update({ ended_at: new Date().toISOString() })
+      .eq("admin_id", context.userId)
+      .is("ended_at", null);
+    if (endErr) throw new Error("Could not end View As: " + endErr.message);
     if (!data.userId) {
       await audit(context.userId, "proxy_ended", "user", null, {});
       return { ok: true };
     }
-    const db = await admin();
     const { data: profile } = await db
       .from("profiles")
       .select("display_name, email")

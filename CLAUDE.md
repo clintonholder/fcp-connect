@@ -99,7 +99,11 @@ Run all four; each must pass before a build is READY.
 - View As (admin proxy) is read-only. Writes still run on the admin's own session, so
   every create/edit/delete/upload control checks `readOnly` from `useProxy()`
   (`src/lib/proxy-context.tsx`) and is hidden or disabled while it is true. New write
-  controls must do the same.
+  controls must do the same. Read-only is also enforced in the database: `adminStartProxy`
+  records a `proxy_sessions` row (expires after 2 hours, closed by `adminEndProxy`) and
+  restrictive INSERT/UPDATE/DELETE policies refuse writes from an admin with an active
+  session. Any new table with write policies must get matching restrictive
+  INSERT/UPDATE/DELETE policies using `private.has_active_proxy(auth.uid())` in its migration.
 - `audit_log` rows are written only by server functions through the service role
   (`supabaseAdmin`). There is no client-side insert policy, so new audit entries must be
   written from `src/lib/*.functions.ts`, never from the browser.
