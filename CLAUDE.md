@@ -84,13 +84,15 @@ Run all four; each must pass before a build is READY.
 
 ## Production safety (all agents)
 
+- **A push to `main` goes live.** GitHub Actions (`.github/workflows/deploy.yml`)
+  type-checks, tests and builds, then applies pending migrations to the production
+  database and deploys the Worker. Pushing is the human's approval step.
 - Never run migrations, `supabase db push`, `supabase db query`, or SQL against the
   database. A schema change is written as a new file
-  `supabase/migrations/<YYYYMMDDHHMMSS>_<name>.sql` (later than every existing one)
-  and left for a human to apply with `npx supabase db push`.
+  `supabase/migrations/<YYYYMMDDHHMMSS>_<name>.sql` (later than every existing one);
+  it is applied by the pipeline when a human pushes.
 - Never deploy (`wrangler deploy`), never `git push`, never edit `.env` or
-  `wrangler.jsonc` vars, never set Worker secrets. Deploying is
-  `npm run build && npx wrangler deploy`, run by a human.
+  `wrangler.jsonc` vars, never set Worker or GitHub secrets.
 - The dev server talks to production data. In the browser, look and navigate
   only: do not submit forms, upload media, comment, or click anything that
   creates, edits or deletes data.
