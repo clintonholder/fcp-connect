@@ -4,7 +4,24 @@ Job-site photo and video app for a commercial contractor: projects, geotagged
 media, maps, comments, checklists, divisions and role-based access. Started in
 Lovable; since 2026-10-16 it runs on its own Supabase project (`afhlutsdgvsmvitzxhvr`,
 org "FCP Services", East US Ohio) and a Cloudflare Worker (`fcp-connect`), live at
-https://fcp-connect.fcpservices.workers.dev. GitHub is no longer synced with Lovable.
+https://fcp-connect.fcpservices.workers.dev.
+
+## Lovable (front-end editing only)
+
+The Lovable project syncs two ways with the `lovable` branch, never with `main`.
+
+- Lovable is for screens, layout and copy. Database, auth and access-rule changes
+  go through the factory as migrations in `supabase/migrations/`.
+- Lovable's preview runs against the production Supabase project: anything done in
+  it creates real data. Never use Lovable's Publish button; the live site is only
+  deployed from `main`.
+- "Merge lovable": review `git diff main...origin/lovable` first and stop if it
+  touches `.env`, `src/integrations/supabase/`, `wrangler.jsonc`,
+  `supabase/config.toml`, `vite.config.ts`, adds `drizzle/` or a migration, or
+  changes dependencies. Otherwise merge into `main` and run Validation; the
+  human pushes `main` to deploy.
+- "Update lovable": merge `main` into `lovable` and push `lovable` (this deploys
+  nothing), so Lovable sees the latest code.
 
 ## Stack
 
