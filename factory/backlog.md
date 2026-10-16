@@ -11,4 +11,4 @@ roles is fine to queue; it will always come back to you for review.
 - [x] Build the View As visible-project list in one query instead of one database call per project (admin.functions.ts) → 005-view-as-single-query
 - [x] Trim the public share link: get_shared_job returns only listed fields and no archived photos; links get a default expiry (migration file only, not applied) → 006-trim-share-link
 - [x] Photo uploads: upload each file independently with retry, report per-file results, and delete the storage file if its database save fails → 007-photo-upload-retry
-- [ ] Photo location: never give a library photo without GPS the device's current location; record whether the location came from the photo or the device (migration file only)
+- [x] Photo location: never give a library photo without GPS the device's current location; record whether the location came from the photo or the device (migration file only) → 008-photo-location-source
