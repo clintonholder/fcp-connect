@@ -911,6 +911,7 @@ export type Database = {
       }
       is_director: { Args: { _user_id: string }; Returns: boolean }
       my_divisions: { Args: { _user_id: string }; Returns: string[] }
+      visible_job_ids: { Args: { _user_id: string }; Returns: string[] }
     }
     Enums: {
       company_role: "owner" | "admin" | "member"
