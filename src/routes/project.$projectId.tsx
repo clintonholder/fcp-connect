@@ -38,6 +38,7 @@ import { ProjectCollaborators } from "@/components/ProjectCollaborators";
 
 import { PHOTO_PHASES, UNPHASED, phaseLabel, formatTakenAt } from "@/lib/photo-meta";
 import { readPhotoExif } from "@/lib/exif";
+import { withRetry } from "@/lib/retry";
 const MAX_VIDEO_SECONDS = 60;
 
 const ProjectPhotoMap = lazy(() => import("@/components/ProjectPhotoMap"));
@@ -259,40 +260,102 @@ function ProjectDetail() {
     });
     try {
       let withGps = 0;
+      let saved = 0;
+      const failed: { name: string; reason: string }[] = [];
       for (const file of list) {
-        let exif = { takenAt: null as string | null, latitude: null as number | null, longitude: null as number | null };
-        try { exif = await readPhotoExif(file); } catch { /* metadata is optional */ }
-        const nameExt = (file.name.split(".").pop() || "").toLowerCase();
-        const ext = /^[a-z0-9]{2,5}$/.test(nameExt) ? nameExt : (file.type.split("/")[1] || "jpg");
-        const path = `${user.id}/${projectId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-        const { error: upErr } = await supabase.storage.from("job-photos")
-          .upload(path, file, { contentType: file.type || "image/jpeg", upsert: false });
-        if (upErr) throw upErr;
-        const { data: pub } = supabase.storage.from("job-photos").getPublicUrl(path);
-        const hasExifGps = exif.latitude != null && exif.longitude != null;
-        const lat = hasExifGps ? exif.latitude : (coords?.coords.latitude ?? null);
-        const lng = hasExifGps ? exif.longitude : (coords?.coords.longitude ?? null);
-        if (lat != null && lng != null) withGps++;
-        const { error: insErr } = await supabase.from("photos").insert({
-          job_id: projectId, user_id: user.id, company_id: company.id,
-          storage_path: path, image_url: pub.publicUrl, phase: uploadPhase || null,
-          media_type: "image", mime_type: file.type || null, file_size: file.size,
-          taken_at: exif.takenAt ?? new Date().toISOString(),
-          latitude: lat,
-          longitude: lng,
-          accuracy: hasExifGps ? null : (coords?.coords.accuracy ?? null),
-        });
-        if (insErr) throw insErr;
+        let path: string | null = null;
+        try {
+          let exif = {
+            takenAt: null as string | null,
+            latitude: null as number | null,
+            longitude: null as number | null,
+          };
+          try {
+            exif = await readPhotoExif(file);
+          } catch {
+            /* metadata is optional */
+          }
+          const nameExt = (file.name.split(".").pop() || "").toLowerCase();
+          const ext = /^[a-z0-9]{2,5}$/.test(nameExt) ? nameExt : file.type.split("/")[1] || "jpg";
+          const filePath = `${user.id}/${projectId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+          path = filePath;
+          let uploadTries = 0;
+          await withRetry(async () => {
+            const { error: upErr } = await supabase.storage
+              .from("job-photos")
+              .upload(filePath, file, { contentType: file.type || "image/jpeg", upsert: false });
+            // A retry that finds the object means an earlier attempt actually landed.
+            if (upErr && !(uploadTries++ > 0 && /already exists/i.test(upErr.message))) throw upErr;
+          });
+          const { data: pub } = supabase.storage.from("job-photos").getPublicUrl(filePath);
+          const hasExifGps = exif.latitude != null && exif.longitude != null;
+          const lat = hasExifGps ? exif.latitude : (coords?.coords.latitude ?? null);
+          const lng = hasExifGps ? exif.longitude : (coords?.coords.longitude ?? null);
+          await withRetry(async () => {
+            const { error: insErr } = await supabase.from("photos").insert({
+              job_id: projectId,
+              user_id: user.id,
+              company_id: company.id,
+              storage_path: filePath,
+              image_url: pub.publicUrl,
+              phase: uploadPhase || null,
+              media_type: "image",
+              mime_type: file.type || null,
+              file_size: file.size,
+              taken_at: exif.takenAt ?? new Date().toISOString(),
+              latitude: lat,
+              longitude: lng,
+              accuracy: hasExifGps ? null : (coords?.coords.accuracy ?? null),
+            });
+            if (insErr) throw insErr;
+          });
+          saved++;
+          if (lat != null && lng != null) withGps++;
+        } catch (e) {
+          console.error("[photo upload]", file.name, e);
+          if (path) {
+            try {
+              await supabase.storage.from("job-photos").remove([path]);
+            } catch (rmErr) {
+              console.error("[photo upload] cleanup failed", path, rmErr);
+            }
+          }
+          const reason = ((e as Error).message || "unknown error").slice(0, 80);
+          failed.push({ name: file.name, reason });
+        }
       }
-      try {
-        await logActivity({ company_id: company.id, job_id: projectId, kind: "photo_uploaded", meta: { count: list.length, phase: uploadPhase } });
-      } catch { /* history entry is not critical */ }
-      await qc.invalidateQueries({ queryKey: ["photos", projectId] });
-      qc.invalidateQueries({ queryKey: ["activity", projectId] });
-      toast.success(
-        withGps === list.length ? "Photos uploaded with location" : withGps ? `Photos uploaded (${withGps} of ${list.length} with location)` : "Photos uploaded (no location data)",
-        { id: progress },
-      );
+      if (saved > 0) {
+        try {
+          await logActivity({
+            company_id: company.id,
+            job_id: projectId,
+            kind: "photo_uploaded",
+            meta: { count: saved, phase: uploadPhase },
+          });
+        } catch {
+          /* history entry is not critical */
+        }
+        await qc.invalidateQueries({ queryKey: ["photos", projectId] });
+        qc.invalidateQueries({ queryKey: ["activity", projectId] });
+      }
+      if (failed.length === 0) {
+        toast.success(
+          withGps === list.length
+            ? "Photos uploaded with location"
+            : withGps
+              ? `Photos uploaded (${withGps} of ${list.length} with location)`
+              : "Photos uploaded (no location data)",
+          { id: progress },
+        );
+      } else {
+        const shown = failed
+          .slice(0, 3)
+          .map((f) => `${f.name} (${f.reason})`)
+          .join(", ");
+        const more = failed.length > 3 ? ` and ${failed.length - 3} more` : "";
+        const head = saved > 0 ? `${saved} of ${list.length} photos uploaded` : "Upload failed";
+        toast.error(`${head}. Failed: ${shown}${more}`, { id: progress });
+      }
     } catch (e) {
       console.error("[photo upload]", e);
       toast.error(`Upload failed: ${(e as Error).message || "unknown error"}`, { id: progress });
