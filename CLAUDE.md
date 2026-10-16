@@ -100,6 +100,9 @@ Run all four; each must pass before a build is READY.
   every create/edit/delete/upload control checks `readOnly` from `useProxy()`
   (`src/lib/proxy-context.tsx`) and is hidden or disabled while it is true. New write
   controls must do the same.
+- `audit_log` rows are written only by server functions through the service role
+  (`supabaseAdmin`). There is no client-side insert policy, so new audit entries must be
+  written from `src/lib/*.functions.ts`, never from the browser.
 - New pure helpers in `src/lib/` get a colocated `*.test.ts`. Tests must not hit the
   network or Supabase: stub `fetch` and modules with `vi` (`vi.stubGlobal`, `vi.mock`).
 
