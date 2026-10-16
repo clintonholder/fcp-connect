@@ -107,6 +107,9 @@ Run all four; each must pass before a build is READY.
 - `audit_log` rows are written only by server functions through the service role
   (`supabaseAdmin`). There is no client-side insert policy, so new audit entries must be
   written from `src/lib/*.functions.ts`, never from the browser.
+- The public share RPC `get_shared_job` returns only an explicit field list and excludes archived
+  photos, and new `share_links` expire after 30 days by default. Any new field the share page
+  needs must be added to `get_shared_job` in a new migration.
 - New pure helpers in `src/lib/` get a colocated `*.test.ts`. Tests must not hit the
   network or Supabase: stub `fetch` and modules with `vi` (`vi.stubGlobal`, `vi.mock`).
 
