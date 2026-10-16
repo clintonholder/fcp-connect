@@ -609,6 +609,7 @@ export type Database = {
           image_url: string
           job_id: string
           latitude: number | null
+          location_source: string | null
           longitude: number | null
           media_type: string
           mime_type: string | null
@@ -634,6 +635,7 @@ export type Database = {
           image_url: string
           job_id: string
           latitude?: number | null
+          location_source?: string | null
           longitude?: number | null
           media_type?: string
           mime_type?: string | null
@@ -659,6 +661,7 @@ export type Database = {
           image_url?: string
           job_id?: string
           latitude?: number | null
+          location_source?: string | null
           longitude?: number | null
           media_type?: string
           mime_type?: string | null
