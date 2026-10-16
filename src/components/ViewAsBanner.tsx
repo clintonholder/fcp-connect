@@ -7,7 +7,7 @@ import { adminEndProxy } from "@/lib/admin.functions";
 
 /** Sticky reminder that an administrator is seeing the site through someone else's account. */
 export function ViewAsBanner() {
-  const { proxy, setProxy } = useProxy();
+  const { proxy, setProxy, readOnly } = useProxy();
   const navigate = useNavigate();
   const qc = useQueryClient();
   if (!proxy) return null;
@@ -23,6 +23,7 @@ export function ViewAsBanner() {
           <span className="truncate">
             Viewing as <span className="font-semibold">{proxy.name}</span>{" "}
             <span className="text-muted-foreground">({roleLabel}{divLabel})</span>
+            {readOnly && <span className="font-semibold"> · Read-only</span>}
           </span>
         </p>
         <Button

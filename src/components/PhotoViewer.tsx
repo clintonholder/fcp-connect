@@ -45,7 +45,7 @@ export function PhotoViewer({
 }) {
   const photo = photos[index];
   const { user } = useAuth();
-  const { proxy } = useProxy();
+  const { proxy, readOnly } = useProxy();
   const { isAdmin: isAdminUser } = useMyRoles();
   const effectiveUserId = proxy ? proxy.userId : user?.id;
   const qc = useQueryClient();
@@ -122,7 +122,7 @@ export function PhotoViewer({
 
 
   if (!photo || typeof document === "undefined") return null;
-  const editable = canManage(photo);
+  const editable = canManage(photo) && !readOnly;
   const isVideo = photo.media_type === "video";
   const hasMarkup = !isVideo && !!photo.annotated_image_url;
   const displayUrl = isVideo || showOriginal ? photo.image_url : (photo.annotated_image_url ?? photo.image_url);
@@ -409,7 +409,7 @@ export function PhotoViewer({
               <Button size="sm" variant="outline" onClick={() => setEditing(true)}><Pencil className="h-4 w-4 mr-1" />Edit</Button>
             )}
 
-            {(canArchive ? canArchive(photo) : editable) && (
+            {!readOnly && (canArchive ? canArchive(photo) : editable) && (
               <Button size="sm" variant="outline" className="text-destructive" onClick={removePhoto}>
                  <Trash2 className="h-4 w-4 mr-1" />Delete media
               </Button>
@@ -428,7 +428,9 @@ export function PhotoViewer({
                     <div className="flex items-center gap-1 text-xs text-muted-foreground">
                       <span className="font-medium text-foreground">{profile?.display_name || profile?.email || "User"}</span>
                       {" · "}{formatDistanceToNow(new Date(c.created_at), { addSuffix: true })}
-                      {(c.user_id === effectiveUserId || isAdminUser) && editingId !== c.id && (
+                      {!readOnly &&
+                        (c.user_id === effectiveUserId || isAdminUser) &&
+                        editingId !== c.id && (
                         <span className="ml-auto flex gap-1">
                           <button type="button" aria-label="Edit comment" className="rounded p-1 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring outline-none"
                             onClick={() => { setEditingId(c.id); setEditBody(c.body); }}><Pencil className="h-3 w-3" /></button>
@@ -451,15 +453,17 @@ export function PhotoViewer({
               })}
               {comments?.length === 0 && <p className="text-xs text-muted-foreground">No comments yet.</p>}
             </div>
-            <div className="flex gap-2">
+            {!readOnly && (
+              <div className="flex gap-2">
               <Input placeholder="Add a comment…" value={comment} onChange={(e) => setComment(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addComment(); } }} />
               <Button onClick={addComment} disabled={!comment.trim()}><Send className="h-4 w-4" /></Button>
-            </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
-      {markupOpen && !isVideo && (
+      {markupOpen && editable && !isVideo && (
         <PhotoMarkupEditor
           imageUrl={photo.image_url}
           initialShapes={savedShapes}

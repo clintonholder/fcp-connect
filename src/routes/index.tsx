@@ -52,7 +52,7 @@ function ProjectsPage() {
   const { user } = useAuth();
   const { company } = useCompany();
   const { can } = useMyRoles();
-  const { proxy } = useProxy();
+  const { proxy, readOnly } = useProxy();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
@@ -219,13 +219,13 @@ function ProjectsPage() {
               Show archived
             </Label>
           </div>
-          {can.can_add_projects && (
+          {can.can_add_projects && !readOnly && (
             <Button onClick={() => setOpen(true)}><Plus className="h-4 w-4 mr-1" />New Project</Button>
           )}
         </div>
       </div>
 
-      <Dialog open={open} onOpenChange={(o) => (o ? setOpen(true) : closeCreate())}>
+      <Dialog open={open && !readOnly} onOpenChange={(o) => (o ? setOpen(true) : closeCreate())}>
         <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>New Project</DialogTitle></DialogHeader>
           <ProjectForm
