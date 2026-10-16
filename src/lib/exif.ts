@@ -7,7 +7,7 @@ export type PhotoExif = {
 
 const EMPTY: PhotoExif = { takenAt: null, latitude: null, longitude: null };
 
-function validDate(v: unknown): string | null {
+export function validDate(v: unknown): string | null {
   if (!v) return null;
   const d = v instanceof Date ? v : new Date(String(v).replace(/^(\d{4}):(\d{2}):(\d{2})/, "$1-$2-$3"));
   if (Number.isNaN(d.getTime())) return null;
@@ -17,7 +17,7 @@ function validDate(v: unknown): string | null {
 }
 
 /** Accepts decimals, [d, m, s] arrays, rationals and "40 deg 26' 46\" N" strings. */
-function toDecimal(value: unknown, ref: unknown): number | null {
+export function toDecimal(value: unknown, ref: unknown): number | null {
   let n: number | null = null;
 
   if (typeof value === "number") {
@@ -40,7 +40,7 @@ function toDecimal(value: unknown, ref: unknown): number | null {
   return n;
 }
 
-function inRange(n: number | null, max: number): number | null {
+export function inRange(n: number | null, max: number): number | null {
   if (n == null || !Number.isFinite(n)) return null;
   if (Math.abs(n) > max) return null;
   return n;
