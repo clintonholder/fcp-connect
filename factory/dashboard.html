@@ -168,6 +168,130 @@
     overflow-wrap: anywhere;
   }
 
+  [hidden] { display: none !important; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin: 24px 32px 0; border-bottom: 1px solid var(--line); }
+  .tab {
+    display: flex; align-items: center; gap: 8px; margin-bottom: -1px; padding: 8px 14px;
+    background: none; border: 0; border-bottom: 2px solid transparent; cursor: pointer;
+    color: var(--muted); font-size: 13px; font-weight: 600;
+  }
+  .tab:hover { color: var(--text); }
+  .tab[aria-pressed="true"] { color: var(--text); border-bottom-color: var(--active); }
+  .tab:focus-visible { outline: 2px solid var(--active); outline-offset: -2px; border-radius: 6px; }
+  .tab .n {
+    font-family: var(--mono); font-size: 11px; font-weight: 400; padding: 0 7px;
+    border-radius: 999px; background: var(--card); color: var(--muted);
+  }
+  .tab .n:empty { display: none; }
+
+  /* Backlog */
+  .backlog { padding: 20px 32px 40px; }
+  .bl-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+  .bl-stat {
+    --c: var(--muted); background: var(--panel); border: 1px solid var(--line);
+    border-radius: 12px; padding: 14px 16px;
+  }
+  .bl-stat .v { font-size: 26px; font-weight: 600; line-height: 1.1; letter-spacing: -0.02em; }
+  .bl-stat .l {
+    display: flex; align-items: center; gap: 7px; margin-top: 4px;
+    font-size: 12px; color: var(--muted);
+  }
+  .bl-stat .l::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+  .bl-progress {
+    display: flex; gap: 3px; height: 8px; margin: 14px 0 22px; border-radius: 999px; overflow: hidden;
+    background: var(--panel);
+  }
+  .bl-progress span { background: var(--c); min-width: 6px; transition: flex-grow .3s; }
+  .bl-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+  .bl-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+  .bl-filter {
+    display: flex; align-items: center; gap: 6px; padding: 5px 12px; cursor: pointer;
+    background: none; border: 1px solid var(--line); border-radius: 999px;
+    color: var(--muted); font-size: 12px;
+  }
+  .bl-filter:hover { color: var(--text); border-color: var(--muted); }
+  .bl-filter[aria-pressed="true"] {
+    color: var(--text); background: var(--card); border-color: var(--muted);
+  }
+  .bl-filter:focus-visible { outline: 2px solid var(--active); outline-offset: 2px; }
+  .bl-filter .n { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+  .bl-search {
+    margin-left: auto; width: min(260px, 100%); padding: 6px 12px; font: inherit; font-size: 13px;
+    background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px;
+  }
+  .bl-search::placeholder { color: var(--faint); }
+  .bl-search:focus-visible { outline: 2px solid var(--active); outline-offset: 1px; }
+  .bl-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .bl-item {
+    --c: var(--muted); background: var(--card); border: 1px solid var(--line);
+    border-left: 3px solid var(--c); border-radius: 10px; overflow: hidden;
+    transition: background .15s, border-color .15s;
+  }
+  .bl-item.st-active { --c: var(--active); }
+  .bl-item.st-human {
+    --c: var(--human); border-color: var(--human);
+    box-shadow: 0 8px 24px -14px color-mix(in srgb, var(--human) 60%, transparent);
+  }
+  .bl-item.st-merged { --c: var(--merged); }
+  .bl-item.st-merged .bl-title { color: var(--muted); }
+  .bl-item.next { border-color: color-mix(in srgb, var(--active) 55%, var(--line)); }
+  .bl-head {
+    display: grid; grid-template-columns: 34px minmax(0, 1fr) auto 14px; align-items: center;
+    gap: 12px; width: 100%; padding: 11px 14px 11px 12px; text-align: left; cursor: pointer;
+    background: none; border: 0;
+  }
+  .bl-head:hover { background: var(--card-hover); }
+  .bl-head:focus-visible { outline: 2px solid var(--active); outline-offset: -2px; }
+  .bl-n { font-family: var(--mono); font-size: 12px; color: var(--faint); }
+  .bl-title { font-size: 13.5px; line-height: 1.4; min-width: 0; overflow-wrap: anywhere; }
+  .bl-meta { display: flex; align-items: center; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+  .bl-job { font-family: var(--mono); font-size: 11px; color: var(--faint); white-space: nowrap; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 11px;
+    padding: 2px 9px; border-radius: 999px; white-space: nowrap; color: var(--c);
+    background: color-mix(in srgb, var(--c) 15%, transparent);
+  }
+  .pill .pulse { width: 6px; height: 6px; background: var(--c); }
+  .bl-flag {
+    font-size: 10px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--active); white-space: nowrap;
+  }
+  .bl-chev { color: var(--faint); transition: transform .15s; font-size: 16px; line-height: 1; }
+  .bl-item.open .bl-chev { transform: rotate(90deg); }
+  .bl-body { padding: 2px 16px 14px 58px; border-top: 1px solid var(--line); }
+  .bl-text { margin: 12px 0 0; max-width: 760px; color: var(--muted); line-height: 1.65; font-size: 13px; }
+  .bl-text code {
+    font-family: var(--mono); font-size: 12px; background: var(--bg); color: var(--text);
+    padding: 1px 5px; border-radius: 4px;
+  }
+  .bl-open {
+    margin-top: 12px; padding: 5px 12px; cursor: pointer; background: none;
+    border: 1px solid var(--line); border-radius: 8px; color: var(--active); font-size: 12px;
+  }
+  .bl-open:hover { border-color: var(--active); }
+  .bl-open:focus-visible { outline: 2px solid var(--active); outline-offset: 2px; }
+  .bl-empty {
+    padding: 28px 16px; text-align: center; color: var(--muted); font-size: 13px;
+    border: 1px dashed var(--line); border-radius: 10px;
+  }
+  .bl-empty code {
+    font-family: var(--mono); font-size: 12px; background: var(--card); padding: 2px 6px; border-radius: 4px;
+  }
+  @media (max-width: 760px) {
+    .bl-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .bl-search { margin-left: 0; width: 100%; }
+  }
+  @media (max-width: 640px) {
+    .tabs { margin: 20px 16px 0; }
+    .backlog { padding: 16px 16px 32px; }
+    .bl-head { grid-template-columns: 30px minmax(0, 1fr) 14px; }
+    .bl-meta { grid-column: 2; grid-row: 2; justify-content: flex-start; }
+    .bl-chev { grid-column: 3; grid-row: 1; }
+    .bl-body { padding-left: 16px; }
+  }
+
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
   @keyframes breathe { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
   @media (prefers-reduced-motion: reduce) { .pulse, .chip.wait { animation: none; } }
@@ -281,7 +405,20 @@
 </header>
 <div id="banner"></div>
 <section class="todo" id="todo" aria-label="What you need to do"></section>
+<nav class="tabs" aria-label="View">
+  <button class="tab" data-view="board" aria-pressed="true">Board</button>
+  <button class="tab" data-view="backlog" aria-pressed="false">Backlog <span class="n" id="n-backlog"></span></button>
+</nav>
 <main class="board" id="board"></main>
+<section class="backlog" id="backlog" aria-label="Backlog" hidden>
+  <div class="bl-stats" id="bl-stats"></div>
+  <div class="bl-progress" id="bl-progress" role="img"></div>
+  <div class="bl-toolbar">
+    <div class="bl-filters" id="bl-filters" role="group" aria-label="Filter by status"></div>
+    <input class="bl-search" id="bl-search" type="search" placeholder="Search backlog…" aria-label="Search backlog">
+  </div>
+  <ol class="bl-list" id="bl-list"></ol>
+</section>
 <footer>
   <span>/factory &lt;feature&gt;</span>
   <span>/factory next</span>
@@ -516,6 +653,7 @@ async function render() {
     $('todo').innerHTML = t
     if (open) document.querySelector('details.glossary').open = true
   }
+  renderBacklog()
 }
 
 async function poll() {
@@ -526,6 +664,7 @@ async function poll() {
       const res = await fetch('/api/git', { cache: 'no-store' })
       git = res.ok && (res.headers.get('content-type') || '').includes('json') ? await res.json() : null
     } catch { git = null }
+    try { backlogText = await fetchText('backlog.md') } catch { backlogText = null }
     await render()
     if (openJobId) await refreshDrawer()
     let mode = 'slow'
@@ -547,6 +686,133 @@ async function loadJobs() {
     .map((h) => h.slice(0, -1))
     .sort()
   return Promise.all(ids.map(async (id) => JSON.parse(await fetchText(`jobs/${id}/job.json`))))
+}
+
+// ---- Backlog -------------------------------------------------------------
+
+const BL_STATUS = [
+  { key: 'queued', label: 'Queued', c: 'var(--muted)' },
+  { key: 'active', label: 'In progress', c: 'var(--active)' },
+  { key: 'human', label: 'Needs you', c: 'var(--human)' },
+  { key: 'merged', label: 'Merged', c: 'var(--merged)' },
+]
+const STAGE_LABEL = { spec: 'Writing spec', build: 'Building', review: 'In review', approve: 'Approving' }
+
+let backlogText = null // backlog.md; null when it can't be read
+let blFilter = 'all'
+let blQuery = ''
+const blOpen = new Set() // item numbers whose full text is showing
+let lastBacklog = ''
+let view = 'board'
+
+// "- [x] text → job-id": checked items carry the job that built them.
+function parseBacklog(text) {
+  const items = []
+  for (const line of text.replace(/\r/g, '').split('\n')) {
+    const m = line.match(/^- \[([ xX])\]\s+(.*?)(?:\s+→\s+(\S+))?\s*$/)
+    if (m) items.push({ n: items.length + 1, done: m[1] !== ' ', text: m[2], job: m[3] || null })
+  }
+  return items
+}
+
+// Backlog lines are whole paragraphs; the title is the part before the first colon or sentence.
+function titleOf(text) {
+  const plain = text.replace(/`/g, '').replace(/\s*\([^)]*\)/g, '').replace(/\b(e\.g|i\.e)\./g, '$1\u0001')
+  let t = plain.match(/^(.+?)(?::\s|\.\s|$)/)[1].replace(/\u0001/g, '.')
+  if (t.length > 90) t = t.slice(0, 90).replace(/\s+\S*$/, '') + '…'
+  return t
+}
+
+function blStatus(item) {
+  const job = item.job && jobs.find((j) => j.id === item.job)
+  if (job) return { job, key: job.stage === 'merged' ? 'merged' : job.stage === 'needs-human' ? 'human' : 'active' }
+  return { job: null, key: item.done ? 'merged' : 'queued' }
+}
+
+function blRow(item, st, isNext) {
+  const open = blOpen.has(item.n)
+  const color = BL_STATUS.find((s) => s.key === st.key).c
+  let label = BL_STATUS.find((s) => s.key === st.key).label
+  if (st.key === 'active') label = STAGE_LABEL[st.job.stage] || label
+  if (st.key === 'merged' && !st.job) label = 'Done'
+  const live = st.key === 'active'
+  let where = ''
+  if (st.key === 'merged' && st.job && git && git.unpushed) {
+    const local = git.unpushed.some((s) => s.includes(`factory/${st.job.id}`))
+    where = local
+      ? '<span class="tag local" title="Merged on your computer only. Needs a push to go live.">not live yet</span>'
+      : '<span class="tag live" title="Pushed to GitHub, so the deploy has run or is running.">pushed</span>'
+  }
+  const title = titleOf(st.job ? st.job.feature : item.text)
+  return `
+    <li class="bl-item st-${st.key} ${isNext ? 'next' : ''} ${open ? 'open' : ''}">
+      <button class="bl-head" data-bl="${item.n}" aria-expanded="${open}">
+        <span class="bl-n">#${item.n}</span>
+        <span class="bl-title">${esc(title)}</span>
+        <span class="bl-meta">
+          ${isNext ? '<span class="bl-flag">Up next</span>' : ''}
+          ${st.job ? `<span class="bl-job">${esc(st.job.id)}</span>` : ''}${where}
+          <span class="pill" style="--c:${color}">${live ? '<span class="pulse" aria-hidden="true"></span>' : ''}${esc(label)}</span>
+        </span>
+        <span class="bl-chev" aria-hidden="true">›</span>
+      </button>
+      ${open ? `<div class="bl-body"><p class="bl-text">${inline(item.text)}</p>
+        ${st.job ? `<button class="bl-open" data-job="${esc(st.job.id)}">Open job ${esc(st.job.id)} →</button>` : ''}</div>` : ''}
+    </li>`
+}
+
+function renderBacklog() {
+  if (backlogText === null) {
+    const html = '<div class="bl-empty">Couldn’t read <code>backlog.md</code>.</div>'
+    if (html !== lastBacklog) { lastBacklog = html; $('bl-list').innerHTML = html }
+    return
+  }
+  const items = parseBacklog(backlogText).map((item) => ({ item, st: blStatus(item) }))
+  const nextN = items.find((x) => x.st.key === 'queued')?.item.n
+  const counts = Object.fromEntries(BL_STATUS.map((s) => [s.key, items.filter((x) => x.st.key === s.key).length]))
+  const open = counts.queued + counts.active + counts.human
+
+  const q = blQuery.trim().toLowerCase()
+  const shown = items.filter(({ item, st }) =>
+    (blFilter === 'all' || st.key === blFilter) &&
+    (!q || `${item.text} ${item.job || ''} ${st.job ? st.job.feature : ''}`.toLowerCase().includes(q)))
+
+  let list = shown.map(({ item, st }) => blRow(item, st, item.n === nextN)).join('')
+  if (!list) {
+    list = !items.length
+      ? '<div class="bl-empty">The backlog is empty. Add a line to <code>backlog.md</code> or run <code>/factory &lt;feature&gt;</code>.</div>'
+      : blFilter === 'queued' && !q
+        ? '<div class="bl-empty">Nothing is waiting in the queue. Add a line to <code>backlog.md</code> or run <code>/factory &lt;feature&gt;</code>.</div>'
+        : '<div class="bl-empty">No backlog items match.</div>'
+  }
+
+  const stats = BL_STATUS.map((s) => `
+    <div class="bl-stat" style="--c:${s.c}"><div class="v">${counts[s.key]}</div><div class="l">${s.label}</div></div>`).join('')
+  const progress = BL_STATUS.slice().reverse().filter((s) => counts[s.key])
+    .map((s) => `<span style="--c:${s.c};flex-grow:${counts[s.key]}" title="${s.label}: ${counts[s.key]}"></span>`).join('')
+  const filters = [{ key: 'all', label: 'All', n: items.length }, ...BL_STATUS.map((s) => ({ ...s, n: counts[s.key] }))]
+    .map((f) => `<button class="bl-filter" data-filter="${f.key}" aria-pressed="${blFilter === f.key}">${f.label}
+      <span class="n">${f.n}</span></button>`).join('')
+
+  const html = stats + '\u0001' + progress + '\u0001' + filters + '\u0001' + list
+  $('n-backlog').textContent = open || ''
+  if (html === lastBacklog) return
+  lastBacklog = html
+  $('bl-stats').innerHTML = stats
+  $('bl-progress').innerHTML = progress
+  $('bl-progress').setAttribute('aria-label',
+    BL_STATUS.map((s) => `${counts[s.key]} ${s.label.toLowerCase()}`).join(', '))
+  $('bl-filters').innerHTML = filters
+  $('bl-list').innerHTML = list
+}
+
+function setView(v) {
+  view = v
+  $('board').hidden = v !== 'board'
+  $('backlog').hidden = v !== 'backlog'
+  document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)))
+  try { localStorage.setItem('factory.view', v) } catch {}
+  history.replaceState(null, '', v === 'backlog' ? '#backlog' : location.pathname + location.search)
 }
 
 // ---- Drawer --------------------------------------------------------------
@@ -650,6 +916,17 @@ document.addEventListener('click', (e) => {
     try { localStorage.setItem('factory.showAllMerged', showAllMerged ? '1' : '0') } catch {}
     return render()
   }
+  const viewEl = e.target.closest('[data-view]')
+  if (viewEl) return setView(viewEl.dataset.view)
+  const filterEl = e.target.closest('[data-filter]')
+  if (filterEl) { blFilter = filterEl.dataset.filter; return renderBacklog() }
+  const rowEl = e.target.closest('[data-bl]')
+  if (rowEl) {
+    const n = Number(rowEl.dataset.bl)
+    if (!blOpen.delete(n)) blOpen.add(n)
+    renderBacklog()
+    return document.querySelector(`[data-bl="${n}"]`)?.focus()
+  }
   const cardEl = e.target.closest('[data-job]')
   if (cardEl) return openDrawer(cardEl.dataset.job)
   const fileEl = e.target.closest('[data-file]')
@@ -739,6 +1016,12 @@ function markdown(src) {
   }
   return html
 }
+
+$('bl-search').addEventListener('input', (e) => { blQuery = e.target.value; renderBacklog() })
+
+let startView = 'board'
+try { startView = localStorage.getItem('factory.view') || 'board' } catch {}
+setView(location.hash === '#backlog' ? 'backlog' : startView === 'backlog' ? 'backlog' : 'board')
 
 poll()
 setInterval(poll, POLL_MS)
