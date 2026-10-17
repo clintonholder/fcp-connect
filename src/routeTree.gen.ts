@@ -16,9 +16,13 @@ import { Route as MapRouteImport } from './routes/map'
 import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as SafetyRouteImport } from './routes/safety'
 import { Route as JobJobIdRouteImport } from './routes/job.$jobId'
 import { Route as ProjectProjectIdRouteImport } from './routes/project.$projectId'
+import { Route as SafetyIndexRouteImport } from './routes/safety.index'
+import { Route as SafetyFirstAidRouteImport } from './routes/safety.first-aid'
+import { Route as SafetyJhaRouteImport } from './routes/safety.jha'
+import { Route as SafetySdsRouteImport } from './routes/safety.sds'
+import { Route as SafetyToolboxRouteImport } from './routes/safety.toolbox'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
 
 const IndexRoute = IndexRouteImport.update({
@@ -56,11 +60,6 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SafetyRoute = SafetyRouteImport.update({
-  id: '/safety',
-  path: '/safety',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const JobJobIdRoute = JobJobIdRouteImport.update({
   id: '/job/$jobId',
   path: '/job/$jobId',
@@ -69,6 +68,31 @@ const JobJobIdRoute = JobJobIdRouteImport.update({
 const ProjectProjectIdRoute = ProjectProjectIdRouteImport.update({
   id: '/project/$projectId',
   path: '/project/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SafetyIndexRoute = SafetyIndexRouteImport.update({
+  id: '/safety/',
+  path: '/safety/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SafetyFirstAidRoute = SafetyFirstAidRouteImport.update({
+  id: '/safety/first-aid',
+  path: '/safety/first-aid',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SafetyJhaRoute = SafetyJhaRouteImport.update({
+  id: '/safety/jha',
+  path: '/safety/jha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SafetySdsRoute = SafetySdsRouteImport.update({
+  id: '/safety/sds',
+  path: '/safety/sds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SafetyToolboxRoute = SafetyToolboxRouteImport.update({
+  id: '/safety/toolbox',
+  path: '/safety/toolbox',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ShareTokenRoute = ShareTokenRouteImport.update({
@@ -85,10 +109,14 @@ export interface FileRoutesByFullPath {
   '/messages': typeof MessagesRoute
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/safety': typeof SafetyRoute
   '/job/$jobId': typeof JobJobIdRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
+  '/safety/first-aid': typeof SafetyFirstAidRoute
+  '/safety/jha': typeof SafetyJhaRoute
+  '/safety/sds': typeof SafetySdsRoute
+  '/safety/toolbox': typeof SafetyToolboxRoute
   '/share/$token': typeof ShareTokenRoute
+  '/safety/': typeof SafetyIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -98,10 +126,14 @@ export interface FileRoutesByTo {
   '/messages': typeof MessagesRoute
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/safety': typeof SafetyRoute
   '/job/$jobId': typeof JobJobIdRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
+  '/safety/first-aid': typeof SafetyFirstAidRoute
+  '/safety/jha': typeof SafetyJhaRoute
+  '/safety/sds': typeof SafetySdsRoute
+  '/safety/toolbox': typeof SafetyToolboxRoute
   '/share/$token': typeof ShareTokenRoute
+  '/safety': typeof SafetyIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -112,10 +144,14 @@ export interface FileRoutesById {
   '/messages': typeof MessagesRoute
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
-  '/safety': typeof SafetyRoute
   '/job/$jobId': typeof JobJobIdRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
+  '/safety/first-aid': typeof SafetyFirstAidRoute
+  '/safety/jha': typeof SafetyJhaRoute
+  '/safety/sds': typeof SafetySdsRoute
+  '/safety/toolbox': typeof SafetyToolboxRoute
   '/share/$token': typeof ShareTokenRoute
+  '/safety/': typeof SafetyIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -127,10 +163,14 @@ export interface FileRouteTypes {
     | '/messages'
     | '/projects'
     | '/reset-password'
-    | '/safety'
     | '/job/$jobId'
     | '/project/$projectId'
+    | '/safety/first-aid'
+    | '/safety/jha'
+    | '/safety/sds'
+    | '/safety/toolbox'
     | '/share/$token'
+    | '/safety/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -140,10 +180,14 @@ export interface FileRouteTypes {
     | '/messages'
     | '/projects'
     | '/reset-password'
-    | '/safety'
     | '/job/$jobId'
     | '/project/$projectId'
+    | '/safety/first-aid'
+    | '/safety/jha'
+    | '/safety/sds'
+    | '/safety/toolbox'
     | '/share/$token'
+    | '/safety'
   id:
     | '__root__'
     | '/'
@@ -153,10 +197,14 @@ export interface FileRouteTypes {
     | '/messages'
     | '/projects'
     | '/reset-password'
-    | '/safety'
     | '/job/$jobId'
     | '/project/$projectId'
+    | '/safety/first-aid'
+    | '/safety/jha'
+    | '/safety/sds'
+    | '/safety/toolbox'
     | '/share/$token'
+    | '/safety/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -167,10 +215,14 @@ export interface RootRouteChildren {
   MessagesRoute: typeof MessagesRoute
   ProjectsRoute: typeof ProjectsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
-  SafetyRoute: typeof SafetyRoute
   JobJobIdRoute: typeof JobJobIdRoute
   ProjectProjectIdRoute: typeof ProjectProjectIdRoute
+  SafetyFirstAidRoute: typeof SafetyFirstAidRoute
+  SafetyJhaRoute: typeof SafetyJhaRoute
+  SafetySdsRoute: typeof SafetySdsRoute
+  SafetyToolboxRoute: typeof SafetyToolboxRoute
   ShareTokenRoute: typeof ShareTokenRoute
+  SafetyIndexRoute: typeof SafetyIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -224,13 +276,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/safety': {
-      id: '/safety'
-      path: '/safety'
-      fullPath: '/safety'
-      preLoaderRoute: typeof SafetyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/job/$jobId': {
       id: '/job/$jobId'
       path: '/job/$jobId'
@@ -243,6 +288,41 @@ declare module '@tanstack/react-router' {
       path: '/project/$projectId'
       fullPath: '/project/$projectId'
       preLoaderRoute: typeof ProjectProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/safety/': {
+      id: '/safety/'
+      path: '/safety'
+      fullPath: '/safety/'
+      preLoaderRoute: typeof SafetyIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/safety/first-aid': {
+      id: '/safety/first-aid'
+      path: '/safety/first-aid'
+      fullPath: '/safety/first-aid'
+      preLoaderRoute: typeof SafetyFirstAidRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/safety/jha': {
+      id: '/safety/jha'
+      path: '/safety/jha'
+      fullPath: '/safety/jha'
+      preLoaderRoute: typeof SafetyJhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/safety/sds': {
+      id: '/safety/sds'
+      path: '/safety/sds'
+      fullPath: '/safety/sds'
+      preLoaderRoute: typeof SafetySdsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/safety/toolbox': {
+      id: '/safety/toolbox'
+      path: '/safety/toolbox'
+      fullPath: '/safety/toolbox'
+      preLoaderRoute: typeof SafetyToolboxRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/share/$token': {
@@ -263,10 +343,14 @@ const rootRouteChildren: RootRouteChildren = {
   MessagesRoute: MessagesRoute,
   ProjectsRoute: ProjectsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
-  SafetyRoute: SafetyRoute,
   JobJobIdRoute: JobJobIdRoute,
   ProjectProjectIdRoute: ProjectProjectIdRoute,
+  SafetyFirstAidRoute: SafetyFirstAidRoute,
+  SafetyJhaRoute: SafetyJhaRoute,
+  SafetySdsRoute: SafetySdsRoute,
+  SafetyToolboxRoute: SafetyToolboxRoute,
   ShareTokenRoute: ShareTokenRoute,
+  SafetyIndexRoute: SafetyIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

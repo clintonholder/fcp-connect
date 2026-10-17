@@ -27,7 +27,7 @@ The Lovable project syncs two ways with the `lovable` branch, never with `main`.
 
 - TanStack Start (SSR) + TanStack Router file routes, React 19, TypeScript, Vite 7
 - Tailwind CSS 4, shadcn/ui on Radix (`src/components/ui/`), lucide-react icons
-- Supabase: auth, Postgres, storage (private `job-photos` bucket). Client in
+- Supabase: auth, Postgres, storage (private `job-photos` and `safety-documents` buckets). Client in
   `src/integrations/supabase/`; schema in `supabase/migrations/` (the only migration folder)
 - Server functions in `src/lib/*.functions.ts`; Cloudflare Workers deploy (`wrangler.jsonc`)
 - Leaflet maps, exifr (EXIF/GPS), jsPDF / html2canvas / jszip for exports
@@ -115,6 +115,9 @@ Run all four; each must pass before a build is READY.
 - `worker_type`, `subcontractor_name` and `is_disabled` on `profiles` are admin-only. They are
   enforced by the `profiles_admin_fields_guard` trigger and set only from
   `src/lib/admin.functions.ts` through the service role.
+- Safety document writes go through `src/lib/safety.functions.ts` using the caller's RLS client,
+  files are served only by signed URLs, and subcontractors see only `shareable_with_subs`
+  documents (enforced in RLS and mirrored for View As by `visibleToViewer`).
 - New pure helpers in `src/lib/` get a colocated `*.test.ts`. Tests must not hit the
   network or Supabase: stub `fetch` and modules with `vi` (`vi.stubGlobal`, `vi.mock`).
 
