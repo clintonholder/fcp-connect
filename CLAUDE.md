@@ -122,6 +122,10 @@ Run all four; each must pass before a build is READY.
   owner (`owner_id`), collaborators and `manage_safety`. A JHA is completed once per project and
   redone only after a "Request new JHA", enforced by the `jha_record_guard` trigger; completed
   records cannot be changed.
+- Toolbox talk writes go through `src/lib/toolbox-talks.functions.ts`. `toolbox_talks` are readable
+  only by the project team (owner and collaborators) and `manage_safety`, reusing
+  `private.can_access_jha`; topics are managed by `manage_safety`. A talk is completed once with
+  attendee signatures and then cannot be changed, enforced by the `toolbox_talk_guard` trigger.
 - New pure helpers in `src/lib/` get a colocated `*.test.ts`. Tests must not hit the
   network or Supabase: stub `fetch` and modules with `vi` (`vi.stubGlobal`, `vi.mock`).
 

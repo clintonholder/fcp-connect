@@ -968,6 +968,86 @@ export type Database = {
         }
         Relationships: []
       }
+      toolbox_talk_topics: {
+        Row: {
+          body: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      toolbox_talks: {
+        Row: {
+          attendees: Json | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          job_id: string
+          led_by: string | null
+          notes: string | null
+          talk_date: string
+          topic_body: string | null
+          topic_id: string | null
+          topic_title: string
+        }
+        Insert: {
+          attendees?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          job_id: string
+          led_by?: string | null
+          notes?: string | null
+          talk_date?: string
+          topic_body?: string | null
+          topic_id?: string | null
+          topic_title: string
+        }
+        Update: {
+          attendees?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          job_id?: string
+          led_by?: string | null
+          notes?: string | null
+          talk_date?: string
+          topic_body?: string | null
+          topic_id?: string | null
+          topic_title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "toolbox_talks_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_divisions: {
         Row: {
           created_at: string
