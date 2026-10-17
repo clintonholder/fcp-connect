@@ -699,7 +699,9 @@ export type Database = {
           email: string | null
           id: string
           is_disabled: boolean
+          subcontractor_name: string | null
           updated_at: string
+          worker_type: string
         }
         Insert: {
           avatar_url?: string | null
@@ -708,7 +710,9 @@ export type Database = {
           email?: string | null
           id: string
           is_disabled?: boolean
+          subcontractor_name?: string | null
           updated_at?: string
+          worker_type?: string
         }
         Update: {
           avatar_url?: string | null
@@ -717,7 +721,9 @@ export type Database = {
           email?: string | null
           id?: string
           is_disabled?: boolean
+          subcontractor_name?: string | null
           updated_at?: string
+          worker_type?: string
         }
         Relationships: []
       }

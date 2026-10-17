@@ -23,6 +23,7 @@ import {
 } from "@/lib/admin.functions";
 import { DIVISIONS } from "@/lib/project-meta";
 import { useProxy } from "@/lib/proxy-context";
+import { workerTypeLabel, type WorkerType } from "@/lib/worker-type";
 import { useAuth } from "@/lib/auth-context";
 import { useNavigate } from "@tanstack/react-router";
 import { Eye } from "lucide-react";
@@ -94,7 +95,8 @@ function AdminPage() {
 
   const [inviteOpen, setInviteOpen] = useState(false);
   const [editUserId, setEditUserId] = useState<string | null>(null);
-  const [inviteForm, setInviteForm] = useState({ email: "", displayName: "", roleId: "" });
+  const emptyInviteForm = { email: "", displayName: "", roleId: "", workerType: "employee" as WorkerType, subcontractorName: "" };
+  const [inviteForm, setInviteForm] = useState(emptyInviteForm);
 
   const [roleOpen, setRoleOpen] = useState(false);
   const emptyPerms = Object.fromEntries(PERMISSIONS.map((p) => [p.key, false])) as Record<PermissionKey, boolean>;
@@ -131,12 +133,14 @@ function AdminPage() {
         email: inviteForm.email,
         displayName: inviteForm.displayName,
         roleId: inviteForm.roleId || null,
+        workerType: inviteForm.workerType,
+        subcontractorName: inviteForm.subcontractorName,
         origin: window.location.origin,
       },
     }),
     onSuccess: () => {
       toast.success("Invitation sent");
-      setInviteForm({ email: "", displayName: "", roleId: "" });
+      setInviteForm(emptyInviteForm);
       setInviteOpen(false);
       refresh();
     },
@@ -148,13 +152,22 @@ function AdminPage() {
       if (!inviteForm.displayName.trim() || !inviteForm.email.trim()) {
         return Promise.reject(new Error("A name and a valid email address are required"));
       }
+      if (inviteForm.workerType === "subcontractor" && !inviteForm.subcontractorName.trim()) {
+        return Promise.reject(new Error("A Sub Contractor name is required"));
+      }
       return createUser({
-        data: { email: inviteForm.email, displayName: inviteForm.displayName, roleId: inviteForm.roleId || null },
+        data: {
+          email: inviteForm.email,
+          displayName: inviteForm.displayName,
+          roleId: inviteForm.roleId || null,
+          workerType: inviteForm.workerType,
+          subcontractorName: inviteForm.subcontractorName,
+        },
       });
     },
     onSuccess: () => {
       toast.success("User added — invitation pending");
-      setInviteForm({ email: "", displayName: "", roleId: "" });
+      setInviteForm(emptyInviteForm);
       setInviteOpen(false);
       refresh();
     },
@@ -167,18 +180,23 @@ function AdminPage() {
       if (!inviteForm.displayName.trim() || !inviteForm.email.trim()) {
         return Promise.reject(new Error("A name and a valid email address are required"));
       }
+      if (inviteForm.workerType === "subcontractor" && !inviteForm.subcontractorName.trim()) {
+        return Promise.reject(new Error("A Sub Contractor name is required"));
+      }
       return updateUser({
         data: {
           userId: editUserId,
           email: inviteForm.email,
           displayName: inviteForm.displayName,
           roleId: inviteForm.roleId || null,
+          workerType: inviteForm.workerType,
+          subcontractorName: inviteForm.subcontractorName,
         },
       });
     },
     onSuccess: () => {
       toast.success("Changes saved");
-      setInviteForm({ email: "", displayName: "", roleId: "" });
+      setInviteForm(emptyInviteForm);
       setEditUserId(null);
       setInviteOpen(false);
       refresh();
@@ -268,6 +286,17 @@ function AdminPage() {
                 {(roles.data ?? []).filter((r) => r.is_active).map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
             </div>
+            <div>
+              <Label htmlFor="i-worker-type">FCP Employee / Sub Contractor</Label>
+              <select id="i-worker-type" className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                value={inviteForm.workerType} onChange={(e) => setInviteForm({ ...inviteForm, workerType: e.target.value as WorkerType })}>
+                <option value="employee">FCP Employee</option>
+                <option value="subcontractor">Sub Contractor</option>
+              </select>
+            </div>
+            {inviteForm.workerType === "subcontractor" && (
+              <div><Label htmlFor="i-sub-name">Sub Contractor name *</Label><Input id="i-sub-name" required value={inviteForm.subcontractorName} onChange={(e) => setInviteForm({ ...inviteForm, subcontractorName: e.target.value })} /></div>
+            )}
             <p className="text-xs text-muted-foreground">
               {editUserId
                 ? "Passwords cannot be changed here — use Send password reset on the person's row."
@@ -406,7 +435,7 @@ function AdminPage() {
 
       <AdminSection id="users" title="Users"
         actions={
-          <Button size="sm" variant="outline" onClick={() => { setEditUserId(null); setInviteForm({ email: "", displayName: "", roleId: "" }); setInviteOpen(true); }}>
+          <Button size="sm" variant="outline" onClick={() => { setEditUserId(null); setInviteForm(emptyInviteForm); setInviteOpen(true); }}>
             <UserPlus className="h-4 w-4 mr-1" />New User
           </Button>
         }>
@@ -419,6 +448,7 @@ function AdminPage() {
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{u.display_name || u.email}</span>
                   <Badge variant={statusVariant(u.status)}>{u.status}</Badge>
+                  <Badge variant="outline">{workerTypeLabel({ workerType: u.worker_type, subcontractorName: u.subcontractor_name })}</Badge>
                 </div>
                 <div className="truncate text-xs text-muted-foreground">{u.email}</div>
                 <div className="mt-1 flex flex-wrap gap-1">
@@ -471,7 +501,7 @@ function AdminPage() {
                 </select>
                 <Button size="sm" variant="ghost" aria-label={`Edit ${u.display_name || u.email}`} onClick={() => {
                   setEditUserId(u.id);
-                  setInviteForm({ email: u.email, displayName: u.display_name ?? "", roleId: u.roles[0]?.id ?? "" });
+                  setInviteForm({ email: u.email, displayName: u.display_name ?? "", roleId: u.roles[0]?.id ?? "", workerType: u.worker_type, subcontractorName: u.subcontractor_name ?? "" });
                   setInviteOpen(true);
                 }}><Pencil className="h-3.5 w-3.5" /></Button>
                 {u.id !== me?.id && (
