@@ -117,12 +117,17 @@ ON CONFLICT (id) DO UPDATE SET
   file_size_limit = EXCLUDED.file_size_limit,
   allowed_mime_types = EXCLUDED.allowed_mime_types;
 
--- File access follows row access: the subquery runs under the caller's table RLS.
+-- File access follows row access: the subquery runs under the caller's table RLS. Managers can
+-- also read any object in the bucket, so uploads (no row yet), failed-upload cleanup and removal
+-- of a replaced file (its row already points at the new file) work for them.
 DROP POLICY IF EXISTS "safety_documents_files_select" ON storage.objects;
 CREATE POLICY "safety_documents_files_select" ON storage.objects FOR SELECT TO authenticated
   USING (
     bucket_id = 'safety-documents'
-    AND EXISTS (SELECT 1 FROM public.safety_documents d WHERE d.file_path = storage.objects.name)
+    AND (
+      private.has_perm(auth.uid(), 'manage_safety')
+      OR EXISTS (SELECT 1 FROM public.safety_documents d WHERE d.file_path = storage.objects.name)
+    )
   );
 
 DROP POLICY IF EXISTS "safety_documents_files_insert" ON storage.objects;

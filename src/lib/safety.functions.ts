@@ -117,7 +117,10 @@ export const replaceSafetyDocumentVersion = createServerFn({ method: "POST" })
     if (!updated?.length) throw new Error("This document no longer exists or is archived");
 
     // The row now points at the new file; drop the old one. A failure here only orphans a file.
-    await context.supabase.storage.from(SAFETY_BUCKET).remove([old.file_path]);
+    const { error: removeErr } = await context.supabase.storage
+      .from(SAFETY_BUCKET)
+      .remove([old.file_path]);
+    if (removeErr) console.error("Could not remove replaced safety file", old.file_path, removeErr);
 
     await audit(context.userId, "safety_document_replaced", data.id, {
       title: old.title,
