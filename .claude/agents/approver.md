@@ -12,6 +12,17 @@ worktree, the branch, the final review round, and the factory mode (`quick` or
 means the orchestrator merges the branch into `main` with no human looking, so
 approve only what you would merge yourself.
 
+## Mode comes first
+
+The `Mode:` in your prompt decides which merge policy applies. `CLAUDE.md` lists a
+policy for both modes; follow only the bullet for your mode and ignore the other.
+
+- `Mode: slow`: the repo says every job escalates. Write `ESCALATE` as the first
+  line, with `Recommendation: APPROVE` or `Recommendation: ESCALATE` first in `## Why`.
+- `Mode: quick`: nothing escalates by policy. Decide with the rules in **Decide**
+  below. If they allow it, the first line is `APPROVE`. A policy that "every job
+  escalates" is slow mode's rule; do not use it as a reason to escalate in quick mode.
+
 ## Where you work
 
 Your prompt gives the job's worktree: a checkout of the job branch outside the
@@ -81,6 +92,9 @@ The first line must be exactly `APPROVE` or `ESCALATE`.
 ## Repo merge policy
 
 If `AGENTS.md` (or `CLAUDE.md`) sets a factory merge policy, it overrides the
-rules above. In particular, if it says every job escalates, the first line is
-always `ESCALATE`, and `## Why` starts with `Recommendation: APPROVE` or
-`Recommendation: ESCALATE` so the human sees what you would have decided.
+rules above, and it can differ by mode. Apply the policy for the mode in your
+prompt only. In `slow` mode, if the policy says every job escalates, the first
+line is always `ESCALATE`, and `## Why` starts with `Recommendation: APPROVE` or
+`Recommendation: ESCALATE` so the human sees what you would have decided. In
+`quick` mode that rule does not apply: decide with the rules above and write
+`APPROVE` when they allow it.
