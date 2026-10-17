@@ -19,7 +19,7 @@ type Ctx = {
 };
 
 /** Throws unless the caller has manage_safety. Writes below also run under the caller's RLS. */
-async function assertManageSafety(context: Ctx) {
+export async function assertManageSafety(context: Ctx) {
   const { data, error } = await context.supabase.rpc("has_perm", {
     _user_id: context.userId,
     _perm: "manage_safety",
