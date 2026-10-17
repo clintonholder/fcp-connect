@@ -658,7 +658,7 @@ function ProjectDetail() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["projects"] });
       toast.success("Project permanently deleted");
-      navigate({ to: "/" });
+      navigate({ to: "/projects" });
     },
     onError: (e) => toast.error((e as Error).message),
   });
@@ -699,14 +699,14 @@ function ProjectDetail() {
         <p className="mt-1 text-sm text-muted-foreground">
           This project doesn't exist, or you're not assigned to it. Ask an administrator if you need access.
         </p>
-        <Link to="/" className="mt-4 inline-flex text-sm text-primary underline">Back to all projects</Link>
+        <Link to="/projects" className="mt-4 inline-flex text-sm text-primary underline">Back to all projects</Link>
       </div>
     );
   }
 
   return (
     <div className="mx-auto max-w-6xl p-4 sm:p-6">
-      <Link to="/" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <Link to="/projects" className="mb-3 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
         <ArrowLeft className="h-4 w-4" />All projects
       </Link>
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">

@@ -13,7 +13,10 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MapRouteImport } from './routes/map'
+import { Route as MessagesRouteImport } from './routes/messages'
+import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SafetyRouteImport } from './routes/safety'
 import { Route as JobJobIdRouteImport } from './routes/job.$jobId'
 import { Route as ProjectProjectIdRouteImport } from './routes/project.$projectId'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
@@ -38,9 +41,24 @@ const MapRoute = MapRouteImport.update({
   path: '/map',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MessagesRoute = MessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProjectsRoute = ProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SafetyRoute = SafetyRouteImport.update({
+  id: '/safety',
+  path: '/safety',
   getParentRoute: () => rootRouteImport,
 } as any)
 const JobJobIdRoute = JobJobIdRouteImport.update({
@@ -64,7 +82,10 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/map': typeof MapRoute
+  '/messages': typeof MessagesRoute
+  '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/safety': typeof SafetyRoute
   '/job/$jobId': typeof JobJobIdRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/share/$token': typeof ShareTokenRoute
@@ -74,7 +95,10 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/map': typeof MapRoute
+  '/messages': typeof MessagesRoute
+  '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/safety': typeof SafetyRoute
   '/job/$jobId': typeof JobJobIdRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/share/$token': typeof ShareTokenRoute
@@ -85,7 +109,10 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/map': typeof MapRoute
+  '/messages': typeof MessagesRoute
+  '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/safety': typeof SafetyRoute
   '/job/$jobId': typeof JobJobIdRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/share/$token': typeof ShareTokenRoute
@@ -97,7 +124,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/map'
+    | '/messages'
+    | '/projects'
     | '/reset-password'
+    | '/safety'
     | '/job/$jobId'
     | '/project/$projectId'
     | '/share/$token'
@@ -107,7 +137,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/map'
+    | '/messages'
+    | '/projects'
     | '/reset-password'
+    | '/safety'
     | '/job/$jobId'
     | '/project/$projectId'
     | '/share/$token'
@@ -117,7 +150,10 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/map'
+    | '/messages'
+    | '/projects'
     | '/reset-password'
+    | '/safety'
     | '/job/$jobId'
     | '/project/$projectId'
     | '/share/$token'
@@ -128,7 +164,10 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   LoginRoute: typeof LoginRoute
   MapRoute: typeof MapRoute
+  MessagesRoute: typeof MessagesRoute
+  ProjectsRoute: typeof ProjectsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SafetyRoute: typeof SafetyRoute
   JobJobIdRoute: typeof JobJobIdRoute
   ProjectProjectIdRoute: typeof ProjectProjectIdRoute
   ShareTokenRoute: typeof ShareTokenRoute
@@ -164,11 +203,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MapRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/messages': {
+      id: '/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof MessagesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/safety': {
+      id: '/safety'
+      path: '/safety'
+      fullPath: '/safety'
+      preLoaderRoute: typeof SafetyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/job/$jobId': {
@@ -200,7 +260,10 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   LoginRoute: LoginRoute,
   MapRoute: MapRoute,
+  MessagesRoute: MessagesRoute,
+  ProjectsRoute: ProjectsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SafetyRoute: SafetyRoute,
   JobJobIdRoute: JobJobIdRoute,
   ProjectProjectIdRoute: ProjectProjectIdRoute,
   ShareTokenRoute: ShareTokenRoute,
