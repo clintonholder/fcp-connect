@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { CompanyProvider } from "@/lib/company-context";
 import { useMyRoles } from "@/lib/roles";
 import { Toaster } from "@/components/ui/sonner";
-import { MapPin, LogOut, FolderKanban, Shield } from "lucide-react";
+import { MapPin, LogOut, FolderKanban, Shield, House } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import fcpLogo from "@/assets/fcp-logo.png.asset.json";
 import { ProxyProvider } from "@/lib/proxy-context";
@@ -76,6 +76,9 @@ function Header() {
         </Link>
         <nav className="flex items-center gap-1">
           <Link to="/" className="rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary" activeOptions={{ exact: true }} activeProps={{ className: "bg-secondary text-primary font-medium" }}>
+            <span className="flex items-center gap-1.5"><House className="h-4 w-4" /><span className="hidden sm:inline">Home</span></span>
+          </Link>
+          <Link to="/projects" className="rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary" activeProps={{ className: "bg-secondary text-primary font-medium" }}>
             <span className="flex items-center gap-1.5"><FolderKanban className="h-4 w-4" /><span className="hidden sm:inline">Projects</span></span>
           </Link>
           <Link to="/map" className="rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary" activeProps={{ className: "bg-secondary text-primary font-medium" }}>
