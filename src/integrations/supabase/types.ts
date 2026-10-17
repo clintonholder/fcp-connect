@@ -529,6 +529,77 @@ export type Database = {
           },
         ]
       }
+      jha_records: {
+        Row: {
+          answers: Json | null
+          completed_at: string | null
+          completed_by: string | null
+          created_at: string
+          id: string
+          job_id: string
+          requested_at: string | null
+          requested_by: string | null
+          signature: string | null
+        }
+        Insert: {
+          answers?: Json | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          job_id: string
+          requested_at?: string | null
+          requested_by?: string | null
+          signature?: string | null
+        }
+        Update: {
+          answers?: Json | null
+          completed_at?: string | null
+          completed_by?: string | null
+          created_at?: string
+          id?: string
+          job_id?: string
+          requested_at?: string | null
+          requested_by?: string | null
+          signature?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "jha_records_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      jha_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          position: number
+          prompt: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          position?: number
+          prompt: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          position?: number
+          prompt?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       jobs: {
         Row: {
           address: string | null
