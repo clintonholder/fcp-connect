@@ -102,8 +102,15 @@ describe("validateSafetyInput", () => {
       version: "2",
       effectiveDate: "2026-01-31",
       shareableWithSubs: false,
+      requiresAcknowledgement: false,
       filePath: "abc/a.pdf",
     });
+  });
+
+  it("defaults requiresAcknowledgement to false and accepts only true", () => {
+    expect(validateSafetyInput(base).requiresAcknowledgement).toBe(false);
+    const on = validateSafetyInput({ ...base, requiresAcknowledgement: true });
+    expect(on.requiresAcknowledgement).toBe(true);
   });
 
   it("requires a title and a valid category", () => {

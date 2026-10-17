@@ -118,6 +118,10 @@ Run all four; each must pass before a build is READY.
 - Safety document writes go through `src/lib/safety.functions.ts` using the caller's RLS client,
   files are served only by signed URLs, and subcontractors see only `shareable_with_subs`
   documents (enforced in RLS and mirrored for View As by `visibleToViewer`).
+- `safety_acknowledgements` rows are inserted only by the user themselves (via
+  `acknowledgeSafetyDocument`) and are never changed or deleted; `manage_safety` reads all of them.
+  Acknowledgement is per `safety_documents.revision`, which the `safety_documents_set_revision`
+  trigger bumps when the file is replaced.
 - JHA writes go through `src/lib/jha.functions.ts`. `jha_records` are readable only by the project
   owner (`owner_id`), collaborators and `manage_safety`. A JHA is completed once per project and
   redone only after a "Request new JHA", enforced by the `jha_record_guard` trigger; completed

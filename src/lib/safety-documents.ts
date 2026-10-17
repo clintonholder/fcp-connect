@@ -53,6 +53,7 @@ export type SafetyInput = {
   version?: string | null;
   effectiveDate?: string | null;
   shareableWithSubs?: boolean;
+  requiresAcknowledgement?: boolean;
   filePath: string;
 };
 
@@ -63,6 +64,7 @@ export type ValidSafetyInput = {
   version: string | null;
   effectiveDate: string | null;
   shareableWithSubs: boolean;
+  requiresAcknowledgement: boolean;
   filePath: string;
 };
 
@@ -101,6 +103,7 @@ export function validateSafetyInput(input: SafetyInput): ValidSafetyInput {
     version: trimOrNull(input.version),
     effectiveDate: validateEffectiveDate(input.effectiveDate),
     shareableWithSubs: input.shareableWithSubs === true,
+    requiresAcknowledgement: input.requiresAcknowledgement === true,
     filePath: validateFilePath(input.filePath),
   };
 }
