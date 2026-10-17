@@ -13,10 +13,11 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MapRouteImport } from './routes/map'
-import { Route as MessagesRouteImport } from './routes/messages'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as JobJobIdRouteImport } from './routes/job.$jobId'
+import { Route as MessagesIndexRouteImport } from './routes/messages.index'
+import { Route as MessagesNewRouteImport } from './routes/messages.new'
 import { Route as ProjectProjectIdRouteImport } from './routes/project.$projectId'
 import { Route as SafetyIndexRouteImport } from './routes/safety.index'
 import { Route as SafetyAcknowledgementsRouteImport } from './routes/safety.acknowledgements'
@@ -48,11 +49,6 @@ const MapRoute = MapRouteImport.update({
   path: '/map',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MessagesRoute = MessagesRouteImport.update({
-  id: '/messages',
-  path: '/messages',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ProjectsRoute = ProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
@@ -66,6 +62,16 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
 const JobJobIdRoute = JobJobIdRouteImport.update({
   id: '/job/$jobId',
   path: '/job/$jobId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MessagesIndexRoute = MessagesIndexRouteImport.update({
+  id: '/messages/',
+  path: '/messages/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MessagesNewRoute = MessagesNewRouteImport.update({
+  id: '/messages/new',
+  path: '/messages/new',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProjectProjectIdRoute = ProjectProjectIdRouteImport.update({
@@ -124,15 +130,16 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/map': typeof MapRoute
-  '/messages': typeof MessagesRoute
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/job/$jobId': typeof JobJobIdRoute
+  '/messages/new': typeof MessagesNewRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/safety/acknowledgements': typeof SafetyAcknowledgementsRoute
   '/safety/first-aid': typeof SafetyFirstAidRoute
   '/safety/sds': typeof SafetySdsRoute
   '/share/$token': typeof ShareTokenRoute
+  '/messages/': typeof MessagesIndexRoute
   '/safety/': typeof SafetyIndexRoute
   '/safety/jha/$projectId': typeof SafetyJhaProjectIdRoute
   '/safety/toolbox/$talkId': typeof SafetyToolboxTalkIdRoute
@@ -144,15 +151,16 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/map': typeof MapRoute
-  '/messages': typeof MessagesRoute
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/job/$jobId': typeof JobJobIdRoute
+  '/messages/new': typeof MessagesNewRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/safety/acknowledgements': typeof SafetyAcknowledgementsRoute
   '/safety/first-aid': typeof SafetyFirstAidRoute
   '/safety/sds': typeof SafetySdsRoute
   '/share/$token': typeof ShareTokenRoute
+  '/messages': typeof MessagesIndexRoute
   '/safety': typeof SafetyIndexRoute
   '/safety/jha/$projectId': typeof SafetyJhaProjectIdRoute
   '/safety/toolbox/$talkId': typeof SafetyToolboxTalkIdRoute
@@ -165,15 +173,16 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/map': typeof MapRoute
-  '/messages': typeof MessagesRoute
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/job/$jobId': typeof JobJobIdRoute
+  '/messages/new': typeof MessagesNewRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/safety/acknowledgements': typeof SafetyAcknowledgementsRoute
   '/safety/first-aid': typeof SafetyFirstAidRoute
   '/safety/sds': typeof SafetySdsRoute
   '/share/$token': typeof ShareTokenRoute
+  '/messages/': typeof MessagesIndexRoute
   '/safety/': typeof SafetyIndexRoute
   '/safety/jha/$projectId': typeof SafetyJhaProjectIdRoute
   '/safety/toolbox/$talkId': typeof SafetyToolboxTalkIdRoute
@@ -187,15 +196,16 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/map'
-    | '/messages'
     | '/projects'
     | '/reset-password'
     | '/job/$jobId'
+    | '/messages/new'
     | '/project/$projectId'
     | '/safety/acknowledgements'
     | '/safety/first-aid'
     | '/safety/sds'
     | '/share/$token'
+    | '/messages/'
     | '/safety/'
     | '/safety/jha/$projectId'
     | '/safety/toolbox/$talkId'
@@ -207,15 +217,16 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/map'
-    | '/messages'
     | '/projects'
     | '/reset-password'
     | '/job/$jobId'
+    | '/messages/new'
     | '/project/$projectId'
     | '/safety/acknowledgements'
     | '/safety/first-aid'
     | '/safety/sds'
     | '/share/$token'
+    | '/messages'
     | '/safety'
     | '/safety/jha/$projectId'
     | '/safety/toolbox/$talkId'
@@ -227,15 +238,16 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/map'
-    | '/messages'
     | '/projects'
     | '/reset-password'
     | '/job/$jobId'
+    | '/messages/new'
     | '/project/$projectId'
     | '/safety/acknowledgements'
     | '/safety/first-aid'
     | '/safety/sds'
     | '/share/$token'
+    | '/messages/'
     | '/safety/'
     | '/safety/jha/$projectId'
     | '/safety/toolbox/$talkId'
@@ -248,15 +260,16 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   LoginRoute: typeof LoginRoute
   MapRoute: typeof MapRoute
-  MessagesRoute: typeof MessagesRoute
   ProjectsRoute: typeof ProjectsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   JobJobIdRoute: typeof JobJobIdRoute
+  MessagesNewRoute: typeof MessagesNewRoute
   ProjectProjectIdRoute: typeof ProjectProjectIdRoute
   SafetyAcknowledgementsRoute: typeof SafetyAcknowledgementsRoute
   SafetyFirstAidRoute: typeof SafetyFirstAidRoute
   SafetySdsRoute: typeof SafetySdsRoute
   ShareTokenRoute: typeof ShareTokenRoute
+  MessagesIndexRoute: typeof MessagesIndexRoute
   SafetyIndexRoute: typeof SafetyIndexRoute
   SafetyJhaProjectIdRoute: typeof SafetyJhaProjectIdRoute
   SafetyToolboxTalkIdRoute: typeof SafetyToolboxTalkIdRoute
@@ -294,13 +307,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MapRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/messages': {
-      id: '/messages'
-      path: '/messages'
-      fullPath: '/messages'
-      preLoaderRoute: typeof MessagesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/projects': {
       id: '/projects'
       path: '/projects'
@@ -320,6 +326,20 @@ declare module '@tanstack/react-router' {
       path: '/job/$jobId'
       fullPath: '/job/$jobId'
       preLoaderRoute: typeof JobJobIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/messages/': {
+      id: '/messages/'
+      path: '/messages'
+      fullPath: '/messages/'
+      preLoaderRoute: typeof MessagesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/messages/new': {
+      id: '/messages/new'
+      path: '/messages/new'
+      fullPath: '/messages/new'
+      preLoaderRoute: typeof MessagesNewRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/project/$projectId': {
@@ -400,15 +420,16 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRoute,
   LoginRoute: LoginRoute,
   MapRoute: MapRoute,
-  MessagesRoute: MessagesRoute,
   ProjectsRoute: ProjectsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   JobJobIdRoute: JobJobIdRoute,
+  MessagesNewRoute: MessagesNewRoute,
   ProjectProjectIdRoute: ProjectProjectIdRoute,
   SafetyAcknowledgementsRoute: SafetyAcknowledgementsRoute,
   SafetyFirstAidRoute: SafetyFirstAidRoute,
   SafetySdsRoute: SafetySdsRoute,
   ShareTokenRoute: ShareTokenRoute,
+  MessagesIndexRoute: MessagesIndexRoute,
   SafetyIndexRoute: SafetyIndexRoute,
   SafetyJhaProjectIdRoute: SafetyJhaProjectIdRoute,
   SafetyToolboxTalkIdRoute: SafetyToolboxTalkIdRoute,
