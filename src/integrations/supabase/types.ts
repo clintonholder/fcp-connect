@@ -58,6 +58,9 @@ export type Database = {
           can_delete_projects: boolean
           can_edit_photos: boolean
           can_edit_projects: boolean
+          can_manage_safety: boolean
+          can_send_messages: boolean
+          can_view_safety: boolean
           created_at: string
           id: string
           is_active: boolean
@@ -73,6 +76,9 @@ export type Database = {
           can_delete_projects?: boolean
           can_edit_photos?: boolean
           can_edit_projects?: boolean
+          can_manage_safety?: boolean
+          can_send_messages?: boolean
+          can_view_safety?: boolean
           created_at?: string
           id?: string
           is_active?: boolean
@@ -88,6 +94,9 @@ export type Database = {
           can_delete_projects?: boolean
           can_edit_photos?: boolean
           can_edit_projects?: boolean
+          can_manage_safety?: boolean
+          can_send_messages?: boolean
+          can_view_safety?: boolean
           created_at?: string
           id?: string
           is_active?: boolean

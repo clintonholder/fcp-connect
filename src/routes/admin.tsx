@@ -99,7 +99,7 @@ function AdminPage() {
   const [inviteForm, setInviteForm] = useState(emptyInviteForm);
 
   const [roleOpen, setRoleOpen] = useState(false);
-  const emptyPerms = Object.fromEntries(PERMISSIONS.map((p) => [p.key, false])) as Record<PermissionKey, boolean>;
+  const emptyPerms = Object.fromEntries(PERMISSIONS.map((p) => [p.key, p.key === "can_view_safety"])) as Record<PermissionKey, boolean>;
   const [roleForm, setRoleForm] = useState<{ id?: string; name: string; isDirector: boolean; permissions: Record<PermissionKey, boolean> }>(
     { name: "", isDirector: false, permissions: emptyPerms },
   );

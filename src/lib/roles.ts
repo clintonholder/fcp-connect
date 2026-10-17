@@ -10,6 +10,9 @@ export const PERMISSIONS = [
   { key: "can_add_photos", label: "Add photos" },
   { key: "can_edit_photos", label: "Edit photos" },
   { key: "can_delete_photos", label: "Delete photos" },
+  { key: "can_view_safety", label: "View safety" },
+  { key: "can_manage_safety", label: "Manage safety" },
+  { key: "can_send_messages", label: "Send messages" },
 ] as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[number]["key"];
