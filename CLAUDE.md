@@ -110,6 +110,9 @@ Run all four; each must pass before a build is READY.
 - The public share RPC `get_shared_job` returns only an explicit field list and excludes archived
   photos, and new `share_links` expire after 30 days by default. Any new field the share page
   needs must be added to `get_shared_job` in a new migration.
+- `worker_type`, `subcontractor_name` and `is_disabled` on `profiles` are admin-only. They are
+  enforced by the `profiles_admin_fields_guard` trigger and set only from
+  `src/lib/admin.functions.ts` through the service role.
 - New pure helpers in `src/lib/` get a colocated `*.test.ts`. Tests must not hit the
   network or Supabase: stub `fetch` and modules with `vi` (`vi.stubGlobal`, `vi.mock`).
 
