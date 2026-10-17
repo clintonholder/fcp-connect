@@ -33,6 +33,7 @@ dist-ssr
 
 # Software factory runtime state (one folder per job)
 /factory/jobs/
+/factory/mode
 
 # Supabase CLI link state (machine-specific)
 supabase/.temp/

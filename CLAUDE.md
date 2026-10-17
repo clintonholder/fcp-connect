@@ -130,9 +130,19 @@ Run all four; each must pass before a build is READY.
 
 ## Factory merge policy
 
-Every job escalates. The approver always writes `ESCALATE` on the first line and
-starts `## Why` with `Recommendation: APPROVE` or `Recommendation: ESCALATE`.
-The human merges with `/factory approve <job-id>` after reading `decision.md`.
+The mode is in `factory/mode` (`quick` or `slow`; missing means `slow`); set it
+with `/factory quick` and `/factory slow`.
+
+- **slow**: every job escalates. The approver always writes `ESCALATE` on the first
+  line and starts `## Why` with `Recommendation: APPROVE` or `Recommendation: ESCALATE`.
+  The human merges with `/factory approve <job-id>` after reading `decision.md`.
+- **quick**: the approver writes `APPROVE` unless it finds a real problem (unmet
+  criterion, review issue, conflict, a product decision hidden in an assumption, or a
+  concrete security or migration flaw). The orchestrator merges locally and `/factory
+  next` continues through the backlog until a job escalates. Every `decision.md` lists
+  its sensitive areas (migrations, access rules, dependencies, config).
+- In both modes the human's push to `main` is the approval step: the factory never
+  pushes, so nothing deploys until the human has reviewed and pushed.
 
 ## Factory dashboard
 

@@ -1,6 +1,6 @@
 ---
 name: factory
-description: Run the software factory. Use when the user types /factory <feature>, /factory next, /factory approve <job-id>, or /factory rework <job-id> <note>. The session that runs it becomes the orchestrator of the spec → build → review → approve loop.
+description: Run the software factory. Use when the user types /factory <feature>, /factory next, /factory approve <job-id>, /factory rework <job-id> <note>, /factory quick, /factory slow or /factory mode. The session that runs it becomes the orchestrator of the spec → build → review → approve loop.
 ---
 
 # Factory
@@ -36,6 +36,22 @@ agent files in `.claude/agents/`.
 
 Every agent reads `AGENTS.md` (or `CLAUDE.md`) for the repo's setup, dev server,
 validation commands and conventions. Nothing repo-specific lives in these files.
+
+## Mode: quick or slow
+
+`factory/mode` in the main checkout holds one word, `quick` or `slow` (missing
+means `slow`). It is gitignored local state. Read it at **Approve**, so a switch
+takes effect on the next job.
+
+- `slow`: the approver follows the repo's merge policy (in this repo every job
+  escalates) and the human merges with `/factory approve <job-id>`.
+- `quick`: the approver writes `APPROVE` unless it finds a real issue, and you run
+  **Merge** yourself. `/factory next` then carries on with the next backlog item
+  (see **/factory next**). Nothing is ever pushed, so nothing deploys until the
+  human pushes `main`.
+
+`/factory quick` and `/factory slow` write the word to `factory/mode` and
+confirm in one line. `/factory mode` reports the current value.
 
 ## Parallel jobs
 
@@ -155,10 +171,11 @@ Read the first line of `build.md`.
 
 ### Approve
 
-Set `stage: "approve"`. Spawn `approver` with the prompt `<paths> Final round: N.`
+Set `stage: "approve"`. Read `factory/mode` and spawn `approver` with the prompt
+`<paths> Final round: N. Mode: <quick|slow>.`
 When it finishes, read the first line of `decision.md`:
 
-- `APPROVE`: go to **Merge**.
+- `APPROVE`: go to **Merge** (only the approver in `quick` mode writes this).
 - `ESCALATE`: go to **Needs human**.
 
 ### Merge
@@ -197,6 +214,14 @@ and try the next `- [ ]` item. If none is left, say so and stop.
 
 Run `/factory <item>`, and once step 1 has given it a job id, replace `claimed`
 on its backlog line with the job id.
+
+In `quick` mode, when the job reaches `merged`, take the next `- [ ]` item and
+repeat. Stop the loop when the backlog is empty or any job ends in
+`needs-human` (escalation, BLOCKED build, exhausted rounds, a busy `main` or a
+failed merge), and report why. Then print a summary: the jobs merged, the
+migration files they added, and how many commits `main` is ahead of
+`origin/main` (`git rev-list --count origin/main..main`), waiting for the human
+to push. In `slow` mode run one item and stop.
 
 ## /factory approve <job-id>
 

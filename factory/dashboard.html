@@ -287,6 +287,7 @@
   <span>/factory next</span>
   <span>/factory approve &lt;job-id&gt;</span>
   <span>/factory rework &lt;job-id&gt; &lt;note&gt;</span>
+  <span>/factory quick | slow</span>
 </footer>
 
 <div id="overlay">
@@ -527,8 +528,10 @@ async function poll() {
     } catch { git = null }
     await render()
     if (openJobId) await refreshDrawer()
+    let mode = 'slow'
+    try { mode = (await fetchText('mode')).trim() || 'slow' } catch { /* no mode file yet */ }
     status.className = 'status'
-    status.innerHTML = `<span class="dot"></span>jobs/ · ${new Date().toLocaleTimeString()}`
+    status.innerHTML = `<span class="dot"></span>mode: ${esc(mode)} · jobs/ · ${new Date().toLocaleTimeString()}`
   } catch (err) {
     status.className = 'status error'
     status.innerHTML = `<span class="dot"></span>${esc(err.message)}`
