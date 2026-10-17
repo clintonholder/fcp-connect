@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { normalizeWorkerType, type WorkerType } from "@/lib/worker-type";
 
 /** Throws unless the caller is an active Admin. Enforced on the server, never in the browser. */
 async function assertAdmin(context: { supabase: { rpc: (fn: "is_admin", args: { _user_id: string }) => PromiseLike<{ data: unknown; error: unknown }> }; userId: string }) {
@@ -49,7 +50,7 @@ export const adminListUsers = createServerFn({ method: "GET" })
     await assertAdmin(context);
     const db = await admin();
     const [{ data: profiles }, { data: userRoles }, { data: invites }, { data: divisions }] = await Promise.all([
-      db.from("profiles").select("id, email, display_name, is_disabled, created_at").order("created_at"),
+      db.from("profiles").select("id, email, display_name, is_disabled, created_at, worker_type, subcontractor_name").order("created_at"),
       db.from("user_roles").select("user_id, role_id, app_roles(id, name, is_active, is_admin, is_director)"),
       db.from("invitations").select("*").order("created_at", { ascending: false }),
       db.from("user_divisions").select("user_id, division"),
@@ -77,6 +78,8 @@ export const adminListUsers = createServerFn({ method: "GET" })
           email: p.email ?? au?.email ?? "",
           display_name: p.display_name,
           is_disabled: p.is_disabled,
+          worker_type: p.worker_type as WorkerType,
+          subcontractor_name: p.subcontractor_name,
           created_at: p.created_at,
           last_sign_in_at: au?.last_sign_in_at ?? null,
           status,
@@ -133,11 +136,12 @@ export const adminListAudit = createServerFn({ method: "GET" })
 
 export const adminInviteUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { email: string; displayName: string; roleId: string | null; origin: string }) => {
+  .inputValidator((d: { email: string; displayName: string; roleId: string | null; origin: string; workerType: string; subcontractorName?: string | null }) => {
     const email = d.email?.trim().toLowerCase();
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error("A valid email address is required");
     if (!d.displayName?.trim()) throw new Error("A name is required");
-    return { ...d, email, displayName: d.displayName.trim() };
+    const worker = normalizeWorkerType(d);
+    return { ...d, ...worker, email, displayName: d.displayName.trim() };
   })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
@@ -151,7 +155,13 @@ export const adminInviteUser = createServerFn({ method: "POST" })
     const newId = invited?.user?.id;
     if (!newId) throw new Error("Could not create the account");
 
-    await db.from("profiles").upsert({ id: newId, email: data.email, display_name: data.displayName });
+    await db.from("profiles").upsert({
+      id: newId,
+      email: data.email,
+      display_name: data.displayName,
+      worker_type: data.workerType,
+      subcontractor_name: data.subcontractorName,
+    });
     if (data.roleId) await db.from("user_roles").insert({ user_id: newId, role_id: data.roleId }).select();
     await db.from("invitations").insert({
       email: data.email,
@@ -160,7 +170,12 @@ export const adminInviteUser = createServerFn({ method: "POST" })
       invited_by: context.userId,
       status: "invited",
     });
-    await audit(context.userId, "user_invited", "user", newId, { email: data.email, role_id: data.roleId });
+    await audit(context.userId, "user_invited", "user", newId, {
+      email: data.email,
+      role_id: data.roleId,
+      worker_type: data.workerType,
+      subcontractor_name: data.subcontractorName,
+    });
     return { id: newId };
   });
 
@@ -353,11 +368,11 @@ export const adminDeleteUser = createServerFn({ method: "POST" })
 
 export const adminCreateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { email: string; displayName: string; roleId: string | null }) => {
+  .inputValidator((d: { email: string; displayName: string; roleId: string | null; workerType: string; subcontractorName?: string | null }) => {
     const email = d.email?.trim().toLowerCase();
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error("A valid email address is required");
     if (!d.displayName?.trim()) throw new Error("A name is required");
-    return { email, displayName: d.displayName.trim(), roleId: d.roleId };
+    return { email, displayName: d.displayName.trim(), roleId: d.roleId, ...normalizeWorkerType(d) };
   })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
@@ -375,7 +390,13 @@ export const adminCreateUser = createServerFn({ method: "POST" })
     const newId = created?.user?.id;
     if (!newId) throw new Error("Could not create the account");
 
-    await db.from("profiles").upsert({ id: newId, email: data.email, display_name: data.displayName });
+    await db.from("profiles").upsert({
+      id: newId,
+      email: data.email,
+      display_name: data.displayName,
+      worker_type: data.workerType,
+      subcontractor_name: data.subcontractorName,
+    });
     if (data.roleId) await db.from("user_roles").insert({ user_id: newId, role_id: data.roleId });
     await db.from("invitations").insert({
       email: data.email,
@@ -384,7 +405,11 @@ export const adminCreateUser = createServerFn({ method: "POST" })
       invited_by: context.userId,
       status: "pending",
     });
-    await audit(context.userId, "user_created_without_invitation", "user", newId, { email: data.email });
+    await audit(context.userId, "user_created_without_invitation", "user", newId, {
+      email: data.email,
+      worker_type: data.workerType,
+      subcontractor_name: data.subcontractorName,
+    });
     return { id: newId };
   });
 
@@ -392,12 +417,12 @@ export const adminCreateUser = createServerFn({ method: "POST" })
 
 export const adminUpdateUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((d: { userId: string; email: string; displayName: string; roleId: string | null }) => {
+  .inputValidator((d: { userId: string; email: string; displayName: string; roleId: string | null; workerType: string; subcontractorName?: string | null }) => {
     const email = d.email?.trim().toLowerCase();
     if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error("A valid email address is required");
     if (!d.displayName?.trim()) throw new Error("A name is required");
     if (!d.userId) throw new Error("Missing user");
-    return { userId: d.userId, email, displayName: d.displayName.trim(), roleId: d.roleId };
+    return { userId: d.userId, email, displayName: d.displayName.trim(), roleId: d.roleId, ...normalizeWorkerType(d) };
   })
   .handler(async ({ data, context }) => {
     await assertAdmin(context);
@@ -421,7 +446,14 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
     }
 
     const { error: profErr } = await db
-      .from("profiles").update({ email: data.email, display_name: data.displayName }).eq("id", data.userId);
+      .from("profiles")
+      .update({
+        email: data.email,
+        display_name: data.displayName,
+        worker_type: data.workerType,
+        subcontractor_name: data.subcontractorName,
+      })
+      .eq("id", data.userId);
     if (profErr) throw new Error(profErr.message);
 
     // Keep the single-role model in step with the form.
@@ -435,6 +467,8 @@ export const adminUpdateUser = createServerFn({ method: "POST" })
       email: data.email,
       previous_email: current.email,
       display_name: data.displayName,
+      worker_type: data.workerType,
+      subcontractor_name: data.subcontractorName,
     });
     return { ok: true };
   });
@@ -508,6 +542,8 @@ export type ProxyTarget = {
   perms: Record<string, boolean>;
   divisions: string[];
   visibleJobIds: string[];
+  workerType: WorkerType;
+  subcontractorName: string | null;
 };
 
 const PERM_COLS = [
@@ -538,7 +574,7 @@ export const adminStartProxy = createServerFn({ method: "POST" })
 
     const { data: profile } = await db
       .from("profiles")
-      .select("id, display_name, email, is_disabled")
+      .select("id, display_name, email, is_disabled, worker_type, subcontractor_name")
       .eq("id", data.userId)
       .maybeSingle();
     if (!profile) throw new Error("That user no longer exists");
@@ -593,6 +629,8 @@ export const adminStartProxy = createServerFn({ method: "POST" })
       perms,
       divisions: (divs ?? []).map((d) => d.division).sort(),
       visibleJobIds,
+      workerType: profile.worker_type as WorkerType,
+      subcontractorName: profile.subcontractor_name,
     };
   });
 

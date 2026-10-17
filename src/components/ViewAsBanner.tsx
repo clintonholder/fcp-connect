@@ -4,6 +4,7 @@ import { Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useProxy } from "@/lib/proxy-context";
 import { adminEndProxy } from "@/lib/admin.functions";
+import { workerTypeLabel } from "@/lib/worker-type";
 
 /** Sticky reminder that an administrator is seeing the site through someone else's account. */
 export function ViewAsBanner() {
@@ -14,6 +15,10 @@ export function ViewAsBanner() {
 
   const roleLabel = proxy.roles.map((r) => r.name).join(", ") || "No role";
   const divLabel = proxy.divisions.length ? ` · ${proxy.divisions.join(", ")}` : "";
+  // Sessions started before worker types existed have no workerType stored.
+  const workerLabel = proxy.workerType
+    ? ` · ${workerTypeLabel({ workerType: proxy.workerType, subcontractorName: proxy.subcontractorName ?? null })}`
+    : "";
 
   return (
     <div className="sticky top-0 z-50 border-b border-amber-500/40 bg-amber-500/15 text-foreground">
@@ -22,7 +27,11 @@ export function ViewAsBanner() {
           <Eye className="h-4 w-4 shrink-0" aria-hidden />
           <span className="truncate">
             Viewing as <span className="font-semibold">{proxy.name}</span>{" "}
-            <span className="text-muted-foreground">({roleLabel}{divLabel})</span>
+            <span className="text-muted-foreground">
+              ({roleLabel}
+              {divLabel}
+              {workerLabel})
+            </span>
             {readOnly && <span className="font-semibold"> · Read-only</span>}
           </span>
         </p>
