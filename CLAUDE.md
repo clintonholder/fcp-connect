@@ -130,6 +130,9 @@ Run all four; each must pass before a build is READY.
   only by the project team (owner and collaborators) and `manage_safety`, reusing
   `private.can_access_jha`; topics are managed by `manage_safety`. A talk is completed once with
   attendee signatures and then cannot be changed, enforced by the `toolbox_talk_guard` trigger.
+- Messages are in-app only (no email or push). Recipients are resolved server-side by
+  `resolveAudience` in `src/lib/messages.ts`; sending goes only through `sendMessage` in
+  `src/lib/messages.functions.ts`, which writes the `message_sent` audit entry.
 - New pure helpers in `src/lib/` get a colocated `*.test.ts`. Tests must not hit the
   network or Supabase: stub `fetch` and modules with `vi` (`vi.stubGlobal`, `vi.mock`).
 
