@@ -19,6 +19,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as JobJobIdRouteImport } from './routes/job.$jobId'
 import { Route as ProjectProjectIdRouteImport } from './routes/project.$projectId'
 import { Route as SafetyIndexRouteImport } from './routes/safety.index'
+import { Route as SafetyAcknowledgementsRouteImport } from './routes/safety.acknowledgements'
 import { Route as SafetyFirstAidRouteImport } from './routes/safety.first-aid'
 import { Route as SafetySdsRouteImport } from './routes/safety.sds'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
@@ -77,6 +78,11 @@ const SafetyIndexRoute = SafetyIndexRouteImport.update({
   path: '/safety/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SafetyAcknowledgementsRoute = SafetyAcknowledgementsRouteImport.update({
+  id: '/safety/acknowledgements',
+  path: '/safety/acknowledgements',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SafetyFirstAidRoute = SafetyFirstAidRouteImport.update({
   id: '/safety/first-aid',
   path: '/safety/first-aid',
@@ -123,6 +129,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/job/$jobId': typeof JobJobIdRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
+  '/safety/acknowledgements': typeof SafetyAcknowledgementsRoute
   '/safety/first-aid': typeof SafetyFirstAidRoute
   '/safety/sds': typeof SafetySdsRoute
   '/share/$token': typeof ShareTokenRoute
@@ -142,6 +149,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/job/$jobId': typeof JobJobIdRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
+  '/safety/acknowledgements': typeof SafetyAcknowledgementsRoute
   '/safety/first-aid': typeof SafetyFirstAidRoute
   '/safety/sds': typeof SafetySdsRoute
   '/share/$token': typeof ShareTokenRoute
@@ -162,6 +170,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/job/$jobId': typeof JobJobIdRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
+  '/safety/acknowledgements': typeof SafetyAcknowledgementsRoute
   '/safety/first-aid': typeof SafetyFirstAidRoute
   '/safety/sds': typeof SafetySdsRoute
   '/share/$token': typeof ShareTokenRoute
@@ -183,6 +192,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/job/$jobId'
     | '/project/$projectId'
+    | '/safety/acknowledgements'
     | '/safety/first-aid'
     | '/safety/sds'
     | '/share/$token'
@@ -202,6 +212,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/job/$jobId'
     | '/project/$projectId'
+    | '/safety/acknowledgements'
     | '/safety/first-aid'
     | '/safety/sds'
     | '/share/$token'
@@ -221,6 +232,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/job/$jobId'
     | '/project/$projectId'
+    | '/safety/acknowledgements'
     | '/safety/first-aid'
     | '/safety/sds'
     | '/share/$token'
@@ -241,6 +253,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   JobJobIdRoute: typeof JobJobIdRoute
   ProjectProjectIdRoute: typeof ProjectProjectIdRoute
+  SafetyAcknowledgementsRoute: typeof SafetyAcknowledgementsRoute
   SafetyFirstAidRoute: typeof SafetyFirstAidRoute
   SafetySdsRoute: typeof SafetySdsRoute
   ShareTokenRoute: typeof ShareTokenRoute
@@ -323,6 +336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SafetyIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/safety/acknowledgements': {
+      id: '/safety/acknowledgements'
+      path: '/safety/acknowledgements'
+      fullPath: '/safety/acknowledgements'
+      preLoaderRoute: typeof SafetyAcknowledgementsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/safety/first-aid': {
       id: '/safety/first-aid'
       path: '/safety/first-aid'
@@ -385,6 +405,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   JobJobIdRoute: JobJobIdRoute,
   ProjectProjectIdRoute: ProjectProjectIdRoute,
+  SafetyAcknowledgementsRoute: SafetyAcknowledgementsRoute,
   SafetyFirstAidRoute: SafetyFirstAidRoute,
   SafetySdsRoute: SafetySdsRoute,
   ShareTokenRoute: ShareTokenRoute,

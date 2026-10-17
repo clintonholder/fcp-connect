@@ -7,6 +7,11 @@ import {
   validateSafetyInput,
   type SafetyInput,
 } from "@/lib/safety-documents";
+import {
+  buildAcknowledgementReport,
+  type AckDoc,
+  type Person,
+} from "@/lib/safety-acknowledgements";
 
 type Ctx = {
   supabase: {
@@ -62,6 +67,7 @@ export const createSafetyDocument = createServerFn({ method: "POST" })
         version: data.version,
         effective_date: data.effectiveDate,
         shareable_with_subs: data.shareableWithSubs,
+        requires_acknowledgement: data.requiresAcknowledgement,
         file_path: data.filePath,
       })
       .select("id")
@@ -73,6 +79,7 @@ export const createSafetyDocument = createServerFn({ method: "POST" })
       category: data.category,
       version: data.version,
       shareable_with_subs: data.shareableWithSubs,
+      requires_acknowledgement: data.requiresAcknowledgement,
     });
     return { id: row.id };
   });
@@ -150,4 +157,92 @@ export const archiveSafetyDocument = createServerFn({ method: "POST" })
       category: doc.category,
     });
     return { id: doc.id };
+  });
+
+export const setSafetyDocumentRequiresAcknowledgement = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; required: boolean }) => ({
+    id: requireId(d?.id),
+    required: d?.required === true,
+  }))
+  .handler(async ({ data, context }) => {
+    await assertManageSafety(context);
+    const { data: updated, error } = await context.supabase
+      .from("safety_documents")
+      .update({ requires_acknowledgement: data.required })
+      .eq("id", data.id)
+      .select("id, title");
+    if (error) throw new Error(error.message);
+    const doc = updated?.[0];
+    if (!doc) throw new Error("This document no longer exists");
+
+    await audit(context.userId, "safety_document_ack_requirement_changed", doc.id, {
+      title: doc.title,
+      required: data.required,
+    });
+    return { id: doc.id };
+  });
+
+export const acknowledgeSafetyDocument = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string }) => ({ id: requireId(d?.id) }))
+  .handler(async ({ data, context }) => {
+    const { data: doc, error: docErr } = await context.supabase
+      .from("safety_documents")
+      .select("revision, archived, requires_acknowledgement")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (docErr) throw new Error(docErr.message);
+    if (!doc || doc.archived || !doc.requires_acknowledgement) {
+      throw new Error("This document cannot be acknowledged");
+    }
+
+    const { error } = await context.supabase
+      .from("safety_acknowledgements")
+      .insert({ document_id: data.id, revision: doc.revision });
+    // 23505 = unique violation: already acknowledged at this revision, which counts as success.
+    if (error && error.code !== "23505") throw new Error(error.message);
+    return { id: data.id };
+  });
+
+export const getSafetyAcknowledgementReport = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await assertManageSafety(context);
+    const [docs, acks, profiles, roles] = await Promise.all([
+      context.supabase
+        .from("safety_documents")
+        .select(
+          "id, title, category, version, revision, archived, requires_acknowledgement, shareable_with_subs",
+        )
+        .eq("archived", false)
+        .eq("requires_acknowledgement", true),
+      context.supabase
+        .from("safety_acknowledgements")
+        .select("user_id, document_id, revision, acknowledged_at"),
+      context.supabase.from("profiles").select("id, display_name, email, worker_type, is_disabled"),
+      context.supabase
+        .from("user_roles")
+        .select("user_id, app_roles(is_active, is_admin, can_view_safety, can_manage_safety)"),
+    ]);
+    for (const r of [docs, acks, profiles, roles]) {
+      if (r.error) throw new Error(r.error.message);
+    }
+
+    // Mirrors has_perm: any active role that is admin or grants view or manage safety.
+    const canView = new Set<string>();
+    for (const r of roles.data ?? []) {
+      const role = r.app_roles;
+      if (role?.is_active && (role.is_admin || role.can_view_safety || role.can_manage_safety)) {
+        canView.add(r.user_id);
+      }
+    }
+    const people: Person[] = (profiles.data ?? []).map((p) => ({
+      id: p.id,
+      name: p.display_name || p.email || "Unknown user",
+      isSubcontractor: p.worker_type === "subcontractor",
+      isDisabled: p.is_disabled,
+      canViewSafety: canView.has(p.id),
+    }));
+    return buildAcknowledgementReport((docs.data ?? []) as AckDoc[], people, acks.data ?? []);
   });

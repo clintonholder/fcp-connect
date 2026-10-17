@@ -3,8 +3,9 @@ import { Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ExternalLink, FileText, Plus, RefreshCw, Archive } from "lucide-react";
+import { ExternalLink, FileText, Plus, RefreshCw, Archive, CheckCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
 import { useMyRoles } from "@/lib/roles";
 import { useProxy } from "@/lib/proxy-context";
 import {
@@ -15,10 +16,13 @@ import {
   visibleToViewer,
   type SafetyCategory,
 } from "@/lib/safety-documents";
+import { pendingAcknowledgements } from "@/lib/safety-acknowledgements";
 import {
+  acknowledgeSafetyDocument,
   archiveSafetyDocument,
   createSafetyDocument,
   replaceSafetyDocumentVersion,
+  setSafetyDocumentRequiresAcknowledgement,
 } from "@/lib/safety.functions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -63,6 +67,8 @@ type Doc = {
   effective_date: string | null;
   archived: boolean;
   shareable_with_subs: boolean;
+  requires_acknowledgement: boolean;
+  revision: number;
   file_path: string;
 };
 
@@ -79,7 +85,12 @@ export function SafetyDocumentList({
 }) {
   const { can, loading: rolesLoading } = useMyRoles();
   const { proxy, readOnly } = useProxy();
+  const { user } = useAuth();
   const qc = useQueryClient();
+  const acknowledge = useServerFn(acknowledgeSafetyDocument);
+  const setRequired = useServerFn(setSafetyDocumentRequiresAcknowledgement);
+  const [opened, setOpened] = useState<Set<string>>(new Set());
+  const [busyId, setBusyId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [uploadOpen, setUploadOpen] = useState(false);
   const [replaceDoc, setReplaceDoc] = useState<Doc | null>(null);
@@ -89,6 +100,7 @@ export function SafetyDocumentList({
   const canWrite = can.can_manage_safety && !readOnly;
   const isSubcontractor = proxy?.workerType === "subcontractor";
   const key = ["safety-documents", categories.join(",")];
+  const viewerId = proxy?.userId ?? user?.id;
 
   const q = useQuery({
     queryKey: key,
@@ -97,12 +109,25 @@ export function SafetyDocumentList({
       const { data, error } = await supabase
         .from("safety_documents")
         .select(
-          "id, title, category, description, version, effective_date, archived, shareable_with_subs, file_path",
+          "id, title, category, description, version, effective_date, archived, shareable_with_subs, requires_acknowledgement, revision, file_path",
         )
         .in("category", categories)
         .eq("archived", false);
       if (error) throw error;
       return (data ?? []) as Doc[];
+    },
+  });
+
+  const acksQ = useQuery({
+    queryKey: ["safety-acknowledgements", viewerId],
+    enabled: canSee && !!viewerId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("safety_acknowledgements")
+        .select("user_id, document_id, revision, acknowledged_at")
+        .eq("user_id", viewerId!);
+      if (error) throw error;
+      return data ?? [];
     },
   });
 
@@ -115,9 +140,45 @@ export function SafetyDocumentList({
     [q.data, can.can_manage_safety, isSubcontractor, search],
   );
 
+  const pendingIds = useMemo(
+    () => new Set(pendingAcknowledgements(rows, acksQ.data ?? [], viewerId ?? "").map((d) => d.id)),
+    [rows, acksQ.data, viewerId],
+  );
+
   const refresh = () => qc.invalidateQueries({ queryKey: key });
 
+  const doAcknowledge = async (doc: Doc) => {
+    setBusyId(doc.id);
+    try {
+      await acknowledge({ data: { id: doc.id } });
+      toast.success("Document acknowledged");
+      await qc.invalidateQueries({ queryKey: ["safety-acknowledgements"] });
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const toggleRequired = async (doc: Doc) => {
+    setBusyId(doc.id);
+    try {
+      await setRequired({ data: { id: doc.id, required: !doc.requires_acknowledgement } });
+      toast.success(
+        doc.requires_acknowledgement
+          ? "Acknowledgement no longer required"
+          : "Acknowledgement required",
+      );
+      await refresh();
+    } catch (e) {
+      toast.error(errMsg(e));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
   const open = async (doc: Doc) => {
+    setOpened((prev) => new Set(prev).add(doc.id));
     // Open the tab synchronously so the browser does not block it as a popup.
     const tab = window.open("", "_blank");
     const { data, error } = await supabase.storage
@@ -180,6 +241,16 @@ export function SafetyDocumentList({
                       {can.can_manage_safety && doc.shareable_with_subs && (
                         <Badge variant="outline">Shared with subs</Badge>
                       )}
+                      {can.can_manage_safety && doc.requires_acknowledgement && (
+                        <Badge variant="outline">Requires acknowledgement</Badge>
+                      )}
+                      {pendingIds.has(doc.id) ? (
+                        <Badge variant="destructive">Pending acknowledgement</Badge>
+                      ) : (
+                        doc.requires_acknowledgement && (
+                          <Badge variant="secondary">Acknowledged</Badge>
+                        )
+                      )}
                     </div>
                     {(doc.version || doc.effective_date) && (
                       <div className="text-sm text-muted-foreground">
@@ -197,8 +268,30 @@ export function SafetyDocumentList({
                     <Button size="sm" onClick={() => open(doc)}>
                       <ExternalLink className="mr-1 h-4 w-4" /> Open
                     </Button>
+                    {!readOnly && pendingIds.has(doc.id) && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        disabled={!opened.has(doc.id) || busyId === doc.id}
+                        title={opened.has(doc.id) ? undefined : "Open the document first"}
+                        onClick={() => doAcknowledge(doc)}
+                      >
+                        <CheckCheck className="mr-1 h-4 w-4" />
+                        {opened.has(doc.id) ? "Acknowledge" : "Open first to acknowledge"}
+                      </Button>
+                    )}
                     {canWrite && (
                       <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busyId === doc.id}
+                          onClick={() => toggleRequired(doc)}
+                        >
+                          {doc.requires_acknowledgement
+                            ? "Stop requiring acknowledgement"
+                            : "Require acknowledgement"}
+                        </Button>
                         <Button size="sm" variant="outline" onClick={() => setReplaceDoc(doc)}>
                           <RefreshCw className="mr-1 h-4 w-4" /> Replace version
                         </Button>
@@ -260,6 +353,7 @@ function UploadDialog({
   const [version, setVersion] = useState("");
   const [effectiveDate, setEffectiveDate] = useState("");
   const [shareable, setShareable] = useState(false);
+  const [requiresAck, setRequiresAck] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const submit = async () => {
@@ -278,6 +372,7 @@ function UploadDialog({
           version,
           effectiveDate,
           shareableWithSubs: shareable,
+          requiresAcknowledgement: requiresAck,
           filePath: path,
         },
       });
@@ -287,6 +382,7 @@ function UploadDialog({
       setVersion("");
       setEffectiveDate("");
       setShareable(false);
+      setRequiresAck(false);
       setCategory(categories[0]);
       onOpenChange(false);
       onDone();
@@ -360,6 +456,14 @@ function UploadDialog({
               onCheckedChange={(c) => setShareable(c === true)}
             />
             <Label htmlFor="sd-share">Share with subcontractors</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="sd-ack"
+              checked={requiresAck}
+              onCheckedChange={(c) => setRequiresAck(c === true)}
+            />
+            <Label htmlFor="sd-ack">Requires acknowledgement</Label>
           </div>
         </div>
         <DialogFooter>

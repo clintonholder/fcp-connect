@@ -893,6 +893,38 @@ export type Database = {
           },
         ]
       }
+      safety_acknowledgements: {
+        Row: {
+          acknowledged_at: string
+          document_id: string
+          id: string
+          revision: number
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string
+          document_id: string
+          id?: string
+          revision: number
+          user_id?: string
+        }
+        Update: {
+          acknowledged_at?: string
+          document_id?: string
+          id?: string
+          revision?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "safety_acknowledgements_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "safety_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       safety_documents: {
         Row: {
           archived: boolean
@@ -903,6 +935,8 @@ export type Database = {
           effective_date: string | null
           file_path: string
           id: string
+          requires_acknowledgement: boolean
+          revision: number
           shareable_with_subs: boolean
           title: string
           updated_at: string
@@ -917,6 +951,8 @@ export type Database = {
           effective_date?: string | null
           file_path: string
           id?: string
+          requires_acknowledgement?: boolean
+          revision?: number
           shareable_with_subs?: boolean
           title: string
           updated_at?: string
@@ -931,6 +967,8 @@ export type Database = {
           effective_date?: string | null
           file_path?: string
           id?: string
+          requires_acknowledgement?: boolean
+          revision?: number
           shareable_with_subs?: boolean
           title?: string
           updated_at?: string
