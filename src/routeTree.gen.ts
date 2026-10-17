@@ -20,10 +20,11 @@ import { Route as JobJobIdRouteImport } from './routes/job.$jobId'
 import { Route as ProjectProjectIdRouteImport } from './routes/project.$projectId'
 import { Route as SafetyIndexRouteImport } from './routes/safety.index'
 import { Route as SafetyFirstAidRouteImport } from './routes/safety.first-aid'
-import { Route as SafetyJhaRouteImport } from './routes/safety.jha'
 import { Route as SafetySdsRouteImport } from './routes/safety.sds'
 import { Route as SafetyToolboxRouteImport } from './routes/safety.toolbox'
 import { Route as ShareTokenRouteImport } from './routes/share.$token'
+import { Route as SafetyJhaIndexRouteImport } from './routes/safety.jha.index'
+import { Route as SafetyJhaProjectIdRouteImport } from './routes/safety.jha.$projectId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -80,11 +81,6 @@ const SafetyFirstAidRoute = SafetyFirstAidRouteImport.update({
   path: '/safety/first-aid',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SafetyJhaRoute = SafetyJhaRouteImport.update({
-  id: '/safety/jha',
-  path: '/safety/jha',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SafetySdsRoute = SafetySdsRouteImport.update({
   id: '/safety/sds',
   path: '/safety/sds',
@@ -100,6 +96,16 @@ const ShareTokenRoute = ShareTokenRouteImport.update({
   path: '/share/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SafetyJhaIndexRoute = SafetyJhaIndexRouteImport.update({
+  id: '/safety/jha/',
+  path: '/safety/jha/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SafetyJhaProjectIdRoute = SafetyJhaProjectIdRouteImport.update({
+  id: '/safety/jha/$projectId',
+  path: '/safety/jha/$projectId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -112,11 +118,12 @@ export interface FileRoutesByFullPath {
   '/job/$jobId': typeof JobJobIdRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/safety/first-aid': typeof SafetyFirstAidRoute
-  '/safety/jha': typeof SafetyJhaRoute
   '/safety/sds': typeof SafetySdsRoute
   '/safety/toolbox': typeof SafetyToolboxRoute
   '/share/$token': typeof ShareTokenRoute
   '/safety/': typeof SafetyIndexRoute
+  '/safety/jha/$projectId': typeof SafetyJhaProjectIdRoute
+  '/safety/jha/': typeof SafetyJhaIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -129,11 +136,12 @@ export interface FileRoutesByTo {
   '/job/$jobId': typeof JobJobIdRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/safety/first-aid': typeof SafetyFirstAidRoute
-  '/safety/jha': typeof SafetyJhaRoute
   '/safety/sds': typeof SafetySdsRoute
   '/safety/toolbox': typeof SafetyToolboxRoute
   '/share/$token': typeof ShareTokenRoute
   '/safety': typeof SafetyIndexRoute
+  '/safety/jha/$projectId': typeof SafetyJhaProjectIdRoute
+  '/safety/jha': typeof SafetyJhaIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -147,11 +155,12 @@ export interface FileRoutesById {
   '/job/$jobId': typeof JobJobIdRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/safety/first-aid': typeof SafetyFirstAidRoute
-  '/safety/jha': typeof SafetyJhaRoute
   '/safety/sds': typeof SafetySdsRoute
   '/safety/toolbox': typeof SafetyToolboxRoute
   '/share/$token': typeof ShareTokenRoute
   '/safety/': typeof SafetyIndexRoute
+  '/safety/jha/$projectId': typeof SafetyJhaProjectIdRoute
+  '/safety/jha/': typeof SafetyJhaIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -166,11 +175,12 @@ export interface FileRouteTypes {
     | '/job/$jobId'
     | '/project/$projectId'
     | '/safety/first-aid'
-    | '/safety/jha'
     | '/safety/sds'
     | '/safety/toolbox'
     | '/share/$token'
     | '/safety/'
+    | '/safety/jha/$projectId'
+    | '/safety/jha/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -183,11 +193,12 @@ export interface FileRouteTypes {
     | '/job/$jobId'
     | '/project/$projectId'
     | '/safety/first-aid'
-    | '/safety/jha'
     | '/safety/sds'
     | '/safety/toolbox'
     | '/share/$token'
     | '/safety'
+    | '/safety/jha/$projectId'
+    | '/safety/jha'
   id:
     | '__root__'
     | '/'
@@ -200,11 +211,12 @@ export interface FileRouteTypes {
     | '/job/$jobId'
     | '/project/$projectId'
     | '/safety/first-aid'
-    | '/safety/jha'
     | '/safety/sds'
     | '/safety/toolbox'
     | '/share/$token'
     | '/safety/'
+    | '/safety/jha/$projectId'
+    | '/safety/jha/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -218,11 +230,12 @@ export interface RootRouteChildren {
   JobJobIdRoute: typeof JobJobIdRoute
   ProjectProjectIdRoute: typeof ProjectProjectIdRoute
   SafetyFirstAidRoute: typeof SafetyFirstAidRoute
-  SafetyJhaRoute: typeof SafetyJhaRoute
   SafetySdsRoute: typeof SafetySdsRoute
   SafetyToolboxRoute: typeof SafetyToolboxRoute
   ShareTokenRoute: typeof ShareTokenRoute
   SafetyIndexRoute: typeof SafetyIndexRoute
+  SafetyJhaProjectIdRoute: typeof SafetyJhaProjectIdRoute
+  SafetyJhaIndexRoute: typeof SafetyJhaIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -304,13 +317,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SafetyFirstAidRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/safety/jha': {
-      id: '/safety/jha'
-      path: '/safety/jha'
-      fullPath: '/safety/jha'
-      preLoaderRoute: typeof SafetyJhaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/safety/sds': {
       id: '/safety/sds'
       path: '/safety/sds'
@@ -332,6 +338,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShareTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/safety/jha/': {
+      id: '/safety/jha/'
+      path: '/safety/jha'
+      fullPath: '/safety/jha/'
+      preLoaderRoute: typeof SafetyJhaIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/safety/jha/$projectId': {
+      id: '/safety/jha/$projectId'
+      path: '/safety/jha/$projectId'
+      fullPath: '/safety/jha/$projectId'
+      preLoaderRoute: typeof SafetyJhaProjectIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -346,11 +366,12 @@ const rootRouteChildren: RootRouteChildren = {
   JobJobIdRoute: JobJobIdRoute,
   ProjectProjectIdRoute: ProjectProjectIdRoute,
   SafetyFirstAidRoute: SafetyFirstAidRoute,
-  SafetyJhaRoute: SafetyJhaRoute,
   SafetySdsRoute: SafetySdsRoute,
   SafetyToolboxRoute: SafetyToolboxRoute,
   ShareTokenRoute: ShareTokenRoute,
   SafetyIndexRoute: SafetyIndexRoute,
+  SafetyJhaProjectIdRoute: SafetyJhaProjectIdRoute,
+  SafetyJhaIndexRoute: SafetyJhaIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

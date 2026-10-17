@@ -118,6 +118,10 @@ Run all four; each must pass before a build is READY.
 - Safety document writes go through `src/lib/safety.functions.ts` using the caller's RLS client,
   files are served only by signed URLs, and subcontractors see only `shareable_with_subs`
   documents (enforced in RLS and mirrored for View As by `visibleToViewer`).
+- JHA writes go through `src/lib/jha.functions.ts`. `jha_records` are readable only by the project
+  owner (`owner_id`), collaborators and `manage_safety`. A JHA is completed once per project and
+  redone only after a "Request new JHA", enforced by the `jha_record_guard` trigger; completed
+  records cannot be changed.
 - New pure helpers in `src/lib/` get a colocated `*.test.ts`. Tests must not hit the
   network or Supabase: stub `fetch` and modules with `vi` (`vi.stubGlobal`, `vi.mock`).
 
