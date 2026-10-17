@@ -822,6 +822,51 @@ export type Database = {
           },
         ]
       }
+      safety_documents: {
+        Row: {
+          archived: boolean
+          category: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          effective_date: string | null
+          file_path: string
+          id: string
+          shareable_with_subs: boolean
+          title: string
+          updated_at: string
+          version: string | null
+        }
+        Insert: {
+          archived?: boolean
+          category: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          effective_date?: string | null
+          file_path: string
+          id?: string
+          shareable_with_subs?: boolean
+          title: string
+          updated_at?: string
+          version?: string | null
+        }
+        Update: {
+          archived?: boolean
+          category?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          effective_date?: string | null
+          file_path?: string
+          id?: string
+          shareable_with_subs?: boolean
+          title?: string
+          updated_at?: string
+          version?: string | null
+        }
+        Relationships: []
+      }
       share_links: {
         Row: {
           company_id: string
