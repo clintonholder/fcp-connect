@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { NationalPaintPlaceholder } from "@/components/NationalPaintPlaceholder";
+import { NationalPaintProjects } from "@/components/NationalPaintProjects";
 
 export const Route = createFileRoute("/national-paint/")({
   head: () => ({
@@ -8,5 +8,5 @@ export const Route = createFileRoute("/national-paint/")({
       { property: "og:title", content: "Projects — National Paint — FCP Connect" },
     ],
   }),
-  component: () => <NationalPaintPlaceholder title="Projects" />,
+  component: () => <NationalPaintProjects />,
 });

@@ -148,7 +148,12 @@ Run all four; each must pass before a build is READY.
   (PMs, contractors, crews, crew members) writes go through `src/lib/national-paint.functions.ts`
   under the caller's RLS; deleting a PM, contractor or crew in use by projects (or a contractor
   with crews) is refused, and the audit actions are `national_paint_<entity>_created|updated|deleted`
-  (entity `pm`, `contractor`, `crew` or `crew_member`). Real National Paint data,
+  (entity `pm`, `contractor`, `crew` or `crew_member`). Project writes (create, update, delete and
+  the quick status change) also go through `src/lib/national-paint.functions.ts` under the caller's
+  RLS, audited as `national_paint_project_created|updated|deleted|status_changed`. A project's crew
+  must belong to its contractor (checked on the server). Pace is computed in the browser by
+  `computePace` in `src/lib/national-paint-projects.ts` (the workbook formula) and is not stored;
+  Progress is entered by hand. Real National Paint data,
   workbooks and CMiC exports must never be committed; tests use made-up rows.
 - New pure helpers in `src/lib/` get a colocated `*.test.ts`. Tests must not hit the
   network or Supabase: stub `fetch` and modules with `vi` (`vi.stubGlobal`, `vi.mock`).
