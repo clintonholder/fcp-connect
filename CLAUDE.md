@@ -153,7 +153,10 @@ Run all four; each must pass before a build is READY.
   RLS, audited as `national_paint_project_created|updated|deleted|status_changed`. A project's crew
   must belong to its contractor (checked on the server). Pace is computed in the browser by
   `computePace` in `src/lib/national-paint-projects.ts` (the workbook formula) and is not stored;
-  Progress is entered by hand. Real National Paint data,
+  Progress is entered by hand. The Project Timeline (`/national-paint/timeline`) is read-only; bars
+  follow the workbook rule in `src/lib/national-paint-timeline.ts` (140 days from a reference date,
+  Start and End inclusive, no bar without a Start, open-ended without an End) and dates are edited
+  in the project form. Real National Paint data,
   workbooks and CMiC exports must never be committed; tests use made-up rows.
 - New pure helpers in `src/lib/` get a colocated `*.test.ts`. Tests must not hit the
   network or Supabase: stub `fetch` and modules with `vi` (`vi.stubGlobal`, `vi.mock`).

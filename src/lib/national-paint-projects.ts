@@ -36,7 +36,7 @@ export type CrewRef = {
 };
 export type NamedRef = { id: string; name: string };
 
-function isoToDay(iso: string): number {
+export function isoToDay(iso: string): number {
   const [y, m, d] = iso.split("-").map(Number);
   return Date.UTC(y, m - 1, d) / DAY_MS;
 }
