@@ -63,7 +63,9 @@ function HomePage() {
   return (
     <main className="mx-auto max-w-6xl px-3 py-6">
       <h1 className="mb-4 text-2xl font-semibold">Home</h1>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div
+        className={`grid grid-cols-1 gap-4 ${visibleTiles.length > 3 ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3"}`}
+      >
         {visibleTiles.map(({ to, label, description, icon: Icon }) => (
           <Link
             key={to}

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
@@ -57,22 +57,26 @@ function ImportPage() {
   const [readError, setReadError] = useState<string | null>(null);
   const [importing, setImporting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const latestParse = useRef(0);
 
   if (!isAdmin) return <p className="text-muted-foreground">Administrators only.</p>;
 
   async function parse(f: File | null, y: number) {
+    const run = ++latestParse.current;
     setParsed(null);
     setReadError(null);
     if (!f) return;
     setReading(true);
     try {
       const data = await readWorkbook(f);
+      if (run !== latestParse.current) return;
       const { payload, report } = buildImport(data, y);
       setParsed({ fileName: f.name, payload, report, errors: data.errors });
     } catch (e) {
+      if (run !== latestParse.current) return;
       setReadError(e instanceof Error ? e.message : "Could not read the workbook.");
     } finally {
-      setReading(false);
+      if (run === latestParse.current) setReading(false);
     }
   }
 
