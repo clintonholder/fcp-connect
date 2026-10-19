@@ -684,6 +684,7 @@ export type Database = {
           created_at: string
           id: string
           month: number
+          reported_revenue: number | null
           updated_at: string
           year: number
         }
@@ -692,6 +693,7 @@ export type Database = {
           created_at?: string
           id?: string
           month: number
+          reported_revenue?: number | null
           updated_at?: string
           year: number
         }
@@ -700,6 +702,7 @@ export type Database = {
           created_at?: string
           id?: string
           month?: number
+          reported_revenue?: number | null
           updated_at?: string
           year?: number
         }

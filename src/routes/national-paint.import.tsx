@@ -168,7 +168,7 @@ function ImportPage() {
             <AlertDialogTitle>Replace National Paint data?</AlertDialogTitle>
             <AlertDialogDescription>
               This replaces all National Paint PMs, contractors, crews and projects, and the {year}{" "}
-              budget. This cannot be undone.
+              budget. It also clears the {year} reported revenue. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
