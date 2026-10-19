@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { FolderKanban, MessageSquare, ShieldCheck } from "lucide-react";
+import { FolderKanban, MessageSquare, PaintRoller, ShieldCheck } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { useMyRoles } from "@/lib/roles";
 import { useUnreadMessageCount } from "@/lib/use-unread-messages";
 
 const tiles = [
@@ -25,6 +26,13 @@ const tiles = [
     icon: MessageSquare,
   },
 ] as const;
+
+const nationalPaintTile = {
+  to: "/national-paint",
+  label: "National Paint",
+  description: "Projects, crews, schedule and finance.",
+  icon: PaintRoller,
+} as const;
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -50,11 +58,13 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   const unread = useUnreadMessageCount();
+  const { can } = useMyRoles();
+  const visibleTiles = can.can_manage_national_paint ? [...tiles, nationalPaintTile] : tiles;
   return (
     <main className="mx-auto max-w-6xl px-3 py-6">
       <h1 className="mb-4 text-2xl font-semibold">Home</h1>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {tiles.map(({ to, label, description, icon: Icon }) => (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {visibleTiles.map(({ to, label, description, icon: Icon }) => (
           <Link
             key={to}
             to={to}
