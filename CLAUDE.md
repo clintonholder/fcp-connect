@@ -160,7 +160,15 @@ Run all four; each must pass before a build is READY.
   live in `src/lib/national-paint-capacity.ts`: 120 days from a reference date; busy = Scheduled
   or In Progress; a project counts only between both dates, inclusive; projects match by
   `crew_id`; inactive crews are Unavailable at 0%; % Busy and overlap days cover
-  Reference..Through; an overlap is a day with two or more busy projects. Real National Paint data,
+  Reference..Through; an overlap is a day with two or more busy projects. The Revenue
+  (`/national-paint/revenue`) and Dashboard (`/national-paint/dashboard`) pages are read-only except
+  the monthly targets; their rules live in `src/lib/national-paint-revenue.ts`: revenue is split over
+  calendar days from Est Start to Est End inclusive, only Verbal Award, Upcoming, Scheduled, In
+  Progress and Completed count, Exclude Revenue or a missing date or revenue is 0, and Actual is
+  Reported where entered, else Scheduled. `np_budget_targets.reported_revenue` (NULL = not reported)
+  is saved only by `saveNpMonthlyTargets` under the caller's RLS and audited as
+  `national_paint_budget_saved`; a workbook re-import resets the year's reported values to blank.
+  Real National Paint data,
   workbooks and CMiC exports must never be committed; tests use made-up rows.
 - New pure helpers in `src/lib/` get a colocated `*.test.ts`. Tests must not hit the
   network or Supabase: stub `fetch` and modules with `vi` (`vi.stubGlobal`, `vi.mock`).

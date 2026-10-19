@@ -13,6 +13,7 @@ import {
 } from "@/lib/national-paint-people";
 import { NP_STATUSES } from "@/lib/national-paint-import";
 import { validateProject } from "@/lib/national-paint-projects";
+import { validateMonthlyTargets } from "@/lib/national-paint-revenue";
 
 const STATUSES = ["Potential", "Verbal Award", "Upcoming", "Scheduled", "In Progress", "Completed"];
 const MAX_PROJECTS = 5000;
@@ -570,4 +571,53 @@ export const setNpProjectStatus = createServerFn({ method: "POST" })
       to: data.status,
     });
     return { id: data.id };
+  });
+
+// ---- Budget targets ----
+
+export const saveNpMonthlyTargets = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(validateMonthlyTargets)
+  .handler(async ({ data, context }) => {
+    await assertManageNationalPaint(context);
+    const { data: existing, error: readError } = await context.supabase
+      .from("np_budget_targets")
+      .select("month, amount, reported_revenue")
+      .eq("year", data.year);
+    if (readError) throw new Error(readError.message);
+    const changes = data.months.flatMap((m) => {
+      const old = existing?.find((e) => e.month === m.month);
+      const amountFrom = old ? Number(old.amount) : 0;
+      const reportedFrom = old?.reported_revenue == null ? null : Number(old.reported_revenue);
+      if (old && amountFrom === m.amount && reportedFrom === m.reported_revenue) return [];
+      if (!old && m.amount === 0 && m.reported_revenue === null) return [];
+      return [
+        {
+          month: m.month,
+          amount_from: amountFrom,
+          amount_to: m.amount,
+          reported_from: reportedFrom,
+          reported_to: m.reported_revenue,
+        },
+      ];
+    });
+    if (changes.length === 0) return { changed: 0 };
+    const { error } = await context.supabase.from("np_budget_targets").upsert(
+      changes.map((c) => ({
+        year: data.year,
+        month: c.month,
+        amount: c.amount_to,
+        reported_revenue: c.reported_to,
+      })),
+      { onConflict: "year,month" },
+    );
+    if (error) throw new Error(error.message);
+    await audit(
+      context.userId,
+      "national_paint_budget_saved",
+      "np_budget_targets",
+      String(data.year),
+      { year: data.year, changes },
+    );
+    return { changed: changes.length };
   });

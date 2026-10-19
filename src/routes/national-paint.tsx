@@ -53,6 +53,9 @@ function NationalPaintLayout() {
         <Link to="/national-paint/capacity" className={linkClass} activeProps={activeProps}>
           Crew Capacity
         </Link>
+        <Link to="/national-paint/revenue" className={linkClass} activeProps={activeProps}>
+          Revenue
+        </Link>
         <Link to="/national-paint/dashboard" className={linkClass} activeProps={activeProps}>
           Dashboard
         </Link>

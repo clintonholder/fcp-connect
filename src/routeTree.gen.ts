@@ -27,6 +27,7 @@ import { Route as NationalPaintDashboardRouteImport } from './routes/national-pa
 import { Route as NationalPaintFinanceRouteImport } from './routes/national-paint.finance'
 import { Route as NationalPaintImportRouteImport } from './routes/national-paint.import'
 import { Route as NationalPaintPeopleRouteImport } from './routes/national-paint.people'
+import { Route as NationalPaintRevenueRouteImport } from './routes/national-paint.revenue'
 import { Route as NationalPaintTimelineRouteImport } from './routes/national-paint.timeline'
 import { Route as ProjectProjectIdRouteImport } from './routes/project.$projectId'
 import { Route as SafetyIndexRouteImport } from './routes/safety.index'
@@ -129,6 +130,11 @@ const NationalPaintPeopleRoute = NationalPaintPeopleRouteImport.update({
   path: '/people',
   getParentRoute: () => NationalPaintRoute,
 } as any)
+const NationalPaintRevenueRoute = NationalPaintRevenueRouteImport.update({
+  id: '/revenue',
+  path: '/revenue',
+  getParentRoute: () => NationalPaintRoute,
+} as any)
 const NationalPaintTimelineRoute = NationalPaintTimelineRouteImport.update({
   id: '/timeline',
   path: '/timeline',
@@ -202,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/national-paint/finance': typeof NationalPaintFinanceRoute
   '/national-paint/import': typeof NationalPaintImportRoute
   '/national-paint/people': typeof NationalPaintPeopleRoute
+  '/national-paint/revenue': typeof NationalPaintRevenueRoute
   '/national-paint/timeline': typeof NationalPaintTimelineRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/safety/acknowledgements': typeof SafetyAcknowledgementsRoute
@@ -232,6 +239,7 @@ export interface FileRoutesByTo {
   '/national-paint/finance': typeof NationalPaintFinanceRoute
   '/national-paint/import': typeof NationalPaintImportRoute
   '/national-paint/people': typeof NationalPaintPeopleRoute
+  '/national-paint/revenue': typeof NationalPaintRevenueRoute
   '/national-paint/timeline': typeof NationalPaintTimelineRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/safety/acknowledgements': typeof SafetyAcknowledgementsRoute
@@ -264,6 +272,7 @@ export interface FileRoutesById {
   '/national-paint/finance': typeof NationalPaintFinanceRoute
   '/national-paint/import': typeof NationalPaintImportRoute
   '/national-paint/people': typeof NationalPaintPeopleRoute
+  '/national-paint/revenue': typeof NationalPaintRevenueRoute
   '/national-paint/timeline': typeof NationalPaintTimelineRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/safety/acknowledgements': typeof SafetyAcknowledgementsRoute
@@ -297,6 +306,7 @@ export interface FileRouteTypes {
     | '/national-paint/finance'
     | '/national-paint/import'
     | '/national-paint/people'
+    | '/national-paint/revenue'
     | '/national-paint/timeline'
     | '/project/$projectId'
     | '/safety/acknowledgements'
@@ -327,6 +337,7 @@ export interface FileRouteTypes {
     | '/national-paint/finance'
     | '/national-paint/import'
     | '/national-paint/people'
+    | '/national-paint/revenue'
     | '/national-paint/timeline'
     | '/project/$projectId'
     | '/safety/acknowledgements'
@@ -358,6 +369,7 @@ export interface FileRouteTypes {
     | '/national-paint/finance'
     | '/national-paint/import'
     | '/national-paint/people'
+    | '/national-paint/revenue'
     | '/national-paint/timeline'
     | '/project/$projectId'
     | '/safety/acknowledgements'
@@ -525,6 +537,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NationalPaintPeopleRouteImport
       parentRoute: typeof NationalPaintRoute
     }
+    '/national-paint/revenue': {
+      id: '/national-paint/revenue'
+      path: '/revenue'
+      fullPath: '/national-paint/revenue'
+      preLoaderRoute: typeof NationalPaintRevenueRouteImport
+      parentRoute: typeof NationalPaintRoute
+    }
     '/national-paint/timeline': {
       id: '/national-paint/timeline'
       path: '/timeline'
@@ -612,6 +631,7 @@ interface NationalPaintRouteChildren {
   NationalPaintFinanceRoute: typeof NationalPaintFinanceRoute
   NationalPaintImportRoute: typeof NationalPaintImportRoute
   NationalPaintPeopleRoute: typeof NationalPaintPeopleRoute
+  NationalPaintRevenueRoute: typeof NationalPaintRevenueRoute
   NationalPaintTimelineRoute: typeof NationalPaintTimelineRoute
   NationalPaintIndexRoute: typeof NationalPaintIndexRoute
 }
@@ -623,6 +643,7 @@ const NationalPaintRouteChildren: NationalPaintRouteChildren = {
   NationalPaintFinanceRoute: NationalPaintFinanceRoute,
   NationalPaintImportRoute: NationalPaintImportRoute,
   NationalPaintPeopleRoute: NationalPaintPeopleRoute,
+  NationalPaintRevenueRoute: NationalPaintRevenueRoute,
   NationalPaintTimelineRoute: NationalPaintTimelineRoute,
   NationalPaintIndexRoute: NationalPaintIndexRoute,
 }
