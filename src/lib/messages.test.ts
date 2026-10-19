@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
   EMPTY_SELECTION,
+  buildSentReport,
+  countUnread,
+  shouldMarkRead,
   resolveAudience,
   validateMessageInput,
   type AudienceDirectory,
@@ -127,5 +130,62 @@ describe("validateMessageInput", () => {
 
   it("rejects non-string ids", () => {
     expect(() => validateMessageInput({ ...good, selection: { userIds: [1] } })).toThrow();
+  });
+});
+
+describe("shouldMarkRead", () => {
+  it("marks only an unread message for a recipient who is not read-only", () => {
+    expect(shouldMarkRead({ readOnly: false, isRecipient: true, readAt: null })).toBe(true);
+    expect(shouldMarkRead({ readOnly: false, isRecipient: true, readAt: "2026-01-01" })).toBe(
+      false,
+    );
+    expect(shouldMarkRead({ readOnly: false, isRecipient: false, readAt: null })).toBe(false);
+  });
+
+  it("never marks read when read-only", () => {
+    expect(shouldMarkRead({ readOnly: true, isRecipient: true, readAt: null })).toBe(false);
+    expect(shouldMarkRead({ readOnly: true, isRecipient: false, readAt: null })).toBe(false);
+  });
+});
+
+describe("buildSentReport", () => {
+  const messages = [
+    { id: "m1", subject: "Old", sentAt: "2026-01-01T00:00:00Z" },
+    { id: "m2", subject: "New", sentAt: "2026-02-01T00:00:00Z" },
+  ];
+  const recipients = [
+    { messageId: "m2", userId: "u1", readAt: "2026-02-02T00:00:00Z" },
+    { messageId: "m2", userId: "u2", readAt: null },
+    { messageId: "m2", userId: "u3", readAt: null },
+    { messageId: "m2", userId: "u4", readAt: "2026-02-03T00:00:00Z" },
+    { messageId: "m1", userId: "u1", readAt: null },
+    { messageId: "gone", userId: "u1", readAt: null },
+  ];
+  const names = { u1: "Zed", u2: "Bea", u4: "Amy" };
+
+  it("returns newest first with counts", () => {
+    const report = buildSentReport(messages, recipients, names);
+    expect(report.map((r) => r.id)).toEqual(["m2", "m1"]);
+    expect(report[0].recipientCount).toBe(4);
+    expect(report[0].readCount).toBe(2);
+    expect(report[1].recipientCount).toBe(1);
+    expect(report[1].readCount).toBe(0);
+  });
+
+  it("sorts unread first then by name, with an Unknown fallback", () => {
+    const [first] = buildSentReport(messages, recipients, names);
+    expect(first.recipients.map((r) => r.name)).toEqual(["Bea", "Unknown", "Amy", "Zed"]);
+  });
+
+  it("ignores recipient rows for unknown messages", () => {
+    const report = buildSentReport(messages, recipients, names);
+    expect(report.flatMap((r) => r.recipients).length).toBe(5);
+  });
+});
+
+describe("countUnread", () => {
+  it("counts rows with no read time", () => {
+    expect(countUnread([])).toBe(0);
+    expect(countUnread([{ readAt: null }, { readAt: "x" }, { readAt: null }])).toBe(2);
   });
 });

@@ -127,3 +127,52 @@ export function validateMessageInput(d: unknown): MessageInput {
     },
   };
 }
+
+/** True only for a real (not View As) recipient opening a message they have not read yet. */
+export function shouldMarkRead(args: {
+  readOnly: boolean;
+  isRecipient: boolean;
+  readAt: string | null;
+}): boolean {
+  return !args.readOnly && args.isRecipient && args.readAt === null;
+}
+
+export type SentReportEntry = {
+  id: string;
+  subject: string;
+  sentAt: string;
+  recipientCount: number;
+  readCount: number;
+  recipients: { userId: string; name: string; readAt: string | null }[];
+};
+
+/** One entry per sent message, newest first, with recipients sorted unread first then by name. */
+export function buildSentReport(
+  messages: { id: string; subject: string; sentAt: string }[],
+  recipients: { messageId: string; userId: string; readAt: string | null }[],
+  names: Record<string, string>,
+): SentReportEntry[] {
+  return [...messages]
+    .sort((a, b) => (a.sentAt < b.sentAt ? 1 : a.sentAt > b.sentAt ? -1 : 0))
+    .map((m) => {
+      const list = recipients
+        .filter((r) => r.messageId === m.id)
+        .map((r) => ({ userId: r.userId, name: names[r.userId] || "Unknown", readAt: r.readAt }))
+        .sort((a, b) => {
+          const unread = Number(b.readAt === null) - Number(a.readAt === null);
+          return unread || a.name.localeCompare(b.name);
+        });
+      return {
+        id: m.id,
+        subject: m.subject,
+        sentAt: m.sentAt,
+        recipientCount: list.length,
+        readCount: list.filter((r) => r.readAt !== null).length,
+        recipients: list,
+      };
+    });
+}
+
+export function countUnread(rows: { readAt: string | null }[]): number {
+  return rows.filter((r) => r.readAt === null).length;
+}
