@@ -156,7 +156,11 @@ Run all four; each must pass before a build is READY.
   Progress is entered by hand. The Project Timeline (`/national-paint/timeline`) is read-only; bars
   follow the workbook rule in `src/lib/national-paint-timeline.ts` (140 days from a reference date,
   Start and End inclusive, no bar without a Start, open-ended without an End) and dates are edited
-  in the project form. Real National Paint data,
+  in the project form. The Crew Capacity page (`/national-paint/capacity`) is read-only; its rules
+  live in `src/lib/national-paint-capacity.ts`: 120 days from a reference date; busy = Scheduled
+  or In Progress; a project counts only between both dates, inclusive; projects match by
+  `crew_id`; inactive crews are Unavailable at 0%; % Busy and overlap days cover
+  Reference..Through; an overlap is a day with two or more busy projects. Real National Paint data,
   workbooks and CMiC exports must never be committed; tests use made-up rows.
 - New pure helpers in `src/lib/` get a colocated `*.test.ts`. Tests must not hit the
   network or Supabase: stub `fetch` and modules with `vi` (`vi.stubGlobal`, `vi.mock`).
