@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { FolderKanban, MessageSquare, ShieldCheck } from "lucide-react";
 import { RequireAuth } from "@/components/RequireAuth";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
+import { useUnreadMessageCount } from "@/lib/use-unread-messages";
 
 const tiles = [
   {
@@ -47,6 +49,7 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
+  const unread = useUnreadMessageCount();
   return (
     <main className="mx-auto max-w-6xl px-3 py-6">
       <h1 className="mb-4 text-2xl font-semibold">Home</h1>
@@ -60,7 +63,12 @@ function HomePage() {
             <Card className="h-full transition-colors hover:bg-secondary">
               <CardContent className="flex flex-col items-start gap-2 p-5">
                 <Icon className="h-8 w-8 text-primary" />
-                <div className="text-lg font-medium">{label}</div>
+                <div className="flex items-center gap-2 text-lg font-medium">
+                  {label}
+                  {to === "/messages" && unread > 0 && (
+                    <Badge variant="destructive">{unread} unread</Badge>
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground">{description}</p>
               </CardContent>
             </Card>

@@ -17,6 +17,7 @@ import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as JobJobIdRouteImport } from './routes/job.$jobId'
 import { Route as MessagesIndexRouteImport } from './routes/messages.index'
+import { Route as MessagesMessageIdRouteImport } from './routes/messages.$messageId'
 import { Route as MessagesNewRouteImport } from './routes/messages.new'
 import { Route as ProjectProjectIdRouteImport } from './routes/project.$projectId'
 import { Route as SafetyIndexRouteImport } from './routes/safety.index'
@@ -67,6 +68,11 @@ const JobJobIdRoute = JobJobIdRouteImport.update({
 const MessagesIndexRoute = MessagesIndexRouteImport.update({
   id: '/messages/',
   path: '/messages/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MessagesMessageIdRoute = MessagesMessageIdRouteImport.update({
+  id: '/messages/$messageId',
+  path: '/messages/$messageId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MessagesNewRoute = MessagesNewRouteImport.update({
@@ -133,6 +139,7 @@ export interface FileRoutesByFullPath {
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/job/$jobId': typeof JobJobIdRoute
+  '/messages/$messageId': typeof MessagesMessageIdRoute
   '/messages/new': typeof MessagesNewRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/safety/acknowledgements': typeof SafetyAcknowledgementsRoute
@@ -154,6 +161,7 @@ export interface FileRoutesByTo {
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/job/$jobId': typeof JobJobIdRoute
+  '/messages/$messageId': typeof MessagesMessageIdRoute
   '/messages/new': typeof MessagesNewRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/safety/acknowledgements': typeof SafetyAcknowledgementsRoute
@@ -176,6 +184,7 @@ export interface FileRoutesById {
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/job/$jobId': typeof JobJobIdRoute
+  '/messages/$messageId': typeof MessagesMessageIdRoute
   '/messages/new': typeof MessagesNewRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/safety/acknowledgements': typeof SafetyAcknowledgementsRoute
@@ -199,6 +208,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/reset-password'
     | '/job/$jobId'
+    | '/messages/$messageId'
     | '/messages/new'
     | '/project/$projectId'
     | '/safety/acknowledgements'
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/reset-password'
     | '/job/$jobId'
+    | '/messages/$messageId'
     | '/messages/new'
     | '/project/$projectId'
     | '/safety/acknowledgements'
@@ -241,6 +252,7 @@ export interface FileRouteTypes {
     | '/projects'
     | '/reset-password'
     | '/job/$jobId'
+    | '/messages/$messageId'
     | '/messages/new'
     | '/project/$projectId'
     | '/safety/acknowledgements'
@@ -263,6 +275,7 @@ export interface RootRouteChildren {
   ProjectsRoute: typeof ProjectsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   JobJobIdRoute: typeof JobJobIdRoute
+  MessagesMessageIdRoute: typeof MessagesMessageIdRoute
   MessagesNewRoute: typeof MessagesNewRoute
   ProjectProjectIdRoute: typeof ProjectProjectIdRoute
   SafetyAcknowledgementsRoute: typeof SafetyAcknowledgementsRoute
@@ -333,6 +346,13 @@ declare module '@tanstack/react-router' {
       path: '/messages'
       fullPath: '/messages/'
       preLoaderRoute: typeof MessagesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/messages/$messageId': {
+      id: '/messages/$messageId'
+      path: '/messages/$messageId'
+      fullPath: '/messages/$messageId'
+      preLoaderRoute: typeof MessagesMessageIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/messages/new': {
@@ -423,6 +443,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProjectsRoute: ProjectsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   JobJobIdRoute: JobJobIdRoute,
+  MessagesMessageIdRoute: MessagesMessageIdRoute,
   MessagesNewRoute: MessagesNewRoute,
   ProjectProjectIdRoute: ProjectProjectIdRoute,
   SafetyAcknowledgementsRoute: SafetyAcknowledgementsRoute,

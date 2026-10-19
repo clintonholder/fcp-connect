@@ -133,6 +133,11 @@ Run all four; each must pass before a build is READY.
 - Messages are in-app only (no email or push). Recipients are resolved server-side by
   `resolveAudience` in `src/lib/messages.ts`; sending goes only through `sendMessage` in
   `src/lib/messages.functions.ts`, which writes the `message_sent` audit entry.
+  Read receipts are set only by `markMessageRead` in `src/lib/messages.functions.ts`, under the
+  caller's RLS; a trigger allows only `read_at` to change, and only once. Under View As, message
+  reads pass `viewAsUserId` and go through `resolveReader`, which requires an admin with an active
+  `proxy_sessions` row for that user. No receipt is recorded: the client skips `markMessageRead`
+  and the restrictive policy refuses it.
 - New pure helpers in `src/lib/` get a colocated `*.test.ts`. Tests must not hit the
   network or Supabase: stub `fetch` and modules with `vi` (`vi.stubGlobal`, `vi.mock`).
 
