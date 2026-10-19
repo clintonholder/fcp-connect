@@ -11,6 +11,8 @@ import {
   validateCrewMember,
   validateName,
 } from "@/lib/national-paint-people";
+import { NP_STATUSES } from "@/lib/national-paint-import";
+import { validateProject } from "@/lib/national-paint-projects";
 
 const STATUSES = ["Potential", "Verbal Award", "Upcoming", "Scheduled", "In Progress", "Completed"];
 const MAX_PROJECTS = 5000;
@@ -453,6 +455,119 @@ export const deleteNpCrewMember = createServerFn({ method: "POST" })
     await audit(context.userId, "national_paint_crew_member_deleted", "np_crew_member", data.id, {
       crew_id: rows[0].crew_id,
       name: rows[0].name,
+    });
+    return { id: data.id };
+  });
+
+// ---- Projects ----
+
+const projectGone = "This project no longer exists";
+const projectBadRef = "Choose an existing PM, contractor and crew";
+
+/** The crew must exist and belong to the submitted contractor. */
+async function assertCrewMatchesContractor(
+  context: Ctx,
+  crewId: string | null,
+  contractorId: string | null,
+) {
+  if (!crewId) return;
+  const { data, error } = await context.supabase
+    .from("np_crews")
+    .select("contractor_id")
+    .eq("id", crewId)
+    .maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data || data.contractor_id !== contractorId) {
+    throw new Error("Choose a crew assigned to the selected contractor");
+  }
+}
+
+export const createNpProject = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: Parameters<typeof validateProject>[0]) => validateProject(d))
+  .handler(async ({ data, context }) => {
+    await assertManageNationalPaint(context);
+    await assertCrewMatchesContractor(context, data.crew_id, data.contractor_id);
+    const { data: row, error } = await context.supabase
+      .from("np_projects")
+      .insert(data)
+      .select("id")
+      .single();
+    if (error) throw friendlyDbError(error, error.message, projectBadRef);
+    await audit(context.userId, "national_paint_project_created", "np_project", row.id, {
+      ...data,
+    });
+    return { id: row.id };
+  });
+
+export const updateNpProject = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string } & Parameters<typeof validateProject>[0]) => ({
+    id: requireId(d?.id, "project"),
+    fields: validateProject(d),
+  }))
+  .handler(async ({ data, context }) => {
+    await assertManageNationalPaint(context);
+    await assertCrewMatchesContractor(context, data.fields.crew_id, data.fields.contractor_id);
+    const { data: rows, error } = await context.supabase
+      .from("np_projects")
+      .update(data.fields)
+      .eq("id", data.id)
+      .select("id");
+    if (error) throw friendlyDbError(error, error.message, projectBadRef);
+    if (!rows?.length) throw new Error(projectGone);
+    await audit(context.userId, "national_paint_project_updated", "np_project", data.id, {
+      ...data.fields,
+    });
+    return { id: data.id };
+  });
+
+export const deleteNpProject = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(validateDelete)
+  .handler(async ({ data, context }) => {
+    await assertManageNationalPaint(context);
+    const { data: rows, error } = await context.supabase
+      .from("np_projects")
+      .delete()
+      .eq("id", data.id)
+      .select("id, name");
+    if (error) throw new Error(error.message);
+    if (!rows?.length) throw new Error(projectGone);
+    await audit(context.userId, "national_paint_project_deleted", "np_project", data.id, {
+      name: rows[0].name,
+    });
+    return { id: data.id };
+  });
+
+export const setNpProjectStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; status: string }) => {
+    const status = NP_STATUSES.find((s) => s === d?.status);
+    if (!status) throw new Error("Invalid status");
+    return { id: requireId(d?.id, "project"), status };
+  })
+  .handler(async ({ data, context }) => {
+    await assertManageNationalPaint(context);
+    const { data: current, error: readError } = await context.supabase
+      .from("np_projects")
+      .select("name, status")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (readError) throw new Error(readError.message);
+    if (!current) throw new Error(projectGone);
+    if (current.status === data.status) return { id: data.id };
+    const { data: rows, error } = await context.supabase
+      .from("np_projects")
+      .update({ status: data.status })
+      .eq("id", data.id)
+      .select("id");
+    if (error) throw new Error(error.message);
+    if (!rows?.length) throw new Error(projectGone);
+    await audit(context.userId, "national_paint_project_status_changed", "np_project", data.id, {
+      name: current.name,
+      from: current.status,
+      to: data.status,
     });
     return { id: data.id };
   });
