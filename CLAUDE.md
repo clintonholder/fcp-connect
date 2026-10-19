@@ -144,7 +144,11 @@ Run all four; each must pass before a build is READY.
   `np_budget_targets`) use permission RLS plus the restrictive View As policies. National Paint
   writes go through `src/lib/national-paint.functions.ts`. The workbook import is admin-only: the
   .xlsm is parsed in the browser (`src/lib/national-paint-import.ts`), applied atomically by the
-  `np_import_workbook` function and audited as `national_paint_imported`. Real National Paint data,
+  `np_import_workbook` function and audited as `national_paint_imported`. People and crews
+  (PMs, contractors, crews, crew members) writes go through `src/lib/national-paint.functions.ts`
+  under the caller's RLS; deleting a PM, contractor or crew in use by projects (or a contractor
+  with crews) is refused, and the audit actions are `national_paint_<entity>_created|updated|deleted`
+  (entity `pm`, `contractor`, `crew` or `crew_member`). Real National Paint data,
   workbooks and CMiC exports must never be committed; tests use made-up rows.
 - New pure helpers in `src/lib/` get a colocated `*.test.ts`. Tests must not hit the
   network or Supabase: stub `fetch` and modules with `vi` (`vi.stubGlobal`, `vi.mock`).
