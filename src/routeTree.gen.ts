@@ -13,12 +13,21 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as MapRouteImport } from './routes/map'
+import { Route as NationalPaintRouteImport } from './routes/national-paint'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as JobJobIdRouteImport } from './routes/job.$jobId'
 import { Route as MessagesIndexRouteImport } from './routes/messages.index'
 import { Route as MessagesMessageIdRouteImport } from './routes/messages.$messageId'
 import { Route as MessagesNewRouteImport } from './routes/messages.new'
+import { Route as NationalPaintIndexRouteImport } from './routes/national-paint.index'
+import { Route as NationalPaintCapacityRouteImport } from './routes/national-paint.capacity'
+import { Route as NationalPaintCmicRouteImport } from './routes/national-paint.cmic'
+import { Route as NationalPaintDashboardRouteImport } from './routes/national-paint.dashboard'
+import { Route as NationalPaintFinanceRouteImport } from './routes/national-paint.finance'
+import { Route as NationalPaintImportRouteImport } from './routes/national-paint.import'
+import { Route as NationalPaintPeopleRouteImport } from './routes/national-paint.people'
+import { Route as NationalPaintTimelineRouteImport } from './routes/national-paint.timeline'
 import { Route as ProjectProjectIdRouteImport } from './routes/project.$projectId'
 import { Route as SafetyIndexRouteImport } from './routes/safety.index'
 import { Route as SafetyAcknowledgementsRouteImport } from './routes/safety.acknowledgements'
@@ -50,6 +59,11 @@ const MapRoute = MapRouteImport.update({
   path: '/map',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NationalPaintRoute = NationalPaintRouteImport.update({
+  id: '/national-paint',
+  path: '/national-paint',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProjectsRoute = ProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
@@ -79,6 +93,46 @@ const MessagesNewRoute = MessagesNewRouteImport.update({
   id: '/messages/new',
   path: '/messages/new',
   getParentRoute: () => rootRouteImport,
+} as any)
+const NationalPaintIndexRoute = NationalPaintIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => NationalPaintRoute,
+} as any)
+const NationalPaintCapacityRoute = NationalPaintCapacityRouteImport.update({
+  id: '/capacity',
+  path: '/capacity',
+  getParentRoute: () => NationalPaintRoute,
+} as any)
+const NationalPaintCmicRoute = NationalPaintCmicRouteImport.update({
+  id: '/cmic',
+  path: '/cmic',
+  getParentRoute: () => NationalPaintRoute,
+} as any)
+const NationalPaintDashboardRoute = NationalPaintDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => NationalPaintRoute,
+} as any)
+const NationalPaintFinanceRoute = NationalPaintFinanceRouteImport.update({
+  id: '/finance',
+  path: '/finance',
+  getParentRoute: () => NationalPaintRoute,
+} as any)
+const NationalPaintImportRoute = NationalPaintImportRouteImport.update({
+  id: '/import',
+  path: '/import',
+  getParentRoute: () => NationalPaintRoute,
+} as any)
+const NationalPaintPeopleRoute = NationalPaintPeopleRouteImport.update({
+  id: '/people',
+  path: '/people',
+  getParentRoute: () => NationalPaintRoute,
+} as any)
+const NationalPaintTimelineRoute = NationalPaintTimelineRouteImport.update({
+  id: '/timeline',
+  path: '/timeline',
+  getParentRoute: () => NationalPaintRoute,
 } as any)
 const ProjectProjectIdRoute = ProjectProjectIdRouteImport.update({
   id: '/project/$projectId',
@@ -136,17 +190,26 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/map': typeof MapRoute
+  '/national-paint': typeof NationalPaintRouteWithChildren
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/job/$jobId': typeof JobJobIdRoute
   '/messages/$messageId': typeof MessagesMessageIdRoute
   '/messages/new': typeof MessagesNewRoute
+  '/national-paint/capacity': typeof NationalPaintCapacityRoute
+  '/national-paint/cmic': typeof NationalPaintCmicRoute
+  '/national-paint/dashboard': typeof NationalPaintDashboardRoute
+  '/national-paint/finance': typeof NationalPaintFinanceRoute
+  '/national-paint/import': typeof NationalPaintImportRoute
+  '/national-paint/people': typeof NationalPaintPeopleRoute
+  '/national-paint/timeline': typeof NationalPaintTimelineRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/safety/acknowledgements': typeof SafetyAcknowledgementsRoute
   '/safety/first-aid': typeof SafetyFirstAidRoute
   '/safety/sds': typeof SafetySdsRoute
   '/share/$token': typeof ShareTokenRoute
   '/messages/': typeof MessagesIndexRoute
+  '/national-paint/': typeof NationalPaintIndexRoute
   '/safety/': typeof SafetyIndexRoute
   '/safety/jha/$projectId': typeof SafetyJhaProjectIdRoute
   '/safety/toolbox/$talkId': typeof SafetyToolboxTalkIdRoute
@@ -163,12 +226,20 @@ export interface FileRoutesByTo {
   '/job/$jobId': typeof JobJobIdRoute
   '/messages/$messageId': typeof MessagesMessageIdRoute
   '/messages/new': typeof MessagesNewRoute
+  '/national-paint/capacity': typeof NationalPaintCapacityRoute
+  '/national-paint/cmic': typeof NationalPaintCmicRoute
+  '/national-paint/dashboard': typeof NationalPaintDashboardRoute
+  '/national-paint/finance': typeof NationalPaintFinanceRoute
+  '/national-paint/import': typeof NationalPaintImportRoute
+  '/national-paint/people': typeof NationalPaintPeopleRoute
+  '/national-paint/timeline': typeof NationalPaintTimelineRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/safety/acknowledgements': typeof SafetyAcknowledgementsRoute
   '/safety/first-aid': typeof SafetyFirstAidRoute
   '/safety/sds': typeof SafetySdsRoute
   '/share/$token': typeof ShareTokenRoute
   '/messages': typeof MessagesIndexRoute
+  '/national-paint': typeof NationalPaintIndexRoute
   '/safety': typeof SafetyIndexRoute
   '/safety/jha/$projectId': typeof SafetyJhaProjectIdRoute
   '/safety/toolbox/$talkId': typeof SafetyToolboxTalkIdRoute
@@ -181,17 +252,26 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/login': typeof LoginRoute
   '/map': typeof MapRoute
+  '/national-paint': typeof NationalPaintRouteWithChildren
   '/projects': typeof ProjectsRoute
   '/reset-password': typeof ResetPasswordRoute
   '/job/$jobId': typeof JobJobIdRoute
   '/messages/$messageId': typeof MessagesMessageIdRoute
   '/messages/new': typeof MessagesNewRoute
+  '/national-paint/capacity': typeof NationalPaintCapacityRoute
+  '/national-paint/cmic': typeof NationalPaintCmicRoute
+  '/national-paint/dashboard': typeof NationalPaintDashboardRoute
+  '/national-paint/finance': typeof NationalPaintFinanceRoute
+  '/national-paint/import': typeof NationalPaintImportRoute
+  '/national-paint/people': typeof NationalPaintPeopleRoute
+  '/national-paint/timeline': typeof NationalPaintTimelineRoute
   '/project/$projectId': typeof ProjectProjectIdRoute
   '/safety/acknowledgements': typeof SafetyAcknowledgementsRoute
   '/safety/first-aid': typeof SafetyFirstAidRoute
   '/safety/sds': typeof SafetySdsRoute
   '/share/$token': typeof ShareTokenRoute
   '/messages/': typeof MessagesIndexRoute
+  '/national-paint/': typeof NationalPaintIndexRoute
   '/safety/': typeof SafetyIndexRoute
   '/safety/jha/$projectId': typeof SafetyJhaProjectIdRoute
   '/safety/toolbox/$talkId': typeof SafetyToolboxTalkIdRoute
@@ -205,17 +285,26 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/map'
+    | '/national-paint'
     | '/projects'
     | '/reset-password'
     | '/job/$jobId'
     | '/messages/$messageId'
     | '/messages/new'
+    | '/national-paint/capacity'
+    | '/national-paint/cmic'
+    | '/national-paint/dashboard'
+    | '/national-paint/finance'
+    | '/national-paint/import'
+    | '/national-paint/people'
+    | '/national-paint/timeline'
     | '/project/$projectId'
     | '/safety/acknowledgements'
     | '/safety/first-aid'
     | '/safety/sds'
     | '/share/$token'
     | '/messages/'
+    | '/national-paint/'
     | '/safety/'
     | '/safety/jha/$projectId'
     | '/safety/toolbox/$talkId'
@@ -232,12 +321,20 @@ export interface FileRouteTypes {
     | '/job/$jobId'
     | '/messages/$messageId'
     | '/messages/new'
+    | '/national-paint/capacity'
+    | '/national-paint/cmic'
+    | '/national-paint/dashboard'
+    | '/national-paint/finance'
+    | '/national-paint/import'
+    | '/national-paint/people'
+    | '/national-paint/timeline'
     | '/project/$projectId'
     | '/safety/acknowledgements'
     | '/safety/first-aid'
     | '/safety/sds'
     | '/share/$token'
     | '/messages'
+    | '/national-paint'
     | '/safety'
     | '/safety/jha/$projectId'
     | '/safety/toolbox/$talkId'
@@ -249,17 +346,26 @@ export interface FileRouteTypes {
     | '/admin'
     | '/login'
     | '/map'
+    | '/national-paint'
     | '/projects'
     | '/reset-password'
     | '/job/$jobId'
     | '/messages/$messageId'
     | '/messages/new'
+    | '/national-paint/capacity'
+    | '/national-paint/cmic'
+    | '/national-paint/dashboard'
+    | '/national-paint/finance'
+    | '/national-paint/import'
+    | '/national-paint/people'
+    | '/national-paint/timeline'
     | '/project/$projectId'
     | '/safety/acknowledgements'
     | '/safety/first-aid'
     | '/safety/sds'
     | '/share/$token'
     | '/messages/'
+    | '/national-paint/'
     | '/safety/'
     | '/safety/jha/$projectId'
     | '/safety/toolbox/$talkId'
@@ -272,6 +378,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   LoginRoute: typeof LoginRoute
   MapRoute: typeof MapRoute
+  NationalPaintRoute: typeof NationalPaintRouteWithChildren
   ProjectsRoute: typeof ProjectsRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   JobJobIdRoute: typeof JobJobIdRoute
@@ -320,6 +427,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MapRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/national-paint': {
+      id: '/national-paint'
+      path: '/national-paint'
+      fullPath: '/national-paint'
+      preLoaderRoute: typeof NationalPaintRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/projects': {
       id: '/projects'
       path: '/projects'
@@ -361,6 +475,62 @@ declare module '@tanstack/react-router' {
       fullPath: '/messages/new'
       preLoaderRoute: typeof MessagesNewRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/national-paint/': {
+      id: '/national-paint/'
+      path: '/'
+      fullPath: '/national-paint/'
+      preLoaderRoute: typeof NationalPaintIndexRouteImport
+      parentRoute: typeof NationalPaintRoute
+    }
+    '/national-paint/capacity': {
+      id: '/national-paint/capacity'
+      path: '/capacity'
+      fullPath: '/national-paint/capacity'
+      preLoaderRoute: typeof NationalPaintCapacityRouteImport
+      parentRoute: typeof NationalPaintRoute
+    }
+    '/national-paint/cmic': {
+      id: '/national-paint/cmic'
+      path: '/cmic'
+      fullPath: '/national-paint/cmic'
+      preLoaderRoute: typeof NationalPaintCmicRouteImport
+      parentRoute: typeof NationalPaintRoute
+    }
+    '/national-paint/dashboard': {
+      id: '/national-paint/dashboard'
+      path: '/dashboard'
+      fullPath: '/national-paint/dashboard'
+      preLoaderRoute: typeof NationalPaintDashboardRouteImport
+      parentRoute: typeof NationalPaintRoute
+    }
+    '/national-paint/finance': {
+      id: '/national-paint/finance'
+      path: '/finance'
+      fullPath: '/national-paint/finance'
+      preLoaderRoute: typeof NationalPaintFinanceRouteImport
+      parentRoute: typeof NationalPaintRoute
+    }
+    '/national-paint/import': {
+      id: '/national-paint/import'
+      path: '/import'
+      fullPath: '/national-paint/import'
+      preLoaderRoute: typeof NationalPaintImportRouteImport
+      parentRoute: typeof NationalPaintRoute
+    }
+    '/national-paint/people': {
+      id: '/national-paint/people'
+      path: '/people'
+      fullPath: '/national-paint/people'
+      preLoaderRoute: typeof NationalPaintPeopleRouteImport
+      parentRoute: typeof NationalPaintRoute
+    }
+    '/national-paint/timeline': {
+      id: '/national-paint/timeline'
+      path: '/timeline'
+      fullPath: '/national-paint/timeline'
+      preLoaderRoute: typeof NationalPaintTimelineRouteImport
+      parentRoute: typeof NationalPaintRoute
     }
     '/project/$projectId': {
       id: '/project/$projectId'
@@ -435,11 +605,38 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface NationalPaintRouteChildren {
+  NationalPaintCapacityRoute: typeof NationalPaintCapacityRoute
+  NationalPaintCmicRoute: typeof NationalPaintCmicRoute
+  NationalPaintDashboardRoute: typeof NationalPaintDashboardRoute
+  NationalPaintFinanceRoute: typeof NationalPaintFinanceRoute
+  NationalPaintImportRoute: typeof NationalPaintImportRoute
+  NationalPaintPeopleRoute: typeof NationalPaintPeopleRoute
+  NationalPaintTimelineRoute: typeof NationalPaintTimelineRoute
+  NationalPaintIndexRoute: typeof NationalPaintIndexRoute
+}
+
+const NationalPaintRouteChildren: NationalPaintRouteChildren = {
+  NationalPaintCapacityRoute: NationalPaintCapacityRoute,
+  NationalPaintCmicRoute: NationalPaintCmicRoute,
+  NationalPaintDashboardRoute: NationalPaintDashboardRoute,
+  NationalPaintFinanceRoute: NationalPaintFinanceRoute,
+  NationalPaintImportRoute: NationalPaintImportRoute,
+  NationalPaintPeopleRoute: NationalPaintPeopleRoute,
+  NationalPaintTimelineRoute: NationalPaintTimelineRoute,
+  NationalPaintIndexRoute: NationalPaintIndexRoute,
+}
+
+const NationalPaintRouteWithChildren = NationalPaintRoute._addFileChildren(
+  NationalPaintRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRoute,
   LoginRoute: LoginRoute,
   MapRoute: MapRoute,
+  NationalPaintRoute: NationalPaintRouteWithChildren,
   ProjectsRoute: ProjectsRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   JobJobIdRoute: JobJobIdRoute,

@@ -13,6 +13,7 @@ export const PERMISSIONS = [
   { key: "can_view_safety", label: "View safety" },
   { key: "can_manage_safety", label: "Manage safety" },
   { key: "can_send_messages", label: "Send messages" },
+  { key: "can_manage_national_paint", label: "National Paint" },
 ] as const;
 
 export type PermissionKey = (typeof PERMISSIONS)[number]["key"];

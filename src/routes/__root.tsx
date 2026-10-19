@@ -7,7 +7,15 @@ import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { CompanyProvider } from "@/lib/company-context";
 import { useMyRoles } from "@/lib/roles";
 import { Toaster } from "@/components/ui/sonner";
-import { MapPin, LogOut, FolderKanban, Shield, House, MessageSquare } from "lucide-react";
+import {
+  MapPin,
+  LogOut,
+  FolderKanban,
+  Shield,
+  House,
+  MessageSquare,
+  PaintRoller,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useUnreadMessageCount } from "@/lib/use-unread-messages";
@@ -68,7 +76,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function Header() {
   const { user, signOut } = useAuth();
-  const { isAdmin } = useMyRoles();
+  const { isAdmin, can } = useMyRoles();
   const unread = useUnreadMessageCount();
   if (!user) return null;
   return (
@@ -90,6 +98,18 @@ function Header() {
           <Link to="/messages" className="rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary" activeProps={{ className: "bg-secondary text-primary font-medium" }}>
             <span className="flex items-center gap-1.5"><MessageSquare className="h-4 w-4" /><span className="hidden sm:inline">Messages</span>{unread > 0 && <Badge variant="destructive" className="px-1.5 py-0" aria-label={`${unread} unread messages`}>{unread}</Badge>}</span>
           </Link>
+          {can.can_manage_national_paint && (
+            <Link
+              to="/national-paint"
+              className="rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary"
+              activeProps={{ className: "bg-secondary text-primary font-medium" }}
+            >
+              <span className="flex items-center gap-1.5">
+                <PaintRoller className="h-4 w-4" />
+                <span className="hidden sm:inline">National Paint</span>
+              </span>
+            </Link>
+          )}
           {isAdmin && (
             <Link to="/admin" className="rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary" activeProps={{ className: "bg-secondary text-primary font-medium" }}>
               <span className="flex items-center gap-1.5"><Shield className="h-4 w-4" /><span className="hidden sm:inline">Admin</span></span>
