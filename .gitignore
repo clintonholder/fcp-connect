@@ -37,3 +37,7 @@ dist-ssr
 
 # Supabase CLI link state (machine-specific)
 supabase/.temp/
+
+# Workbooks may hold real company data
+*.xlsm
+*.xlsx

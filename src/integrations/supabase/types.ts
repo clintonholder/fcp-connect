@@ -58,6 +58,7 @@ export type Database = {
           can_delete_projects: boolean
           can_edit_photos: boolean
           can_edit_projects: boolean
+          can_manage_national_paint: boolean
           can_manage_safety: boolean
           can_send_messages: boolean
           can_view_safety: boolean
@@ -76,6 +77,7 @@ export type Database = {
           can_delete_projects?: boolean
           can_edit_photos?: boolean
           can_edit_projects?: boolean
+          can_manage_national_paint?: boolean
           can_manage_safety?: boolean
           can_send_messages?: boolean
           can_view_safety?: boolean
@@ -94,6 +96,7 @@ export type Database = {
           can_delete_projects?: boolean
           can_edit_photos?: boolean
           can_edit_projects?: boolean
+          can_manage_national_paint?: boolean
           can_manage_safety?: boolean
           can_send_messages?: boolean
           can_view_safety?: boolean
@@ -675,6 +678,248 @@ export type Database = {
         }
         Relationships: []
       }
+      np_budget_targets: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          month: number
+          updated_at: string
+          year: number
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          month: number
+          updated_at?: string
+          year: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          month?: number
+          updated_at?: string
+          year?: number
+        }
+        Relationships: []
+      }
+      np_contractors: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      np_crew_members: {
+        Row: {
+          created_at: string
+          crew_id: string
+          id: string
+          name: string
+          role: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          crew_id: string
+          id?: string
+          name: string
+          role: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          crew_id?: string
+          id?: string
+          name?: string
+          role?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "np_crew_members_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "np_crews"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      np_crews: {
+        Row: {
+          contractor_id: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          owner_name: string | null
+          crew_type: string | null
+          size: number | null
+          updated_at: string
+        }
+        Insert: {
+          contractor_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          owner_name?: string | null
+          crew_type?: string | null
+          size?: number | null
+          updated_at?: string
+        }
+        Update: {
+          contractor_id?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          owner_name?: string | null
+          crew_type?: string | null
+          size?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "np_crews_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "np_contractors"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      np_pms: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      np_projects: {
+        Row: {
+          address: string | null
+          bonus_eligible: boolean
+          city: string | null
+          cmic_job_number: string | null
+          contractor_id: string | null
+          crew_id: string | null
+          created_at: string
+          deadline: string | null
+          est_end: string | null
+          est_revenue: number | null
+          est_start: string | null
+          exclude_revenue: boolean
+          id: string
+          name: string
+          notes: string | null
+          pm_id: string | null
+          progress: number | null
+          state: string | null
+          status: string
+          tag: string | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          bonus_eligible?: boolean
+          city?: string | null
+          cmic_job_number?: string | null
+          contractor_id?: string | null
+          crew_id?: string | null
+          created_at?: string
+          deadline?: string | null
+          est_end?: string | null
+          est_revenue?: number | null
+          est_start?: string | null
+          exclude_revenue?: boolean
+          id?: string
+          name: string
+          notes?: string | null
+          pm_id?: string | null
+          progress?: number | null
+          state?: string | null
+          status?: string
+          tag?: string | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          bonus_eligible?: boolean
+          city?: string | null
+          cmic_job_number?: string | null
+          contractor_id?: string | null
+          crew_id?: string | null
+          created_at?: string
+          deadline?: string | null
+          est_end?: string | null
+          est_revenue?: number | null
+          est_start?: string | null
+          exclude_revenue?: boolean
+          id?: string
+          name?: string
+          notes?: string | null
+          pm_id?: string | null
+          progress?: number | null
+          state?: string | null
+          status?: string
+          tag?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "np_projects_contractor_id_fkey"
+            columns: ["contractor_id"]
+            isOneToOne: false
+            referencedRelation: "np_contractors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "np_projects_crew_id_fkey"
+            columns: ["crew_id"]
+            isOneToOne: false
+            referencedRelation: "np_crews"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "np_projects_pm_id_fkey"
+            columns: ["pm_id"]
+            isOneToOne: false
+            referencedRelation: "np_pms"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       photos: {
         Row: {
           accuracy: number | null
@@ -1224,6 +1469,7 @@ export type Database = {
         Returns: Database["public"]["Enums"]["company_role"]
       }
       get_shared_job: { Args: { _token: string }; Returns: Json }
+      np_import_workbook: { Args: { _payload: Json }; Returns: Json }
       has_perm: { Args: { _perm: string; _user_id: string }; Returns: boolean }
       has_role: {
         Args: { _role_name: string; _user_id: string }

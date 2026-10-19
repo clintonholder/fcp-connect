@@ -267,7 +267,8 @@ export const adminSaveRole = createServerFn({ method: "POST" })
     permissions?: Partial<Record<
       "can_add_projects" | "can_edit_projects" | "can_delete_projects"
       | "can_add_photos" | "can_edit_photos" | "can_delete_photos"
-      | "can_view_safety" | "can_manage_safety" | "can_send_messages", boolean>>;
+      | "can_view_safety" | "can_manage_safety" | "can_send_messages"
+      | "can_manage_national_paint", boolean>>;
   }) => {
     if (!d.name?.trim()) throw new Error("A role name is required");
     return { ...d, name: d.name.trim() };
@@ -279,6 +280,7 @@ export const adminSaveRole = createServerFn({ method: "POST" })
       "can_add_projects", "can_edit_projects", "can_delete_projects",
       "can_add_photos", "can_edit_photos", "can_delete_photos",
       "can_view_safety", "can_manage_safety", "can_send_messages",
+      "can_manage_national_paint",
     ] as const;
     const perms: Record<string, boolean> = {};
     for (const k of keys) {
@@ -558,6 +560,7 @@ const PERM_COLS = [
   "can_view_safety",
   "can_manage_safety",
   "can_send_messages",
+  "can_manage_national_paint",
 ] as const;
 
 /** proxy_sessions is not in the generated types, so reach it through a loose table handle. */
