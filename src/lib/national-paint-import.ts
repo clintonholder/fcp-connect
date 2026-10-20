@@ -123,7 +123,7 @@ function itemText(el: Element): string {
   return text;
 }
 
-type Cells = Map<number, Map<number, unknown>>;
+export type Cells = Map<number, Map<number, unknown>>;
 
 function readCells(sheetDoc: Document, shared: string[]): Cells {
   const cells: Cells = new Map();
@@ -149,9 +149,8 @@ function readCells(sheetDoc: Document, shared: string[]): Cells {
   return cells;
 }
 
-/** Reads the three tables and the budget row from a workbook. Missing parts become errors. */
-export async function readWorkbook(file: Blob): Promise<WorkbookData> {
-  const zip = await JSZip.loadAsync(await file.arrayBuffer());
+/** The workbook part reader, sheet name to part path, and shared strings. Null when not a workbook. */
+async function openWorkbook(zip: JSZip) {
   const text = async (path: string) => {
     const f = zip.file(path);
     return f ? await f.async("string") : null;
@@ -159,7 +158,7 @@ export async function readWorkbook(file: Blob): Promise<WorkbookData> {
 
   const workbookXml = await text("xl/workbook.xml");
   const workbookRels = await text("xl/_rels/workbook.xml.rels");
-  if (!workbookXml || !workbookRels) throw new Error("This is not an Excel workbook.");
+  if (!workbookXml || !workbookRels) return null;
 
   const relTargets = new Map<string, string>();
   for (const r of Array.from(parseXml(workbookRels).getElementsByTagName("Relationship"))) {
@@ -176,6 +175,31 @@ export async function readWorkbook(file: Blob): Promise<WorkbookData> {
   const shared = sharedXml
     ? Array.from(parseXml(sharedXml).getElementsByTagName("si")).map(itemText)
     : [];
+  return { text, sheets, shared };
+}
+
+/** Cell grid (row to column to value) of one named sheet. Throws a readable error. */
+export async function readSheetCells(file: Blob, sheetName: string): Promise<Cells> {
+  const unreadable = "This file is not a readable .xlsx workbook.";
+  let book: Awaited<ReturnType<typeof openWorkbook>>;
+  try {
+    book = await openWorkbook(await JSZip.loadAsync(await file.arrayBuffer()));
+  } catch {
+    throw new Error(unreadable);
+  }
+  if (!book) throw new Error(unreadable);
+  const sheetPath = book.sheets.get(sheetName);
+  if (!sheetPath) throw new Error(`Sheet "${sheetName}" was not found.`);
+  const xml = await book.text(sheetPath);
+  if (!xml) throw new Error(unreadable);
+  return readCells(parseXml(xml), book.shared);
+}
+
+/** Reads the three tables and the budget row from a workbook. Missing parts become errors. */
+export async function readWorkbook(file: Blob): Promise<WorkbookData> {
+  const book = await openWorkbook(await JSZip.loadAsync(await file.arrayBuffer()));
+  if (!book) throw new Error("This is not an Excel workbook.");
+  const { text, sheets, shared } = book;
 
   // Tables by name, with the sheet that links to each one.
   const tableSheet = new Map<string, { sheet: string; doc: Document }>();

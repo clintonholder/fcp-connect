@@ -139,9 +139,9 @@ Run all four; each must pass before a build is READY.
   `proxy_sessions` row for that user. No receipt is recorded: the client skips `markMessageRead`
   and the restrictive policy refuses it.
 - National Paint is gated by the `manage_national_paint` permission (`app_roles.can_manage_national_paint`):
-  one level covering view, edit and finance, off by default, always on for admins. Its six `np_*`
+  one level covering view, edit and finance, off by default, always on for admins. Its eight `np_*`
   tables (`np_pms`, `np_contractors`, `np_crews`, `np_crew_members`, `np_projects`,
-  `np_budget_targets`) use permission RLS plus the restrictive View As policies. National Paint
+  `np_budget_targets`, `np_cmic_jobs`, `np_cmic_cost_lines`) use permission RLS plus the restrictive View As policies. National Paint
   writes go through `src/lib/national-paint.functions.ts`. The workbook import is admin-only: the
   .xlsm is parsed in the browser (`src/lib/national-paint-import.ts`), applied atomically by the
   `np_import_workbook` function and audited as `national_paint_imported`. People and crews
@@ -168,6 +168,14 @@ Run all four; each must pass before a build is READY.
   Reported where entered, else Scheduled. `np_budget_targets.reported_revenue` (NULL = not reported)
   is saved only by `saveNpMonthlyTargets` under the caller's RLS and audited as
   `national_paint_budget_saved`; a workbook re-import resets the year's reported values to blank.
+  CMiC uploads (`/national-paint/cmic`) need `manage_national_paint`. The two CMiC exports are parsed
+  in the browser (`src/lib/national-paint-cmic.ts`) and replace one report's rows atomically
+  through `np_replace_cmic`; they never touch `np_projects`, and are audited as
+  `national_paint_cmic_uploaded` with counts only. Matching rules live in
+  `src/lib/national-paint-cmic-match.ts` (the workbook "CMiC Job #" and "JobCost Match" formulas,
+  plus the ranking). Matches are saved only by `setNpProjectCmicJob` (audited as
+  `national_paint_cmic_match_set`). A workbook re-import still replaces `cmic_job_number` from the
+  workbook.
   Real National Paint data,
   workbooks and CMiC exports must never be committed; tests use made-up rows.
 - New pure helpers in `src/lib/` get a colocated `*.test.ts`. Tests must not hit the
