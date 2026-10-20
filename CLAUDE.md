@@ -175,7 +175,12 @@ Run all four; each must pass before a build is READY.
   `src/lib/national-paint-cmic-match.ts` (the workbook "CMiC Job #" and "JobCost Match" formulas,
   plus the ranking). Matches are saved only by `setNpProjectCmicJob` (audited as
   `national_paint_cmic_match_set`). A workbook re-import still replaces `cmic_job_number` from the
-  workbook.
+  workbook. The Finance (`/national-paint/finance`) and Project Analysis (`/national-paint/analysis`)
+  pages are read-only and computed in the browser from `np_cmic_jobs`, `np_cmic_cost_lines`,
+  `np_projects` and `np_pms` under the caller's RLS; their rules (workbook Project Budget & Cost
+  Y..AL and Project Analysis) live in `src/lib/national-paint-finance.ts`. The analysis page loads
+  only the selected job's cost lines, and the PM shown is the matched project's PM, else the CMiC
+  contact code.
   Real National Paint data,
   workbooks and CMiC exports must never be committed; tests use made-up rows.
 - New pure helpers in `src/lib/` get a colocated `*.test.ts`. Tests must not hit the
