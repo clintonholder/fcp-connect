@@ -708,6 +708,185 @@ export type Database = {
         }
         Relationships: []
       }
+      np_cmic_cost_lines: {
+        Row: {
+          billed_to_date: number | null
+          budget_variance: number | null
+          budgeted_revenue: number | null
+          category_code: string | null
+          category_name: string | null
+          change_order_amount: number | null
+          committed_remaining: number | null
+          committed_to_date: number | null
+          cost_code: string | null
+          cost_code_name: string | null
+          current_budgeted_cost: number | null
+          division_code: string | null
+          division_name: string | null
+          id: number
+          job_id: string
+          original_budgeted_cost: number | null
+          projected_cost: number | null
+          spent_against_commitments: number | null
+          spent_outside_commitments: number | null
+          spent_to_date: number | null
+          yet_to_buy: number | null
+        }
+        Insert: {
+          billed_to_date?: number | null
+          budget_variance?: number | null
+          budgeted_revenue?: number | null
+          category_code?: string | null
+          category_name?: string | null
+          change_order_amount?: number | null
+          committed_remaining?: number | null
+          committed_to_date?: number | null
+          cost_code?: string | null
+          cost_code_name?: string | null
+          current_budgeted_cost?: number | null
+          division_code?: string | null
+          division_name?: string | null
+          id?: number
+          job_id: string
+          original_budgeted_cost?: number | null
+          projected_cost?: number | null
+          spent_against_commitments?: number | null
+          spent_outside_commitments?: number | null
+          spent_to_date?: number | null
+          yet_to_buy?: number | null
+        }
+        Update: {
+          billed_to_date?: number | null
+          budget_variance?: number | null
+          budgeted_revenue?: number | null
+          category_code?: string | null
+          category_name?: string | null
+          change_order_amount?: number | null
+          committed_remaining?: number | null
+          committed_to_date?: number | null
+          cost_code?: string | null
+          cost_code_name?: string | null
+          current_budgeted_cost?: number | null
+          division_code?: string | null
+          division_name?: string | null
+          id?: number
+          job_id?: string
+          original_budgeted_cost?: number | null
+          projected_cost?: number | null
+          spent_against_commitments?: number | null
+          spent_outside_commitments?: number | null
+          spent_to_date?: number | null
+          yet_to_buy?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "np_cmic_cost_lines_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "np_cmic_jobs"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      np_cmic_jobs: {
+        Row: {
+          actual_end: string | null
+          actual_start: string | null
+          awarded_contract_value: number | null
+          backlog: number | null
+          bill_pct: number | null
+          billed_to_date: number | null
+          billing_remaining: number | null
+          company_code: string | null
+          company_name: string | null
+          contact_code: string | null
+          cost_remaining: number | null
+          created_at: string
+          current_budget: number | null
+          current_budgeted_revenue: number | null
+          customer_name: string | null
+          earned_revenue: number | null
+          est_end: string | null
+          est_start: string | null
+          estimated_profit: number | null
+          id: string
+          job_code: string
+          job_name: string | null
+          job_start: string | null
+          original_budget: number | null
+          pct_complete: number | null
+          profit_pct: number | null
+          projected_total_costs: number | null
+          source: string
+          spent_to_date: number | null
+          status: string | null
+        }
+        Insert: {
+          actual_end?: string | null
+          actual_start?: string | null
+          awarded_contract_value?: number | null
+          backlog?: number | null
+          bill_pct?: number | null
+          billed_to_date?: number | null
+          billing_remaining?: number | null
+          company_code?: string | null
+          company_name?: string | null
+          contact_code?: string | null
+          cost_remaining?: number | null
+          created_at?: string
+          current_budget?: number | null
+          current_budgeted_revenue?: number | null
+          customer_name?: string | null
+          earned_revenue?: number | null
+          est_end?: string | null
+          est_start?: string | null
+          estimated_profit?: number | null
+          id?: string
+          job_code: string
+          job_name?: string | null
+          job_start?: string | null
+          original_budget?: number | null
+          pct_complete?: number | null
+          profit_pct?: number | null
+          projected_total_costs?: number | null
+          source: string
+          spent_to_date?: number | null
+          status?: string | null
+        }
+        Update: {
+          actual_end?: string | null
+          actual_start?: string | null
+          awarded_contract_value?: number | null
+          backlog?: number | null
+          bill_pct?: number | null
+          billed_to_date?: number | null
+          billing_remaining?: number | null
+          company_code?: string | null
+          company_name?: string | null
+          contact_code?: string | null
+          cost_remaining?: number | null
+          created_at?: string
+          current_budget?: number | null
+          current_budgeted_revenue?: number | null
+          customer_name?: string | null
+          earned_revenue?: number | null
+          est_end?: string | null
+          est_start?: string | null
+          estimated_profit?: number | null
+          id?: string
+          job_code?: string
+          job_name?: string | null
+          job_start?: string | null
+          original_budget?: number | null
+          pct_complete?: number | null
+          profit_pct?: number | null
+          projected_total_costs?: number | null
+          source?: string
+          spent_to_date?: number | null
+          status?: string | null
+        }
+        Relationships: []
+      }
       np_contractors: {
         Row: {
           created_at: string
@@ -1473,6 +1652,7 @@ export type Database = {
       }
       get_shared_job: { Args: { _token: string }; Returns: Json }
       np_import_workbook: { Args: { _payload: Json }; Returns: Json }
+      np_replace_cmic: { Args: { _payload: Json }; Returns: Json }
       has_perm: { Args: { _perm: string; _user_id: string }; Returns: boolean }
       has_role: {
         Args: { _role_name: string; _user_id: string }

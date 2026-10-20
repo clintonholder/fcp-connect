@@ -14,6 +14,13 @@ import {
 import { NP_STATUSES } from "@/lib/national-paint-import";
 import { validateProject } from "@/lib/national-paint-projects";
 import { validateMonthlyTargets } from "@/lib/national-paint-revenue";
+import {
+  CMIC_LINE_FIELDS,
+  CMIC_MAX_BUDGET_JOBS,
+  CMIC_MAX_COST_LINES,
+  CMIC_MAX_SUMMARY_JOBS,
+  checkPayloadSize,
+} from "@/lib/national-paint-cmic";
 
 const STATUSES = ["Potential", "Verbal Award", "Upcoming", "Scheduled", "In Progress", "Completed"];
 const MAX_PROJECTS = 5000;
@@ -620,4 +627,187 @@ export const saveNpMonthlyTargets = createServerFn({ method: "POST" })
       { year: data.year, changes },
     );
     return { changed: changes.length };
+  });
+
+// ---- CMiC ----
+
+type CmicUploadPart = {
+  fileName: string;
+  skippedRows: number;
+  problemCount: number;
+  payload: { jobs: Record<string, unknown>[] };
+};
+type CmicUploadInput = { budgetCost?: CmicUploadPart; costSummaries?: CmicUploadPart };
+
+const BUDGET_TEXT = ["job_name", "status", "customer_name", "contact_code"];
+const BUDGET_DATES = ["est_start", "est_end", "actual_start", "actual_end"];
+const BUDGET_NUMBERS = [
+  "awarded_contract_value",
+  "current_budgeted_revenue",
+  "billed_to_date",
+  "original_budget",
+  "current_budget",
+  "projected_total_costs",
+  "spent_to_date",
+  "estimated_profit",
+  "profit_pct",
+  "pct_complete",
+  "bill_pct",
+  "billing_remaining",
+  "cost_remaining",
+  "earned_revenue",
+  "backlog",
+];
+const SUMMARY_TEXT = ["job_name", "status", "company_code", "company_name"];
+const LINE_TEXT_COUNT = 6;
+const invalidCmic = "Invalid CMiC data";
+
+const isText = (v: unknown) => v === null || (typeof v === "string" && v.length <= 300);
+const isNumber = (v: unknown) => v === null || (typeof v === "number" && Number.isFinite(v));
+const isDate = (v: unknown) =>
+  v === null || (typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v));
+
+function validateCmicPart(
+  part: CmicUploadPart | undefined,
+  kind: "budget_cost" | "cost_summaries",
+): CmicUploadPart | undefined {
+  if (part === undefined) return undefined;
+  const jobs = part?.payload?.jobs;
+  if (typeof part.fileName !== "string" || !Array.isArray(jobs)) throw new Error(invalidCmic);
+  if (!Number.isInteger(part.skippedRows) || !Number.isInteger(part.problemCount)) {
+    throw new Error(invalidCmic);
+  }
+  const maxJobs = kind === "budget_cost" ? CMIC_MAX_BUDGET_JOBS : CMIC_MAX_SUMMARY_JOBS;
+  if (jobs.length > maxJobs) throw new Error(`This export has more than ${maxJobs} jobs.`);
+  let lines = 0;
+  for (const job of jobs) {
+    const code = job?.job_code;
+    if (typeof code !== "string" || !code.trim() || code.length > 100) throw new Error(invalidCmic);
+    if (kind === "budget_cost") {
+      const ok =
+        BUDGET_TEXT.every((k) => isText(job[k] ?? null)) &&
+        BUDGET_DATES.every((k) => isDate(job[k] ?? null)) &&
+        BUDGET_NUMBERS.every((k) => isNumber(job[k] ?? null));
+      if (!ok) throw new Error(invalidCmic);
+      continue;
+    }
+    const jobLines = job.lines;
+    if (
+      !SUMMARY_TEXT.every((k) => isText(job[k] ?? null)) ||
+      !isDate(job.job_start ?? null) ||
+      !Array.isArray(jobLines)
+    ) {
+      throw new Error(invalidCmic);
+    }
+    lines += jobLines.length;
+    if (lines > CMIC_MAX_COST_LINES)
+      throw new Error(`This export has more than ${CMIC_MAX_COST_LINES} cost lines.`);
+    for (const line of jobLines) {
+      if (!Array.isArray(line) || line.length !== CMIC_LINE_FIELDS.length) {
+        throw new Error(invalidCmic);
+      }
+      line.forEach((v, i) => {
+        if (!(i < LINE_TEXT_COUNT ? isText(v) : isNumber(v))) throw new Error(invalidCmic);
+      });
+    }
+  }
+  return part;
+}
+
+function validateCmicUpload(d: CmicUploadInput): CmicUploadInput {
+  if (!d?.budgetCost && !d?.costSummaries) throw new Error("Choose at least one CMiC file");
+  const budgetCost = validateCmicPart(d.budgetCost, "budget_cost");
+  const costSummaries = validateCmicPart(d.costSummaries, "cost_summaries");
+  const out = { budgetCost, costSummaries };
+  checkPayloadSize(out);
+  return out;
+}
+
+/** Replaces the CMiC job data of the uploaded reports. Never touches np_projects. */
+export const uploadNpCmic = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(validateCmicUpload)
+  .handler(async ({ data, context }) => {
+    await assertManageNationalPaint(context);
+    const payload: Record<string, unknown> = {};
+    if (data.budgetCost) payload.budget_cost = data.budgetCost.payload;
+    if (data.costSummaries) payload.cost_summaries = data.costSummaries.payload;
+    const { data: counts, error } = await context.supabase.rpc("np_replace_cmic", {
+      _payload: payload as never,
+    });
+    if (error) throw new Error(error.message);
+    const result = counts as {
+      budget_jobs: number | null;
+      cost_summary_jobs: number | null;
+      cost_lines: number | null;
+    };
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    await supabaseAdmin.from("audit_log").insert({
+      actor_id: context.userId,
+      action: "national_paint_cmic_uploaded",
+      target_type: "national_paint",
+      target_id: null,
+      details: {
+        budget_cost: data.budgetCost
+          ? {
+              file_name: data.budgetCost.fileName,
+              jobs: result.budget_jobs,
+              skipped_rows: data.budgetCost.skippedRows,
+              problems: data.budgetCost.problemCount,
+            }
+          : null,
+        cost_summaries: data.costSummaries
+          ? {
+              file_name: data.costSummaries.fileName,
+              jobs: result.cost_summary_jobs,
+              cost_lines: result.cost_lines,
+              skipped_rows: data.costSummaries.skippedRows,
+              problems: data.costSummaries.problemCount,
+            }
+          : null,
+      } as never,
+    });
+    return result;
+  });
+
+/** Saves (or clears) a project's confirmed CMiC job code. */
+export const setNpProjectCmicJob = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: { id: string; jobCode: string | null }) => {
+    const jobCode = typeof d?.jobCode === "string" ? d.jobCode.trim() : null;
+    if (jobCode !== null && jobCode.length > 100) throw new Error("The job code is too long");
+    return { id: requireId(d?.id, "project"), jobCode: jobCode || null };
+  })
+  .handler(async ({ data, context }) => {
+    await assertManageNationalPaint(context);
+    if (data.jobCode) {
+      const { data: jobs, error: jobError } = await context.supabase
+        .from("np_cmic_jobs")
+        .select("id")
+        .eq("job_code", data.jobCode)
+        .limit(1);
+      if (jobError) throw new Error(jobError.message);
+      if (!jobs?.length) throw new Error("This job is not in the uploaded CMiC data");
+    }
+    const { data: current, error: readError } = await context.supabase
+      .from("np_projects")
+      .select("name, cmic_job_number")
+      .eq("id", data.id)
+      .maybeSingle();
+    if (readError) throw new Error(readError.message);
+    if (!current) throw new Error(projectGone);
+    if ((current.cmic_job_number ?? null) === data.jobCode) return { id: data.id };
+    const { data: rows, error } = await context.supabase
+      .from("np_projects")
+      .update({ cmic_job_number: data.jobCode })
+      .eq("id", data.id)
+      .select("id");
+    if (error) throw new Error(error.message);
+    if (!rows?.length) throw new Error(projectGone);
+    await audit(context.userId, "national_paint_cmic_match_set", "np_project", data.id, {
+      name: current.name,
+      from: current.cmic_job_number,
+      to: data.jobCode,
+    });
+    return { id: data.id };
   });
