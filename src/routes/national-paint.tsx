@@ -62,6 +62,14 @@ function NationalPaintLayout() {
         <Link to="/national-paint/finance" className={linkClass} activeProps={activeProps}>
           Finance
         </Link>
+        <Link
+          to="/national-paint/analysis"
+          search={{ job: undefined }}
+          className={linkClass}
+          activeProps={activeProps}
+        >
+          Project Analysis
+        </Link>
         <Link to="/national-paint/cmic" className={linkClass} activeProps={activeProps}>
           CMiC
         </Link>

@@ -22,6 +22,7 @@ import {
   type CmicMatchJob,
   type CmicSuggestion,
 } from "@/lib/national-paint-cmic-match";
+import { readAll } from "@/lib/national-paint-read";
 import { setNpProjectCmicJob, uploadNpCmic } from "@/lib/national-paint.functions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -56,7 +57,6 @@ import {
   CommandList,
 } from "@/components/ui/command";
 
-const PAGE = 1000;
 const JOBS_KEY = ["np-cmic-jobs"];
 const PROJECTS_KEY = ["np-cmic-projects"];
 const LINES_KEY = ["np-cmic-cost-lines"];
@@ -74,22 +74,6 @@ type ProjectRow = {
 
 function errMsg(e: unknown) {
   return e instanceof Error ? e.message : "Something went wrong";
-}
-
-/** PostgREST returns at most 1,000 rows per request, so read in blocks until a short page. */
-async function readAll<T>(
-  page: (
-    from: number,
-    to: number,
-  ) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
-): Promise<T[]> {
-  const out: T[] = [];
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await page(from, from + PAGE - 1);
-    if (error) throw new Error(error.message);
-    out.push(...(data ?? []));
-    if ((data?.length ?? 0) < PAGE) return out;
-  }
 }
 
 const loadJobs = () =>

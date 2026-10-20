@@ -21,6 +21,7 @@ import { Route as MessagesIndexRouteImport } from './routes/messages.index'
 import { Route as MessagesMessageIdRouteImport } from './routes/messages.$messageId'
 import { Route as MessagesNewRouteImport } from './routes/messages.new'
 import { Route as NationalPaintIndexRouteImport } from './routes/national-paint.index'
+import { Route as NationalPaintAnalysisRouteImport } from './routes/national-paint.analysis'
 import { Route as NationalPaintCapacityRouteImport } from './routes/national-paint.capacity'
 import { Route as NationalPaintCmicRouteImport } from './routes/national-paint.cmic'
 import { Route as NationalPaintDashboardRouteImport } from './routes/national-paint.dashboard'
@@ -98,6 +99,11 @@ const MessagesNewRoute = MessagesNewRouteImport.update({
 const NationalPaintIndexRoute = NationalPaintIndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => NationalPaintRoute,
+} as any)
+const NationalPaintAnalysisRoute = NationalPaintAnalysisRouteImport.update({
+  id: '/analysis',
+  path: '/analysis',
   getParentRoute: () => NationalPaintRoute,
 } as any)
 const NationalPaintCapacityRoute = NationalPaintCapacityRouteImport.update({
@@ -202,6 +208,7 @@ export interface FileRoutesByFullPath {
   '/job/$jobId': typeof JobJobIdRoute
   '/messages/$messageId': typeof MessagesMessageIdRoute
   '/messages/new': typeof MessagesNewRoute
+  '/national-paint/analysis': typeof NationalPaintAnalysisRoute
   '/national-paint/capacity': typeof NationalPaintCapacityRoute
   '/national-paint/cmic': typeof NationalPaintCmicRoute
   '/national-paint/dashboard': typeof NationalPaintDashboardRoute
@@ -233,6 +240,7 @@ export interface FileRoutesByTo {
   '/job/$jobId': typeof JobJobIdRoute
   '/messages/$messageId': typeof MessagesMessageIdRoute
   '/messages/new': typeof MessagesNewRoute
+  '/national-paint/analysis': typeof NationalPaintAnalysisRoute
   '/national-paint/capacity': typeof NationalPaintCapacityRoute
   '/national-paint/cmic': typeof NationalPaintCmicRoute
   '/national-paint/dashboard': typeof NationalPaintDashboardRoute
@@ -266,6 +274,7 @@ export interface FileRoutesById {
   '/job/$jobId': typeof JobJobIdRoute
   '/messages/$messageId': typeof MessagesMessageIdRoute
   '/messages/new': typeof MessagesNewRoute
+  '/national-paint/analysis': typeof NationalPaintAnalysisRoute
   '/national-paint/capacity': typeof NationalPaintCapacityRoute
   '/national-paint/cmic': typeof NationalPaintCmicRoute
   '/national-paint/dashboard': typeof NationalPaintDashboardRoute
@@ -300,6 +309,7 @@ export interface FileRouteTypes {
     | '/job/$jobId'
     | '/messages/$messageId'
     | '/messages/new'
+    | '/national-paint/analysis'
     | '/national-paint/capacity'
     | '/national-paint/cmic'
     | '/national-paint/dashboard'
@@ -331,6 +341,7 @@ export interface FileRouteTypes {
     | '/job/$jobId'
     | '/messages/$messageId'
     | '/messages/new'
+    | '/national-paint/analysis'
     | '/national-paint/capacity'
     | '/national-paint/cmic'
     | '/national-paint/dashboard'
@@ -363,6 +374,7 @@ export interface FileRouteTypes {
     | '/job/$jobId'
     | '/messages/$messageId'
     | '/messages/new'
+    | '/national-paint/analysis'
     | '/national-paint/capacity'
     | '/national-paint/cmic'
     | '/national-paint/dashboard'
@@ -495,6 +507,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NationalPaintIndexRouteImport
       parentRoute: typeof NationalPaintRoute
     }
+    '/national-paint/analysis': {
+      id: '/national-paint/analysis'
+      path: '/analysis'
+      fullPath: '/national-paint/analysis'
+      preLoaderRoute: typeof NationalPaintAnalysisRouteImport
+      parentRoute: typeof NationalPaintRoute
+    }
     '/national-paint/capacity': {
       id: '/national-paint/capacity'
       path: '/capacity'
@@ -625,6 +644,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface NationalPaintRouteChildren {
+  NationalPaintAnalysisRoute: typeof NationalPaintAnalysisRoute
   NationalPaintCapacityRoute: typeof NationalPaintCapacityRoute
   NationalPaintCmicRoute: typeof NationalPaintCmicRoute
   NationalPaintDashboardRoute: typeof NationalPaintDashboardRoute
@@ -637,6 +657,7 @@ interface NationalPaintRouteChildren {
 }
 
 const NationalPaintRouteChildren: NationalPaintRouteChildren = {
+  NationalPaintAnalysisRoute: NationalPaintAnalysisRoute,
   NationalPaintCapacityRoute: NationalPaintCapacityRoute,
   NationalPaintCmicRoute: NationalPaintCmicRoute,
   NationalPaintDashboardRoute: NationalPaintDashboardRoute,
