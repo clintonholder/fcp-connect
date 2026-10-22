@@ -34,6 +34,8 @@ dist-ssr
 # Software factory runtime state (one folder per job)
 /factory/jobs/
 /factory/mode
+/factory/models.json
+/factory/__pycache__/
 
 # Supabase CLI link state (machine-specific)
 supabase/.temp/

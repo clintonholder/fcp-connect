@@ -53,6 +53,23 @@ takes effect on the next job.
 `/factory quick` and `/factory slow` write the word to `factory/mode` and
 confirm in one line. `/factory mode` reports the current value.
 
+## Models: per-agent model and effort
+
+`factory/models.json` in the main checkout is gitignored local state, written by
+the dashboard's Settings tab ("Agents deck"). It is a JSON object keyed by agent
+name (`spec-writer`, `builder`, `reviewer-security`, `reviewer-ux`, `reviewer-ui`,
+`reviewer-code`, `approver`), each value
+`{"model": "haiku|sonnet|opus|fable", "effort": "low|medium|high|xhigh|max"}`.
+`{}` or a missing agent means "use the agent file's default".
+
+**Every time you spawn an agent**, read `factory/models.json` right before the
+spawn. When that agent has an entry, pass its `model` and `effort` to the Agent
+call. A missing file, an unreadable or invalid file, or no entry for that agent
+means pass neither, so the agent file's own default applies. For an invalid file,
+say so in your one-line progress report. A change applies to the next agent you
+start, not to agents already running. Resuming the builder with `SendMessage`
+keeps the model it was started with.
+
 ## Parallel jobs
 
 Every job runs in its own git worktree on its own branch, so several jobs can run
@@ -77,6 +94,7 @@ state that never lands in a commit.
 
 ```
 <repo>/factory/backlog.md                      queue for /factory next
+<repo>/factory/models.json                     model and effort per agent (optional, set from the dashboard)
 <repo>/factory/jobs/<job-id>/job.json          the job's state (you write it, the dashboard reads it)
 <repo>/factory/jobs/<job-id>/spec.md
 <repo>/factory/jobs/<job-id>/build.md
@@ -133,10 +151,13 @@ gets `5102 + 10n`, appended as ` Port: <port>.`
    the user.
 3. **Spec.** Spawn `spec-writer` with the prompt
    `<paths> Feature: <feature, verbatim>`.
-   Wait for it to finish, then check that `spec.md` exists.
+   Read `factory/models.json` first and pass the `model` and `effort` set for
+   `spec-writer`, if any (see **Models**). Wait for it to finish, then check that
+   `spec.md` exists.
 4. **Build.** Set `stage: "build"`. Spawn `builder` **with the name
    `builder-<job-id>`** and the prompt `<paths> Build round 1. Port: <port>.`
-   Wait for it to finish, then go to **Build check**.
+   Read `factory/models.json` first and pass the `model` and `effort` set for
+   `builder`, if any. Wait for it to finish, then go to **Build check**.
 
 ### Build check
 
@@ -151,7 +172,8 @@ Read the first line of `build.md`.
    `factory/jobs/<job-id>/round-<N>/`.
 2. Spawn all four reviewers **in one message**, so they run in parallel. Each
    gets the prompt `<paths> Review round N.`, plus its port for `reviewer-ux`
-   and `reviewer-ui`.
+   and `reviewer-ui`. Read `factory/models.json` first and pass each reviewer
+   its own `model` and `effort`, if set (see **Models**).
 3. **WAIT FOR ALL.** Each time a reviewer finishes, read the first line of its
    file (`VERDICT: PASS` or `VERDICT: CHANGES`) and write that verdict to
    `job.json` straight away, so the dashboard chips fill in as they land. The
@@ -173,6 +195,8 @@ Read the first line of `build.md`.
 
 Set `stage: "approve"`. Read `factory/mode` and spawn `approver` with the prompt
 `<paths> Final round: N. Mode: <quick|slow>.`
+Read `factory/models.json` right before the spawn and pass the `model` and
+`effort` set for `approver`, if any.
 When it finishes, read the first line of `decision.md`:
 
 - `APPROVE`: go to **Merge** (only the approver in `quick` mode writes this).
@@ -236,7 +260,9 @@ The job must be in `needs-human`.
 2. Set `stage: "build"`.
 3. Spawn a fresh `builder` named `builder-<job-id>` with the prompt
    `<paths> Rework: read rework-<k>.md and address it, then update build.md for round N+1. Port: <port>.`
-   (`N` is the job's last round.) A rework run gets a fresh `MAX_RESUMES`.
+   (`N` is the job's last round.) Read `factory/models.json` first and pass the
+   `model` and `effort` set for `builder`, if any. A rework run gets a fresh
+   `MAX_RESUMES`.
 4. Continue from **Build check**, exactly like a new job.
 
 ## Reporting
