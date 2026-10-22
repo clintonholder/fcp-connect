@@ -5,23 +5,14 @@ import {
 import appCss from "../styles.css?url";
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { CompanyProvider } from "@/lib/company-context";
-import { useMyRoles } from "@/lib/roles";
 import { Toaster } from "@/components/ui/sonner";
-import {
-  MapPin,
-  LogOut,
-  FolderKanban,
-  Shield,
-  House,
-  MessageSquare,
-  PaintRoller,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { MessageSquare } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { useUnreadMessageCount } from "@/lib/use-unread-messages";
 import fcpLogo from "@/assets/fcp-logo.png.asset.json";
 import { ProxyProvider } from "@/lib/proxy-context";
 import { ViewAsBanner } from "@/components/ViewAsBanner";
+import { HeaderMenu } from "@/components/HeaderMenu";
 
 function NotFoundComponent() {
   return (
@@ -75,8 +66,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
 }
 
 function Header() {
-  const { user, signOut } = useAuth();
-  const { isAdmin, can } = useMyRoles();
+  const { user } = useAuth();
   const unread = useUnreadMessageCount();
   if (!user) return null;
   return (
@@ -86,38 +76,40 @@ function Header() {
           <img src={fcpLogo.url} alt="FCP Services" className="h-10 w-auto sm:h-12" />
         </Link>
         <nav className="flex items-center gap-1">
-          <Link to="/" className="rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary" activeOptions={{ exact: true }} activeProps={{ className: "bg-secondary text-primary font-medium" }}>
-            <span className="flex items-center gap-1.5"><House className="h-4 w-4" /><span className="hidden sm:inline">Home</span></span>
+          <Link
+            to="/projects"
+            className="hidden rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary sm:block"
+            activeProps={{ className: "bg-secondary text-primary font-medium" }}
+          >
+            Projects
           </Link>
-          <Link to="/projects" className="rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary" activeProps={{ className: "bg-secondary text-primary font-medium" }}>
-            <span className="flex items-center gap-1.5"><FolderKanban className="h-4 w-4" /><span className="hidden sm:inline">Projects</span></span>
+          <Link
+            to="/map"
+            className="hidden rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary sm:block"
+            activeProps={{ className: "bg-secondary text-primary font-medium" }}
+          >
+            Map
           </Link>
-          <Link to="/map" className="rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary" activeProps={{ className: "bg-secondary text-primary font-medium" }}>
-            <span className="flex items-center gap-1.5"><MapPin className="h-4 w-4" /><span className="hidden sm:inline">Map</span></span>
+          <Link
+            to="/messages"
+            aria-label="Messages"
+            className="rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary"
+            activeProps={{ className: "bg-secondary text-primary font-medium" }}
+          >
+            <span className="flex items-center gap-1.5">
+              <MessageSquare className="h-4 w-4" />
+              {unread > 0 && (
+                <Badge
+                  variant="destructive"
+                  className="px-1.5 py-0"
+                  aria-label={`${unread} unread messages`}
+                >
+                  {unread}
+                </Badge>
+              )}
+            </span>
           </Link>
-          <Link to="/messages" className="rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary" activeProps={{ className: "bg-secondary text-primary font-medium" }}>
-            <span className="flex items-center gap-1.5"><MessageSquare className="h-4 w-4" /><span className="hidden sm:inline">Messages</span>{unread > 0 && <Badge variant="destructive" className="px-1.5 py-0" aria-label={`${unread} unread messages`}>{unread}</Badge>}</span>
-          </Link>
-          {can.can_manage_national_paint && (
-            <Link
-              to="/national-paint"
-              className="rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary"
-              activeProps={{ className: "bg-secondary text-primary font-medium" }}
-            >
-              <span className="flex items-center gap-1.5">
-                <PaintRoller className="h-4 w-4" />
-                <span className="hidden sm:inline">National Paint</span>
-              </span>
-            </Link>
-          )}
-          {isAdmin && (
-            <Link to="/admin" className="rounded-md px-2 py-1.5 text-sm text-muted-foreground hover:bg-secondary hover:text-primary" activeProps={{ className: "bg-secondary text-primary font-medium" }}>
-              <span className="flex items-center gap-1.5"><Shield className="h-4 w-4" /><span className="hidden sm:inline">Admin</span></span>
-            </Link>
-          )}
-          <Button variant="ghost" size="sm" onClick={signOut} aria-label="Sign out" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
-            <LogOut className="h-4 w-4" />
-          </Button>
+          <HeaderMenu unread={unread} />
         </nav>
       </div>
     </header>
