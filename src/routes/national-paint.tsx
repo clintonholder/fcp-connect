@@ -1,6 +1,7 @@
-import { createFileRoute, Link, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { RequireAuth } from "@/components/RequireAuth";
 import { useMyRoles } from "@/lib/roles";
+import { nationalPaintPageLabel } from "@/lib/header-menu";
 
 export const Route = createFileRoute("/national-paint")({
   head: () => ({
@@ -22,6 +23,7 @@ const activeProps = { className: "bg-secondary text-primary font-medium" };
 
 function NationalPaintLayout() {
   const { can, isAdmin, loading } = useMyRoles();
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   if (loading) {
     return <div className="p-6 text-center text-muted-foreground">Loading…</div>;
   }
@@ -32,10 +34,19 @@ function NationalPaintLayout() {
       </main>
     );
   }
+  const pageLabel = nationalPaintPageLabel(pathname);
   return (
     <main className="mx-auto max-w-6xl px-3 py-6">
-      <h1 className="mb-4 text-2xl font-semibold">National Paint</h1>
-      <nav aria-label="National Paint" className="mb-6 flex flex-wrap gap-1 border-b pb-2">
+      <h1 className={`text-2xl font-semibold md:mb-4 ${pageLabel ? "" : "mb-4"}`}>
+        National Paint
+      </h1>
+      {pageLabel && (
+        <p className="mb-4 mt-0.5 text-sm text-muted-foreground md:hidden">{pageLabel}</p>
+      )}
+      <nav
+        aria-label="National Paint"
+        className="mb-6 hidden flex-wrap gap-1 border-b pb-2 md:flex"
+      >
         <Link
           to="/national-paint"
           className={linkClass}

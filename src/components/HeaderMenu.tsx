@@ -1,14 +1,15 @@
 import { useState, type CSSProperties } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useRouterState } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { LogOut, Menu, X } from "lucide-react";
+import { ChevronDown, LogOut, Menu, X } from "lucide-react";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/lib/auth-context";
 import { useProxy } from "@/lib/proxy-context";
 import { useMyRoles } from "@/lib/roles";
 import { supabase } from "@/integrations/supabase/client";
-import { initialsFor, menuGroups, type MenuItem } from "@/lib/header-menu";
+import { initialsFor, menuGroups, type MenuChild, type MenuItem } from "@/lib/header-menu";
 
 const itemMotion =
   "animate-in fade-in-0 slide-in-from-right-2 fill-mode-both motion-reduce:animate-none";
@@ -22,6 +23,69 @@ function SectionLabel({ children, index }: { children: string; index: number }) 
     >
       {children}
     </p>
+  );
+}
+
+const rowClass =
+  "relative flex min-h-11 w-full items-center gap-3 rounded-lg px-3 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-primary motion-reduce:transition-none";
+const activeProps = { className: "bg-primary/10 font-medium text-primary" };
+const accentBar = <span className="absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-primary" />;
+
+function MenuGroup({
+  item,
+  index,
+  close,
+}: {
+  item: MenuItem & { children: MenuChild[] };
+  index: number;
+  close: () => void;
+}) {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const onSection = pathname === item.to || pathname.startsWith(`${item.to}/`);
+  const [open, setOpen] = useState(onSection);
+  const Icon = item.icon;
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger
+        className={`${rowClass} focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${itemMotion} ${onSection ? "text-primary" : ""}`}
+        style={stagger(index)}
+      >
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-secondary">
+          <Icon className="h-4 w-4" />
+        </span>
+        <span className="flex-1 text-left">{item.label}</span>
+        <ChevronDown
+          className={`h-4 w-4 transition-transform motion-reduce:transition-none ${open ? "rotate-180" : ""}`}
+        />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-collapsible-up data-[state=open]:animate-collapsible-down motion-reduce:animate-none">
+        <div className="ml-7 mt-0.5 flex flex-col gap-0.5 border-l pl-2">
+          {item.children.map((child) => {
+            const linkProps = {
+              onClick: close,
+              activeOptions: { exact: !!child.exact },
+              className: rowClass,
+              activeProps,
+            };
+            const content = ({ isActive }: { isActive: boolean }) => (
+              <>
+                {isActive && accentBar}
+                {child.label}
+              </>
+            );
+            return child.to === "/national-paint/analysis" ? (
+              <Link key={child.to} to={child.to} search={{ job: undefined }} {...linkProps}>
+                {content}
+              </Link>
+            ) : (
+              <Link key={child.to} to={child.to} {...linkProps}>
+                {content}
+              </Link>
+            );
+          })}
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
   );
 }
 
@@ -55,6 +119,16 @@ export function HeaderMenu({ unread }: { unread: number }) {
   let index = 0;
   const renderItem = (item: MenuItem) => {
     const Icon = item.icon;
+    if (item.children) {
+      return (
+        <MenuGroup
+          key={item.to}
+          item={{ ...item, children: item.children }}
+          index={index++}
+          close={close}
+        />
+      );
+    }
     return (
       <Link
         key={item.to}
@@ -119,7 +193,7 @@ export function HeaderMenu({ unread }: { unread: number }) {
       </button>
       <SheetContent
         side="right"
-        overlayClassName="bg-black/40 backdrop-blur-sm duration-250 motion-reduce:animate-none"
+        overlayClassName="bg-black/40 backdrop-blur-sm duration-250 motion-reduce:animate-none md:backdrop-blur-none md:data-[state=closed]:animate-none md:data-[state=open]:animate-none"
         className="flex flex-col gap-0 p-4 ease-out data-[state=closed]:duration-250 data-[state=open]:duration-250 motion-reduce:animate-none motion-reduce:transition-none"
       >
         <SheetTitle className="sr-only">Menu</SheetTitle>

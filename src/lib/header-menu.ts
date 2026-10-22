@@ -9,7 +9,33 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-export type MenuItem = { to: string; label: string; icon: LucideIcon };
+export type MenuChild = { to: string; label: string; exact?: boolean };
+export type MenuItem = { to: string; label: string; icon: LucideIcon; children?: MenuChild[] };
+
+const NP = "/national-paint";
+
+/** The National Paint pages, in the order of the page tab row. Import is admin-only. */
+export function nationalPaintPages(isAdmin: boolean): MenuChild[] {
+  const pages: MenuChild[] = [
+    { to: NP, label: "Projects", exact: true },
+    { to: `${NP}/people`, label: "People and crews" },
+    { to: `${NP}/timeline`, label: "Project Timeline" },
+    { to: `${NP}/capacity`, label: "Crew Capacity" },
+    { to: `${NP}/revenue`, label: "Revenue" },
+    { to: `${NP}/dashboard`, label: "Dashboard" },
+    { to: `${NP}/finance`, label: "Finance" },
+    { to: `${NP}/analysis`, label: "Project Analysis" },
+    { to: `${NP}/cmic`, label: "CMiC" },
+  ];
+  if (isAdmin) pages.push({ to: `${NP}/import`, label: "Import" });
+  return pages;
+}
+
+/** Label of the National Paint page for a pathname, or null outside National Paint. */
+export function nationalPaintPageLabel(pathname: string): string | null {
+  const path = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  return nationalPaintPages(true).find((p) => p.to === path)?.label ?? null;
+}
 
 /** Up to two uppercase initials: first letters of the first and last words. */
 export function initialsFor(name: string): string {
@@ -36,7 +62,12 @@ export function menuGroups({
     { to: "/safety", label: "Safety", icon: ShieldCheck },
   ];
   if (canManageNationalPaint) {
-    navigate.push({ to: "/national-paint", label: "National Paint", icon: PaintRoller });
+    navigate.push({
+      to: NP,
+      label: "National Paint",
+      icon: PaintRoller,
+      children: nationalPaintPages(isAdmin),
+    });
   }
   return { navigate, admin: isAdmin ? [{ to: "/admin", label: "Admin", icon: Shield }] : null };
 }
