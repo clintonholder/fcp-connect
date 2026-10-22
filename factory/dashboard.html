@@ -19,6 +19,7 @@
     --changes: #ffb86c;
     --human: #ff79c6;
     --merged: #bd93f9;
+    --blue: #82aaff;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
@@ -296,6 +297,89 @@
   @keyframes breathe { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
   @media (prefers-reduced-motion: reduce) { .pulse, .chip.wait { animation: none; } }
 
+  /* Settings: Agents deck */
+  .deck { padding: 20px 32px 40px; }
+  .dk-head { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; margin-bottom: 6px; }
+  .dk-head h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .dk-state {
+    font-family: var(--mono); font-size: 11px; padding: 2px 9px; border-radius: 999px;
+    color: var(--pass); background: color-mix(in srgb, var(--pass) 14%, transparent);
+  }
+  .dk-state.unsaved { color: var(--changes); background: color-mix(in srgb, var(--changes) 16%, transparent); }
+  .dk-err { font-size: 12px; color: var(--human); }
+  .dk-reset {
+    margin-left: auto; padding: 5px 12px; cursor: pointer; background: none;
+    border: 1px solid var(--line); border-radius: 8px; color: var(--muted); font-size: 12px;
+  }
+  .dk-reset:hover { color: var(--text); border-color: var(--muted); }
+  .dk-note { margin: 0 0 18px; color: var(--muted); font-size: 13px; }
+  .dk-cards { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; align-items: start; }
+  .dk-card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px;
+  }
+  .dk-top { display: flex; align-items: baseline; gap: 8px; }
+  .dk-top h3 { margin: 0; font-size: 14px; font-weight: 600; }
+  .dk-who { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+  .dk-set { margin: 12px 0; font-family: var(--mono); font-size: 13px; font-weight: 600; letter-spacing: .02em; }
+  .dk-set .eff { color: var(--muted); font-weight: 400; }
+  .dk-actions { display: flex; align-items: center; gap: 12px; }
+  .dk-gear, .dk-link {
+    background: none; border: 1px solid var(--line); border-radius: 8px; cursor: pointer;
+    color: var(--muted); font-size: 12px; padding: 4px 10px;
+  }
+  .dk-gear { font-size: 15px; line-height: 1.2; padding: 3px 9px; }
+  .dk-link { border-color: transparent; padding: 4px 2px; text-decoration: underline; }
+  .dk-gear:hover, .dk-link:hover { color: var(--text); border-color: var(--muted); }
+  .dk-link:hover { border-color: transparent; }
+  .dk-gear:focus-visible, .dk-link:focus-visible, .dk-reset:focus-visible, .mx-close:focus-visible,
+  .mx-cell:focus-visible { outline: 2px solid var(--active); outline-offset: 2px; }
+  .dk-revs { list-style: none; margin: 12px 0 0; padding: 10px 0 0; border-top: 1px solid var(--line); display: grid; gap: 10px; }
+  .dk-rev .dk-set { margin: 4px 0 6px; font-size: 12px; }
+  .dk-rev-name { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  .mx-scrim { position: fixed; inset: 0; background: rgba(5, 6, 10, .55); }
+  .mx-panel {
+    position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    width: min(520px, calc(100vw - 24px)); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px 20px;
+  }
+  .mx-panel h3 { margin: 0 40px 14px 0; font-family: var(--mono); font-size: 12px; letter-spacing: .06em; }
+  .mx-close { top: 12px; right: 12px; }
+  .mx-row { display: grid; grid-template-columns: 76px minmax(0, 1fr); align-items: center; }
+  .mx-head { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+  .mx-cols, .mx-track { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .mx-cols > div { text-align: center; }
+  .mx-label { font-size: 13px; color: var(--muted); }
+  .mx-track { position: relative; touch-action: none; }
+  .mx-cell {
+    position: relative; z-index: 2; height: 38px; display: flex; align-items: center;
+    justify-content: center; cursor: pointer; border-radius: 6px;
+  }
+  .mx-dot { width: 8px; height: 8px; border-radius: 50%; background: color-mix(in srgb, var(--text) 25%, transparent); }
+  .mx-cell.saved .mx-dot, .mx-cell.saved .mx-dot::before, .mx-cell.saved .mx-dot::after {
+    clip-path: polygon(25% 5%, 75% 5%, 100% 50%, 75% 95%, 25% 95%, 0 50%);
+  }
+  .mx-cell.saved .mx-dot { position: relative; width: 26px; height: 26px; border-radius: 0; background: var(--changes); }
+  .mx-cell.saved .mx-dot::before, .mx-cell.saved .mx-dot::after { content: ""; position: absolute; }
+  .mx-cell.saved .mx-dot::before { inset: 3px; background: var(--panel); }
+  .mx-cell.saved .mx-dot::after { inset: 6px; background: var(--changes); }
+  .mx-pill {
+    position: absolute; z-index: 3; top: 50%; left: calc(10% - 6px); height: 12px; margin-top: -6px;
+    width: calc(var(--i, 0) * 20% + 12px); border-radius: 999px; background: var(--mc);
+    opacity: 0; pointer-events: none; transition: width .18s ease, opacity .12s;
+  }
+  .mx-pill.on { opacity: 1; }
+  .mx-pill::after {
+    content: ""; position: absolute; top: -1px; right: -1px; width: 14px; height: 14px;
+    border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, .4);
+  }
+  @media (max-width: 1100px) { .dk-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 640px) {
+    .deck { padding: 16px 16px 32px; }
+    .dk-cards { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) { .mx-pill { transition: none; } }
+
   /* Drawer */
   .scrim {
     position: fixed; inset: 0; background: rgba(5, 6, 10, .55);
@@ -408,6 +492,7 @@
 <nav class="tabs" aria-label="View">
   <button class="tab" data-view="board" aria-pressed="true">Board</button>
   <button class="tab" data-view="backlog" aria-pressed="false">Backlog <span class="n" id="n-backlog"></span></button>
+  <button class="tab" data-view="settings" aria-pressed="false">Settings</button>
 </nav>
 <main class="board" id="board"></main>
 <section class="backlog" id="backlog" aria-label="Backlog" hidden>
@@ -419,6 +504,17 @@
   </div>
   <ol class="bl-list" id="bl-list"></ol>
 </section>
+<section class="deck" id="settings" aria-label="Settings" hidden>
+  <div class="dk-head">
+    <h2>Agents deck</h2>
+    <span class="dk-state" id="dk-state" role="status">Saved</span>
+    <span class="dk-err" id="dk-err"></span>
+    <button class="dk-reset" id="dk-reset">Reset all</button>
+  </div>
+  <p class="dk-note">A change applies to the next agent the factory starts, not to agents already running.</p>
+  <div class="dk-cards" id="dk-cards"></div>
+</section>
+<div id="mx-root"></div>
 <footer>
   <span>/factory &lt;feature&gt;</span>
   <span>/factory next</span>
@@ -658,6 +754,7 @@ async function render() {
 
 async function poll() {
   const status = $('status')
+  if (view === 'settings') await refreshModels()
   try {
     jobs = await loadJobs()
     try {
@@ -810,10 +907,305 @@ function setView(v) {
   view = v
   $('board').hidden = v !== 'board'
   $('backlog').hidden = v !== 'backlog'
+  $('settings').hidden = v !== 'settings'
   document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)))
   try { localStorage.setItem('factory.view', v) } catch {}
-  history.replaceState(null, '', v === 'backlog' ? '#backlog' : location.pathname + location.search)
+  history.replaceState(null, '', v === 'board' ? location.pathname + location.search : `#${v}`)
+  closePanel(false)
+  if (v === 'settings') refreshModels()
 }
+
+// ---- Settings: Agents deck -----------------------------------------------
+
+const MODEL_DEFS = [
+  { key: 'haiku', label: 'Haiku', c: 'var(--active)' },
+  { key: 'sonnet', label: 'Sonnet', c: 'var(--blue)' },
+  { key: 'opus', label: 'Opus', c: 'var(--merged)' },
+  { key: 'fable', label: 'Fable', c: 'var(--human)' },
+]
+const EFFORT_DEFS = [['low', 'Low'], ['medium', 'Medium'], ['high', 'High'], ['xhigh', 'Xhigh'], ['max', 'Max']]
+// What each agent runs when nothing is saved (the model in .claude/agents/<name>.md).
+const FILE_DEFAULT = {
+  'spec-writer': 'opus', builder: 'sonnet', approver: 'sonnet',
+  'reviewer-security': 'sonnet', 'reviewer-ux': 'sonnet', 'reviewer-ui': 'sonnet', 'reviewer-code': 'sonnet',
+}
+const REVIEW_AGENTS = REVIEWERS.map(([k]) => `reviewer-${k}`)
+const DECK = [
+  { key: 'spec', label: 'Spec', agents: ['spec-writer'] },
+  { key: 'build', label: 'Build', agents: ['builder'] },
+  { key: 'review', label: 'Review', agents: REVIEW_AGENTS },
+  { key: 'approve', label: 'Approve', agents: ['approver'] },
+]
+
+let models = {} // what the cards show; { agent: { model, effort } }
+let confirmed = {} // the last map the server confirmed or models.json held
+let inflight = 0
+let saveError = ''
+let reviewOpen = false
+let lastDeck = ''
+let panel = null // { title, agents, opener, fc: { r, c } } while the Model x Effort panel is open
+let drag = null // { r, c, id } while a pointer is down on a row
+
+const modelDef = (key) => MODEL_DEFS.find((m) => m.key === key)
+
+function cleanModels(data) {
+  const out = {}
+  if (!data || typeof data !== 'object' || Array.isArray(data)) return out
+  for (const [agent, v] of Object.entries(data)) {
+    if (agent in FILE_DEFAULT && v && modelDef(v.model) && EFFORT_DEFS.some(([e]) => e === v.effort)) {
+      out[agent] = { model: v.model, effort: v.effort }
+    }
+  }
+  return out
+}
+
+// The shared setting of some agents: { mixed } or { model, effort, saved } (effort null = default).
+function setting(agents) {
+  const first = models[agents[0]]
+  const same = agents.every((a) => JSON.stringify(models[a] || null) === JSON.stringify(first || null))
+  if (!same) return { mixed: true }
+  return first
+    ? { model: first.model, effort: first.effort, saved: true }
+    : { model: FILE_DEFAULT[agents[0]], effort: null, saved: false }
+}
+
+function settingLabel(agents) {
+  const s = setting(agents)
+  if (s.mixed) return '<span class="eff">MIXED</span>'
+  return `<span style="color:${modelDef(s.model).c}">${esc(s.model.toUpperCase())}</span>
+    <span class="eff">· ${esc((s.effort || 'default').toUpperCase())}</span>`
+}
+
+// Gear and Default targets: a stage key, or a single reviewer's agent name.
+function targetOf(key) {
+  const stage = DECK.find((d) => d.key === key)
+  if (stage) return { title: stage.label, agents: stage.agents }
+  return { title: `Review · ${key.replace('reviewer-', '')}`, agents: [key] }
+}
+
+function deckActions(key, name) {
+  return `<button class="dk-gear" data-gear="${esc(key)}" aria-label="Change model and effort for ${esc(name)}"><span aria-hidden="true">⚙</span></button>
+    <button class="dk-link" data-default="${esc(key)}" aria-label="Reset ${esc(name)} to its default model">Default</button>`
+}
+
+function renderDeck() {
+  const cards = DECK.map((d) => {
+    const isReview = d.key === 'review'
+    const revs = isReview && reviewOpen
+      ? `<ul class="dk-revs" id="dk-revs">${REVIEW_AGENTS.map((a) => {
+        const name = `Review · ${a.replace('reviewer-', '')}`
+        return `<li class="dk-rev"><div class="dk-rev-name">${esc(a)}</div>
+          <div class="dk-set">${settingLabel([a])}</div>
+          <div class="dk-actions">${deckActions(a, name)}</div></li>`
+      }).join('')}</ul>`
+      : ''
+    return `<article class="dk-card">
+      <div class="dk-top"><h3>${esc(d.label)}</h3><span class="dk-who">${esc(isReview ? 'sec · ux · ui · code' : d.agents[0])}</span></div>
+      <div class="dk-set">${settingLabel(d.agents)}</div>
+      <div class="dk-actions">${deckActions(d.key, d.label)}
+        ${isReview ? `<button class="dk-link" data-rev-toggle aria-expanded="${reviewOpen}" aria-controls="dk-revs">Reviewers</button>` : ''}</div>
+      ${revs}
+    </article>`
+  }).join('')
+  const unsaved = inflight > 0 || saveError
+  $('dk-state').textContent = unsaved ? 'Unsaved' : 'Saved'
+  $('dk-state').classList.toggle('unsaved', Boolean(unsaved))
+  $('dk-err').textContent = saveError
+  if (cards === lastDeck) return
+  lastDeck = cards
+  const ae = document.activeElement
+  const attr = ['data-gear', 'data-default', 'data-rev-toggle'].find((a) => ae && ae.hasAttribute(a))
+  $('dk-cards').innerHTML = cards
+  if (attr) $('dk-cards').querySelector(`[${attr}="${ae.getAttribute(attr)}"]`)?.focus()
+}
+
+async function refreshModels() {
+  if (drag || inflight) return
+  let next = {}
+  try {
+    const res = await fetch('models.json', { cache: 'no-store' })
+    if (res.ok) next = cleanModels(await res.json())
+  } catch { /* unreadable: all defaults */ }
+  if (drag || inflight) return
+  confirmed = models = next
+  paintDeck()
+}
+
+function paintDeck() {
+  renderDeck()
+  paintPanel()
+}
+
+async function saveModels(next) {
+  models = next
+  inflight++
+  saveError = ''
+  paintDeck()
+  try {
+    const res = await fetch('/api/models', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Factory': '1' },
+      body: JSON.stringify(next),
+    })
+    if (!res.ok || !(res.headers.get('content-type') || '').includes('json')) {
+      throw new Error(`HTTP ${res.status}`)
+    }
+    confirmed = cleanModels(await res.json())
+  } catch (err) {
+    saveError = `Not saved (${err.message}). Start the dashboard with python serve.py.`
+  }
+  inflight--
+  if (!inflight) models = confirmed
+  paintDeck()
+}
+
+function openPanel(key, opener) {
+  const t = targetOf(key)
+  const s = setting(t.agents)
+  const r = Math.max(0, MODEL_DEFS.findIndex((m) => m.key === s.model))
+  const c = s.saved ? EFFORT_DEFS.findIndex(([e]) => e === s.effort) : 0
+  panel = { ...t, opener, fc: { r, c } }
+  const head = EFFORT_DEFS.map(([, l]) => `<div role="columnheader">${l}</div>`).join('')
+  const rows = MODEL_DEFS.map((m, r) => `
+    <div class="mx-row" role="row" style="--mc:${m.c}">
+      <div class="mx-label" role="rowheader">${m.label}</div>
+      <div class="mx-track">
+        <span class="mx-pill"></span>
+        ${EFFORT_DEFS.map(([, l], c) => `<div class="mx-cell" role="gridcell" data-r="${r}" data-c="${c}"
+          tabindex="-1"><span class="mx-dot"></span></div>`).join('')}
+      </div>
+    </div>`).join('')
+  $('mx-root').innerHTML = `
+    <div class="mx-scrim" data-panel-close></div>
+    <div class="mx-panel" role="dialog" aria-modal="true" aria-labelledby="mx-title">
+      <h3 id="mx-title">${esc(t.title)} · MODEL × EFFORT</h3>
+      <button class="close mx-close" data-panel-close aria-label="Close">×</button>
+      <div role="grid" aria-labelledby="mx-title" id="mx-grid">
+        <div class="mx-row mx-head" role="row"><div role="presentation"></div><div class="mx-cols">${head}</div></div>
+        ${rows}
+      </div>
+    </div>`
+  paintPanel()
+  cellAt(panel.fc.r, panel.fc.c).focus()
+}
+
+function closePanel(restoreFocus = true) {
+  if (!panel) return
+  const opener = panel.opener
+  panel = null
+  drag = null
+  $('mx-root').innerHTML = ''
+  if (restoreFocus) document.querySelector(`[data-gear="${opener}"]`)?.focus()
+}
+
+const cellAt = (r, c) => document.querySelector(`.mx-cell[data-r="${r}"][data-c="${c}"]`)
+
+// Updates the open panel in place, so a drag keeps its pointer capture and the pill animates.
+function paintPanel() {
+  if (!panel) return
+  const s = setting(panel.agents)
+  const savedIdx = s.saved ? EFFORT_DEFS.findIndex(([e]) => e === s.effort) : -1
+  const active = drag ? MODEL_DEFS[drag.r].key : s.mixed ? null : s.model
+  document.querySelectorAll('.mx-row[style]').forEach((row, r) => {
+    const m = MODEL_DEFS[r]
+    row.querySelector('.mx-label').style.color = m.key === active ? m.c : ''
+    const idx = drag ? (drag.r === r ? drag.c : -1) : s.saved && s.model === m.key ? savedIdx : -1
+    const pill = row.querySelector('.mx-pill')
+    pill.classList.toggle('on', idx >= 0)
+    if (idx >= 0) pill.style.setProperty('--i', idx)
+    EFFORT_DEFS.forEach(([, l], c) => {
+      const cell = cellAt(r, c)
+      const isSaved = s.saved && s.model === m.key && c === savedIdx
+      cell.classList.toggle('saved', isSaved)
+      cell.setAttribute('aria-selected', String(isSaved))
+      cell.setAttribute('aria-label', `${m.label}, ${l}${isSaved ? ' (saved)' : ''}`)
+      cell.tabIndex = r === panel.fc.r && c === panel.fc.c ? 0 : -1
+    })
+  })
+}
+
+function choose(r, c) {
+  const next = { ...models }
+  for (const a of panel.agents) next[a] = { model: MODEL_DEFS[r].key, effort: EFFORT_DEFS[c][0] }
+  saveModels(next)
+}
+
+function dropAgents(agents) {
+  const next = { ...models }
+  for (const a of agents) delete next[a]
+  saveModels(next)
+}
+
+$('settings').addEventListener('click', (e) => {
+  const gear = e.target.closest('[data-gear]')
+  if (gear) return openPanel(gear.dataset.gear, gear.dataset.gear)
+  const def = e.target.closest('[data-default]')
+  if (def) return dropAgents(targetOf(def.dataset.default).agents)
+  if (e.target.closest('[data-rev-toggle]')) { reviewOpen = !reviewOpen; return renderDeck() }
+  if (e.target.closest('#dk-reset')) saveModels({})
+})
+
+$('mx-root').addEventListener('click', (e) => { if (e.target.closest('[data-panel-close]')) closePanel() })
+
+$('mx-root').addEventListener('pointerdown', (e) => {
+  const cell = e.target.closest('.mx-cell')
+  if (!cell || e.button !== 0) return
+  e.preventDefault()
+  cell.closest('.mx-row').setPointerCapture(e.pointerId)
+  panel.fc = { r: Number(cell.dataset.r), c: Number(cell.dataset.c) }
+  drag = { ...panel.fc, id: e.pointerId }
+  cell.focus()
+  paintPanel()
+})
+
+$('mx-root').addEventListener('pointermove', (e) => {
+  if (!drag || e.pointerId !== drag.id) return
+  const box = e.target.closest('.mx-row').querySelector('.mx-track').getBoundingClientRect()
+  const c = Math.min(4, Math.max(0, Math.floor(((e.clientX - box.left) / box.width) * 5)))
+  if (c === drag.c) return
+  drag.c = c
+  panel.fc.c = c
+  paintPanel()
+})
+
+$('mx-root').addEventListener('pointerup', (e) => {
+  if (!drag || e.pointerId !== drag.id) return
+  const { r, c } = drag
+  drag = null
+  cellAt(r, c).focus()
+  choose(r, c)
+})
+
+$('mx-root').addEventListener('pointercancel', () => { drag = null; paintPanel() })
+
+$('mx-root').addEventListener('keydown', (e) => {
+  if (e.key === 'Tab') {
+    const stops = [...$('mx-root').querySelectorAll('button, [tabindex="0"]')]
+    const i = stops.indexOf(document.activeElement)
+    const next = stops[(i + (e.shiftKey ? -1 : 1) + stops.length) % stops.length]
+    e.preventDefault()
+    return next.focus()
+  }
+  const cell = e.target.closest('.mx-cell')
+  if (!cell) return
+  const r = Number(cell.dataset.r)
+  const c = Number(cell.dataset.c)
+  if (e.key === 'Enter' || e.key === ' ') {
+    e.preventDefault()
+    return choose(r, c)
+  }
+  const move = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] }[e.key]
+  if (!move) return
+  e.preventDefault()
+  panel.fc = {
+    r: Math.min(MODEL_DEFS.length - 1, Math.max(0, r + move[0])),
+    c: Math.min(EFFORT_DEFS.length - 1, Math.max(0, c + move[1])),
+  }
+  paintPanel()
+  cellAt(panel.fc.r, panel.fc.c).focus()
+})
+
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePanel() })
 
 // ---- Drawer --------------------------------------------------------------
 
@@ -1021,7 +1413,9 @@ $('bl-search').addEventListener('input', (e) => { blQuery = e.target.value; rend
 
 let startView = 'board'
 try { startView = localStorage.getItem('factory.view') || 'board' } catch {}
-setView(location.hash === '#backlog' ? 'backlog' : startView === 'backlog' ? 'backlog' : 'board')
+const VIEWS = ['board', 'backlog', 'settings']
+const hashView = location.hash.slice(1)
+setView(VIEWS.includes(hashView) ? hashView : VIEWS.includes(startView) ? startView : 'board')
 
 poll()
 setInterval(poll, POLL_MS)
