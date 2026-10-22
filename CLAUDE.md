@@ -226,3 +226,8 @@ cd factory && python serve.py
 ```
 
 Open http://localhost:8000/dashboard.html
+
+The Settings tab ("Agents deck") sets the model and effort per factory agent. Choices are saved
+to gitignored `factory/models.json`, which the orchestrator reads each time it spawns an agent
+(a missing entry means the agent file's default). Saving needs `python serve.py`, not plain
+`python -m http.server`. Tests for `serve.py`: `cd factory && python -m unittest test_serve`.
